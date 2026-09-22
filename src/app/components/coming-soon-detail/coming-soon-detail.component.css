@@ -1,0 +1,821 @@
+/* ======================================
+   🎬 CSS UNIFICADO FASE 3 - TEMA PARKY FILMS
+   Movie Detail, Search, Favorites, Coming Soon
+   ====================================== */
+
+/* ======================================
+   📋 BASE STYLES - Headers y contenedores
+   ====================================== */
+
+.container {
+  max-width: 1200px;
+}
+
+.header-section {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem !important;
+}
+
+.header-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.text-shadow {
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+}
+
+.header-stats {
+  min-width: 120px;
+}
+
+.search-header {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+}
+
+/* ======================================
+   🎥 MOVIE CARDS - Estilo unificado
+   ====================================== */
+
+.movie-card,
+.coming-soon-card {
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+.movie-card:hover,
+.coming-soon-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(13, 110, 253, 0.2) !important;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.shadow-hover {
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Poster containers */
+.poster-container {
+  overflow: hidden;
+  position: relative;
+}
+
+.movie-card .card-img-top,
+.coming-soon-card .card-img-top,
+.movie-poster {
+  transition: all 0.3s ease;
+  border-radius: 1rem 1rem 0 0;
+}
+
+.movie-card:hover .card-img-top,
+.coming-soon-card:hover .card-img-top,
+.movie-card:hover .movie-poster {
+  transform: scale(1.05);
+  filter: brightness(0.9);
+}
+
+/* Poster overlays */
+.card-overlay,
+.poster-overlay {
+  background: rgba(0,0,0,0.8);
+  opacity: 0;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.movie-card:hover .card-overlay,
+.coming-soon-card:hover .poster-overlay {
+  opacity: 1;
+}
+
+.overlay-btn {
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+}
+
+.movie-card:hover .overlay-btn,
+.coming-soon-card:hover .overlay-btn {
+  transform: translateY(0);
+}
+
+/* ======================================
+   🏷️ BADGES - Rating, géneros, etc.
+   ====================================== */
+
+.badge {
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.badge.bg-warning {
+  background: linear-gradient(45deg, #ffc107, #ff8f00) !important;
+  color: #333 !important;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.badge.bg-primary {
+  background: linear-gradient(45deg, #0d6efd, #6610f2) !important;
+}
+
+.badge.bg-success {
+  background: linear-gradient(45deg, #198754, #20c997) !important;
+}
+
+.badge.bg-info {
+  background: linear-gradient(45deg, #0dcaf0, #17a2b8) !important;
+}
+
+.badge.bg-secondary {
+  background: linear-gradient(45deg, #6c757d, #495057) !important;
+}
+
+.badge.bg-danger {
+  background: linear-gradient(45deg, #dc3545, #c82333) !important;
+}
+
+.movie-card:hover .badge,
+.coming-soon-card:hover .badge {
+  transform: scale(1.1);
+}
+
+/* ======================================
+   🔘 BOTONES - Estilo unificado
+   ====================================== */
+
+.btn {
+  border-radius: 25px;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border: none;
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #6610f2, #0d6efd);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 110, 253, 0.4);
+}
+
+.btn-success {
+  background: linear-gradient(45deg, #198754, #20c997);
+  border: none;
+  box-shadow: 0 4px 15px rgba(25, 135, 84, 0.3);
+}
+
+.btn-success:hover {
+  background: linear-gradient(45deg, #20c997, #198754);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(32, 201, 151, 0.4);
+}
+
+.btn-warning {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  border: none;
+  color: #333;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.btn-warning:hover {
+  background: linear-gradient(45deg, #ff8f00, #ffc107);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+  color: #333;
+}
+
+.btn-outline-primary,
+.btn-outline-success,
+.btn-outline-warning,
+.btn-outline-danger,
+.btn-outline-secondary {
+  border-width: 2px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3);
+}
+
+.btn-outline-success:hover {
+  background: linear-gradient(45deg, #198754, #20c997);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(25, 135, 84, 0.3);
+}
+
+.btn-outline-warning:hover {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  color: #333;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+}
+
+.btn-outline-danger:hover {
+  background: linear-gradient(45deg, #dc3545, #c82333);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+}
+
+.btn-outline-secondary:hover {
+  background: linear-gradient(45deg, #6c757d, #495057);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+}
+
+/* ======================================
+   📋 CARDS - Información y detalles
+   ====================================== */
+
+.card {
+  border-radius: 1rem;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(13, 110, 253, 0.15);
+}
+
+.card-header {
+  border-radius: 1rem 1rem 0 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card-header.bg-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.card-footer {
+  background: rgba(248, 249, 250, 0.8);
+  border-top: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+/* Info cards especiales */
+.info-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  height: 100%;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.info-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 35px rgba(13, 110, 253, 0.15);
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.info-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #0d6efd, #6610f2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  margin: 0 auto 1rem;
+  transition: all 0.3s ease;
+}
+
+.info-card:hover .info-icon {
+  transform: scale(1.1);
+  box-shadow: 0 8px 20px rgba(13, 110, 253, 0.4);
+}
+
+.info-content h6 {
+  color: #0d6efd;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.info-content p {
+  color: #495057;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ======================================
+   🎬 MOVIE DETAIL - Estilos específicos
+   ====================================== */
+
+/* Admin highlights */
+.admin-highlight {
+  border: 2px solid #ffc107 !important;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.3) !important;
+}
+
+.admin-info .card {
+  background: rgba(255, 193, 7, 0.1) !important;
+  border: 1px solid #ffc107 !important;
+  border-radius: 0.75rem;
+}
+
+/* Purchase section */
+.purchase-section .card {
+  border: 2px solid #198754;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  transition: all 0.3s ease;
+}
+
+.purchase-section .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(25, 135, 84, 0.2);
+}
+
+/* Studio section */
+.studio-logo-container {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  border-radius: 1rem !important;
+  padding: 2rem !important;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+.studio-logo-container:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.estudio-img {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+  transition: all 0.3s ease;
+}
+
+.estudio-img:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
+}
+
+/* Trailer section */
+.trailer-section .ratio {
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.trailer-section .ratio:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+/* ======================================
+   🔍 SEARCH - Estilos específicos
+   ====================================== */
+
+.movie-info {
+  font-size: 0.9rem;
+}
+
+.movie-info i {
+  color: #0d6efd;
+  width: 16px;
+}
+
+/* ======================================
+   ❤️ FAVORITES - Estilos específicos
+   ====================================== */
+
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.empty-state i {
+  opacity: 0.5;
+}
+
+/* Vista de tabla */
+.table-responsive {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table-primary {
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(102, 16, 242, 0.1));
+}
+
+.table-hover tbody tr:hover {
+  background: rgba(13, 110, 253, 0.05);
+}
+
+/* Paginación */
+.pagination {
+  border-radius: 1rem;
+}
+
+.page-item .page-link {
+  border-radius: 0.5rem;
+  margin: 0 0.25rem;
+  border: 2px solid rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.page-item.active .page-link {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border-color: #0d6efd;
+}
+
+.page-item .page-link:hover {
+  background: rgba(13, 110, 253, 0.1);
+  border-color: #ffc107;
+  color: #0d6efd;
+  transform: translateY(-2px);
+}
+
+/* ======================================
+   📅 COMING SOON - Estilos específicos
+   ====================================== */
+
+.month-header h2 {
+  color: #0d6efd;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.month-header hr {
+  border-color: #0d6efd;
+  border-width: 2px;
+  width: 100px;
+  margin: 0;
+}
+
+.month-section {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ======================================
+   🎨 SECTION TITLES
+   ====================================== */
+
+.section-title {
+  color: #0d6efd;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid #0d6efd;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: linear-gradient(45deg, #6610f2, #ffc107);
+}
+
+/* ======================================
+   🚨 ALERTS
+   ====================================== */
+
+.alert {
+  border-radius: 1rem;
+  border: none;
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid;
+}
+
+.alert-danger {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
+  color: #dc3545;
+  border-left-color: #dc3545;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, rgba(25, 135, 84, 0.1), rgba(25, 135, 84, 0.05));
+  color: #198754;
+  border-left-color: #198754;
+}
+
+.alert-info {
+  background: linear-gradient(135deg, rgba(13, 202, 240, 0.1), rgba(13, 202, 240, 0.05));
+  color: #0dcaf0;
+  border-left-color: #0dcaf0;
+}
+
+.alert-primary {
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 110, 253, 0.05));
+  color: #0d6efd;
+  border-left-color: #0d6efd;
+}
+
+.alert-heading {
+  font-weight: 700;
+}
+
+/* ======================================
+   🔗 BREADCRUMBS
+   ====================================== */
+
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-item a {
+  color: #0d6efd;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.breadcrumb-item a:hover {
+  color: #ffc107;
+  transform: translateX(3px);
+}
+
+.breadcrumb-item.active {
+  color: #6c757d;
+  font-weight: 600;
+}
+
+/* ======================================
+   📱 RESPONSIVE DESIGN
+   ====================================== */
+
+@media (max-width: 1200px) {
+  .display-4 {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .display-4 {
+    font-size: 2rem;
+  }
+  
+  .header-section {
+    text-align: center;
+  }
+  
+  .header-section .d-flex {
+    flex-direction: column;
+  }
+  
+  .movie-card .card-img-top,
+  .coming-soon-card .card-img-top {
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .display-4 {
+    font-size: 1.8rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .info-card {
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+  
+  .info-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+  
+  .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .movie-card .card-img-top,
+  .coming-soon-card .card-img-top {
+    height: 250px;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 0 0.5rem;
+  }
+  
+  .display-4 {
+    font-size: 1.5rem;
+  }
+  
+  .btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+}
+
+/* ======================================
+   ✨ ANIMACIONES
+   ====================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animated {
+  animation-duration: 0.8s;
+  animation-fill-mode: both;
+}
+
+.fadeIn {
+  animation-name: fadeIn;
+}
+
+.fadeInUp {
+  animation-name: fadeInUp;
+}
+
+.fast {
+  animation-duration: 0.4s;
+}
+
+/* Delays para animaciones escalonadas */
+.row:nth-child(even) {
+  animation-delay: 0.1s;
+}
+
+.row:nth-child(3n) {
+  animation-delay: 0.2s;
+}
+
+.movie-card:nth-child(1) { animation-delay: 0.1s; }
+.movie-card:nth-child(2) { animation-delay: 0.2s; }
+.movie-card:nth-child(3) { animation-delay: 0.3s; }
+.movie-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* ======================================
+   🎯 ESTADOS ESPECIALES
+   ====================================== */
+
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.spinner-border {
+  color: #0d6efd;
+}
+
+.text-primary {
+  color: #0d6efd !important;
+}
+
+.text-muted {
+  opacity: 0.8;
+}
+
+/* ======================================
+   🔧 UTILIDADES
+   ====================================== */
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.position-relative {
+  position: relative;
+}
+
+.w-100 {
+  width: 100% !important;
+}
+
+.h-100 {
+  height: 100% !important;
+}
+
+/* ======================================
+   🎨 ACCESIBILIDAD
+   ====================================== */
+
+.btn:focus,
+.page-link:focus,
+.card:focus {
+  outline: 2px solid #ffc107;
+  outline-offset: 2px;
+}
+
+/* Modo de alto contraste */
+@media (prefers-contrast: high) {
+  .card {
+    border: 2px solid #000000;
+  }
+  
+  .btn-primary {
+    background: #0000ff !important;
+  }
+  
+  .text-primary {
+    color: #0000ff !important;
+  }
+}
+
+/* Modo sin animaciones */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

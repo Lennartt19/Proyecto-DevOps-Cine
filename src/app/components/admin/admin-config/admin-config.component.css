@@ -1,0 +1,169 @@
+/* admin-config.component.css */
+
+.admin-config {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Cards */
+.card {
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1) !important;
+}
+
+/* Tabla */
+.table th {
+  background-color: #f8f9fa;
+  border-top: none;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(0,123,255,0.05);
+}
+
+/* Badges */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+}
+
+/* Botones */
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Form controls */
+.form-control,
+.form-select {
+  border-radius: 8px;
+  border: 1px solid #e0e6ed;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+}
+
+/* Estadísticas */
+.text-center h4,
+.text-center h5 {
+  font-weight: 700;
+}
+
+/* Estados especiales */
+.text-warning {
+  color: #f39c12 !important;
+}
+
+.bg-warning {
+  background-color: #f39c12 !important;
+}
+
+/* Loading states */
+.spinner-border {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Configuraciones críticas */
+tr:has(.text-warning) {
+  background-color: rgba(255, 193, 7, 0.05);
+}
+
+/* Animaciones de edición */
+.d-flex.gap-2 {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-config h4 {
+    font-size: 1.3rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .table-responsive {
+    font-size: 0.85rem;
+  }
+  
+  .btn-group-sm .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+  }
+  
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.5rem !important;
+  }
+}
+
+/* Estados hover mejorados */
+.table tbody tr:hover .btn-outline-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.table tbody tr:hover .btn-outline-warning {
+  background-color: #ffc107;
+  color: #212529;
+}
+
+/* Iconos */
+.fas {
+  width: 16px;
+  text-align: center;
+}

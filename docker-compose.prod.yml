@@ -1,0 +1,90 @@
+# ParkyFilms — despliegue LOCAL "COMO PRODUCCIÓN"
+# Usa las MISMAS imágenes que el compose de dev, pero con comportamiento prod:
+#   NODE_ENV=production (sin logs dev, CORS estricto, SSL/cookies de prod)
+#   DB_SSL=false + COOKIE_SECURE=false SOLO porque en local no hay HTTPS
+#   (en Azure real: DB_SSL=true y COOKIE_SECURE=true detrás de TLS).
+#
+# Uso:
+#   docker compose -f docker-compose.prod.yml up --build -d
+#   curl http://localhost:3000/health   # "environment":"production"
+#   docker compose -f docker-compose.prod.yml down   # apaga (datos se conservan)
+name: ${COMPOSE_PROJECT_NAME:-parkyfilms}-prod
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: parkyfilms-db-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-parkyfilms}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+      TZ: ${TZ:-America/Lima}
+    ports:
+      - "${DB_PORT_HOST:-5433}:5432"
+    volumes:
+      # Volumen SEPARADO del de dev: prod local no toca tus datos de desarrollo
+      - pgdata-prod:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: parkyfilms-backend-prod
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-parkyfilms}
+      DB_USER: ${POSTGRES_USER:-postgres}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+      # Excepciones SOLO para prod local sin TLS (ver .env.example)
+      DB_SSL: "false"
+      COOKIE_SECURE: "false"
+    ports:
+      - "${BACKEND_PORT_HOST:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: parkyfilms-frontend-prod
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # Sin env_file a propósito: solo vars públicas, nada secreto
+    environment:
+      API_URL: ${API_URL:-http://localhost:3000/api}
+      APP_URL: ${APP_URL:-http://localhost:8080}
+    ports:
+      - "${FRONTEND_PORT_HOST:-8080}:80"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  pgdata-prod:
+    name: ${COMPOSE_PROJECT_NAME:-parkyfilms}_pgdata-prod

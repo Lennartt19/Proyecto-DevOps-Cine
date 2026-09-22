@@ -1,0 +1,455 @@
+<!-- bar-detail.component.html -->
+<div class="container mt-4" *ngIf="producto">
+  
+  <!-- Header con título y controles admin -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+          <h1 class="display-4 fw-bold text-warning">{{ producto.nombre }}</h1>
+          <h2 class="text-muted">({{ producto.categoria }})</h2>
+          
+          <div *ngIf="authService.isAdmin()" class="mt-2">
+            <span class="badge bg-danger fs-6 px-3 py-2">
+              <i class="fas fa-crown me-2"></i>MODO ADMINISTRADOR
+            </span>
+          </div>
+        </div>
+      
+        <div class="admin-actions" *ngIf="authService.isAdmin()">
+          <div class="btn-group" role="group">
+
+          </div>
+        </div>
+      </div>
+      <hr class="border-warning border-2">
+    </div>
+  </div>
+  
+  <!-- Contenido principal en 2 columnas -->
+  <div class="row animated fadeIn g-4">
+    
+    <!-- Columna izquierda - Imagen y información básica -->
+    <div class="col-lg-4 col-md-5">
+      <div class="card shadow-lg border-0"
+           [class.border-warning]="authService.isAdmin()"
+           [class.admin-highlight]="authService.isAdmin()"
+           [class.border-danger]="!producto.disponible">
+        
+        <div class="position-relative">
+          <img [src]="producto.imagen" class="card-img-top rounded-top" [alt]="producto.nombre" 
+               style="height: 400px; object-fit: cover;" [class.opacity-50]="!producto.disponible">
+          
+          <div class="position-absolute top-0 end-0 m-2">
+            <div class="d-flex flex-column gap-2">
+              <span class="badge bg-success fs-5 px-3 py-2" *ngIf="!tieneDescuento()">
+                <i class="fas fa-dollar-sign me-1"></i>${{getPrecioBase().toFixed(2)}}
+              </span>
+              <div *ngIf="tieneDescuento()">
+                <span class="badge bg-danger text-decoration-line-through mb-1 d-block">
+                  ${{getPrecioOriginal().toFixed(2)}}
+                </span>
+                <span class="badge bg-success fs-5 px-3 py-2">
+                  <i class="fas fa-dollar-sign me-1"></i>${{getPrecioBase().toFixed(2)}}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="position-absolute top-0 start-0 m-2">
+            <span class="badge fs-6 px-3 py-2"
+                  [ngClass]="{
+                    'bg-primary': producto.categoria.toLowerCase() === 'bebidas',
+                    'bg-warning': producto.categoria.toLowerCase() === 'snacks',
+                    'bg-info': producto.categoria.toLowerCase() === 'dulces',
+                    'bg-danger': producto.categoria.toLowerCase() === 'combos',
+                    'bg-success': producto.categoria.toLowerCase() === 'helados',
+                    'bg-secondary': !['bebidas','snacks','dulces','combos','helados'].includes(producto.categoria.toLowerCase())
+                  }">
+              <i class="fas me-1"
+                 [ngClass]="{
+                   'fa-cocktail': producto.categoria.toLowerCase() === 'bebidas',
+                   'fa-cookie-bite': producto.categoria.toLowerCase() === 'snacks',
+                   'fa-candy-cane': producto.categoria.toLowerCase() === 'dulces',
+                   'fa-gift': producto.categoria.toLowerCase() === 'combos',
+                   'fa-ice-cream': producto.categoria.toLowerCase() === 'helados',
+                   'fa-tag': !['bebidas','snacks','dulces','combos','helados'].includes(producto.categoria.toLowerCase())
+                 }"></i>
+              {{producto.categoria}}
+            </span>
+          </div>
+
+          <div class="position-absolute top-50 start-50 translate-middle" *ngIf="!producto.disponible">
+            <span class="badge bg-danger fs-4 px-4 py-3">
+              <i class="fas fa-times-circle me-2"></i>NO DISPONIBLE
+            </span>
+          </div>
+        </div>
+        
+        <div class="card-body p-3">
+          <div class="text-center mb-3" *ngIf="producto.es_combo">
+            <span class="badge bg-gradient bg-danger text-white fs-5 px-4 py-2">
+              <i class="fas fa-gift me-2"></i>COMBO ESPECIAL
+            </span>
+            <div class="mt-2" *ngIf="producto.descuento">
+              <small class="text-success fw-bold">
+                <i class="fas fa-arrow-down me-1"></i>
+                Ahorras ${{producto.descuento.toFixed(2)}}
+              </small>
+            </div>
+          </div>
+          
+          <div class="admin-info mb-3" *ngIf="authService.isAdmin()">
+            <div class="card bg-light border-warning">
+              <div class="card-body p-2">
+                <h6 class="card-title text-warning mb-2">
+                  <i class="fas fa-info-circle me-1"></i>Info Admin
+                </h6>
+                <small class="text-muted d-block">ID: {{ producto.id }}</small>
+                <small class="text-muted d-block">Disponible: {{ producto.disponible ? 'Sí' : 'No' }}</small>
+                <small class="text-muted d-block">Es Combo: {{ producto.es_combo ? 'Sí' : 'No' }}</small>
+              </div>
+            </div>
+          </div>
+          
+          <div class="d-grid gap-2">
+            <button class="btn btn-outline-warning btn-lg" (click)="volverALista()">
+              <i class="fas fa-arrow-left me-2"></i>Volver al Bar
+            </button>
+            
+            <button class="btn btn-outline-danger" *ngIf="authService.isAdmin()" (click)="irAAdminBar()">
+              <i class="fas fa-cogs me-2"></i>Panel Admin
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Columna derecha - Información del producto y personalización -->
+    <div class="col-lg-8 col-md-7">
+      <div class="product-content">
+        
+        <div class="mb-4">
+          <h3 class="h2 fw-bold mb-3"
+              [ngClass]="{
+                'text-warning': producto.categoria.toLowerCase() === 'snacks',
+                'text-primary': producto.categoria.toLowerCase() === 'bebidas',
+                'text-info': producto.categoria.toLowerCase() === 'dulces',
+                'text-danger': producto.categoria.toLowerCase() === 'combos',
+                'text-success': producto.categoria.toLowerCase() === 'helados',
+                'text-secondary': !['bebidas','snacks','dulces','combos','helados'].includes(producto.categoria.toLowerCase())
+              }">
+            {{ producto.nombre }}
+          </h3>
+          <p class="lead text-muted lh-lg">{{ producto.descripcion }}</p>
+        </div>
+
+        <div class="combo-info mb-4" *ngIf="producto.es_combo && producto.combo_items">
+          <h5 class="text-danger mb-3">
+            <i class="fas fa-gift me-2"></i>Este combo incluye:
+          </h5>
+          <div class="card border-danger">
+            <div class="card-body">
+              <ul class="list-unstyled mb-0">
+                <li *ngFor="let item of producto.combo_items" class="mb-2">
+                  <i class="fas fa-check-circle text-success me-2"></i>
+                  <span class="fw-semibold">{{ item.item_nombre }}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="customization-section mb-4" *ngIf="producto.disponible">
+          <h5 class="text-warning mb-3">
+            <i class="fas fa-cogs me-2"></i>Personaliza tu pedido
+          </h5>
+          
+          <div class="size-selection mb-4" *ngIf="producto.tamanos && producto.tamanos.length > 0">
+            <h6 class="text-secondary mb-3">
+              <i class="fas fa-arrows-alt me-2"></i>Selecciona el tamaño
+            </h6>
+            <div class="row g-2">
+              <div class="col-md-6 col-lg-4" *ngFor="let tamano of producto.tamanos">
+                <div class="card size-option" (click)="seleccionarTamano(tamano)" style="cursor: pointer;"
+                     [class.border-success]="tamanoSeleccionado?.nombre === tamano.nombre"
+                     [class.bg-light]="tamanoSeleccionado?.nombre === tamano.nombre">
+                  <div class="card-body text-center p-3">
+                    <h6 class="card-title mb-2">{{ tamano.nombre }}</h6>
+                    <p class="card-text text-success fw-bold mb-0">${{ tamano.precio.toFixed(2) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="extras-selection mb-4" *ngIf="producto.extras && producto.extras.length > 0">
+            <h6 class="text-secondary mb-3">
+              <i class="fas fa-plus me-2"></i>Extras opcionales
+            </h6>
+            <div class="row g-2">
+              <div class="col-md-6 col-lg-4" *ngFor="let extra of producto.extras">
+                <div class="card extra-option" (click)="toggleExtra(extra)" style="cursor: pointer;"
+                     [class.border-warning]="estaExtraSeleccionado(extra)"
+                     [class.bg-light]="estaExtraSeleccionado(extra)">
+                  <div class="card-body text-center p-3">
+                    <div class="form-check">
+                      <input class="form-check-input" type="checkbox" [checked]="estaExtraSeleccionado(extra)" readonly>
+                      <label class="form-check-label fw-semibold">{{ extra.nombre }}</label>
+                    </div>
+                    <p class="card-text text-warning fw-bold mb-0 mt-2">+${{ extra.precio.toFixed(2) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="quantity-selection mb-4">
+            <h6 class="text-secondary mb-3">
+              <i class="fas fa-hashtag me-2"></i>Cantidad
+            </h6>
+            <div class="card">
+              <div class="card-body">
+                <div class="row align-items-center">
+                  <div class="col-auto">
+                    <button class="btn btn-outline-secondary" (click)="cambiarCantidad(-1)" [disabled]="cantidad <= 1">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                  </div>
+                  <div class="col">
+                    <div class="text-center">
+                      <span class="fs-3 fw-bold text-primary">{{ cantidad }}</span>
+                      <small class="d-block text-muted">{{ cantidad === 1 ? 'unidad' : 'unidades' }}</small>
+                    </div>
+                  </div>
+                  <div class="col-auto">
+                    <button class="btn btn-outline-secondary" (click)="cambiarCantidad(1)" [disabled]="cantidad >= 10">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="notes-section mb-4">
+            <h6 class="text-secondary mb-3">
+              <i class="fas fa-sticky-note me-2"></i>Notas especiales (opcional)
+            </h6>
+            <textarea class="form-control" rows="3" [(ngModel)]="notasEspeciales" 
+                      placeholder="Ej: Sin hielo, extra caliente, etc." maxlength="200"></textarea>
+            <small class="text-muted">{{ notasEspeciales.length || 0 }}/200 caracteres</small>
+          </div>
+        </div>
+
+        <div class="price-summary mb-4" *ngIf="producto.disponible">
+          <h5 class="text-success mb-3">
+            <i class="fas fa-calculator me-2"></i>Resumen de precio
+          </h5>
+          <div class="card border-success">
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <ul class="list-unstyled mb-0">
+                    <li class="d-flex justify-content-between">
+                      <span>Precio base:</span>
+                      <span>${{ getPrecioBase().toFixed(2) }}</span>
+                    </li>
+                    <li class="d-flex justify-content-between" *ngIf="getPrecioExtras() > 0">
+                      <span>Extras:</span>
+                      <span>${{ getPrecioExtras().toFixed(2) }}</span>
+                    </li>
+                    <li class="d-flex justify-content-between">
+                      <span>Precio por unidad:</span>
+                      <span class="fw-bold">${{ getPrecioPorUnidad().toFixed(2) }}</span>
+                    </li>
+                    <li class="d-flex justify-content-between">
+                      <span>Cantidad:</span>
+                      <span class="fw-bold">{{ cantidad }}</span>
+                    </li>
+                  </ul>
+                </div>
+                <div class="col-md-6 text-end">
+                  <div class="total-price">
+                    <h4 class="text-success fw-bold mb-0">Total: ${{ getPrecioTotal().toFixed(2) }}</h4>
+                    <small class="text-muted" *ngIf="tieneDescuento()">
+                      <i class="fas fa-tag me-1"></i>
+                      Descuento aplicado: ${{ producto.descuento!.toFixed(2) }}
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-buttons mb-4" *ngIf="producto.disponible">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <button class="btn btn-success btn-lg w-100" (click)="agregarAlCarrito()"
+                      [disabled]="!esFormularioValido() || agregandoAlCarrito">
+                <span *ngIf="!agregandoAlCarrito">
+                  <i class="fas fa-shopping-cart me-2"></i>Agregar al Carrito
+                </span>
+                <span *ngIf="agregandoAlCarrito">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Agregando...
+                </span>
+              </button>
+            </div>
+            <div class="col-md-6">
+              <button class="btn btn-primary btn-lg w-100" (click)="comprarAhora()"
+                      [disabled]="!esFormularioValido() || agregandoAlCarrito">
+                <i class="fas fa-bolt me-2"></i>Comprar Ahora
+              </button>
+            </div>
+          </div>
+          
+          <div class="selection-summary mt-3" *ngIf="getResumenSelecciones()">
+            <small class="text-muted">
+              <i class="fas fa-info-circle me-1"></i>
+              <strong>Tu selección:</strong><br>
+              <span [innerHTML]="getResumenSeleccionesHTML()"></span>
+            </small>
+          </div>
+        </div>
+
+        <div class="unavailable-message mb-4" *ngIf="!producto.disponible">
+          <div class="alert alert-danger" role="alert">
+            <h5 class="alert-heading">
+              <i class="fas fa-exclamation-triangle me-2"></i>Producto no disponible
+            </h5>
+            <p class="mb-0">Este producto no está disponible en este momento. Por favor, elige otro producto o vuelve más tarde.</p>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="container mt-5" *ngIf="cargando">
+  <div class="text-center">
+    <div class="spinner-border text-warning" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p class="mt-3 text-muted">Cargando producto...</p>
+  </div>
+</div>
+
+<!-- Modal para editar producto -->
+<div class="modal fade" id="modalEditarProducto" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title">
+          <i class="fas fa-edit me-2"></i>Editar: {{ producto?.nombre }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" *ngIf="productoEditando">
+        
+        <form #formularioEdicion="ngForm" (ngSubmit)="guardarEdicionProducto(formularioEdicion)">
+          
+          <div class="row">
+            <div class="col-md-6">
+              
+              <div class="mb-3">
+                <label class="form-label">Nombre *</label>
+                <input type="text" class="form-control" name="nombre" [(ngModel)]="productoEditando.nombre" required>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">Precio *</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" name="precio" [(ngModel)]="productoEditando.precio" 
+                         required min="0.01" step="0.01">
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <label class="form-label">Categoría *</label>
+                <select class="form-control" name="categoria" [(ngModel)]="productoEditando.categoria" required>
+                  <option value="">Seleccionar categoría</option>
+                  <option value="bebidas">Bebidas</option>
+                  <option value="snacks">Snacks</option>
+                  <option value="dulces">Dulces</option>
+                  <option value="combos">Combos</option>
+                  <option value="helados">Helados</option>
+                  <option value="comida">Comida</option>
+                </select>
+              </div>
+              
+              <div class="mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="disponible" [(ngModel)]="productoEditando.disponible">
+                  <label class="form-check-label">Producto disponible</label>
+                </div>
+              </div>
+
+              <div class="mb-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="es_combo" [(ngModel)]="productoEditando.es_combo">
+                  <label class="form-check-label">Es un combo especial</label>
+                </div>
+              </div>
+              
+            </div>
+            
+            <div class="col-md-6">
+              
+              <div class="mb-3">
+                <label class="form-label">URL de la imagen</label>
+                <input type="url" class="form-control" name="imagen" [(ngModel)]="productoEditando.imagen" 
+                       placeholder="https://ejemplo.com/imagen.jpg">
+                
+                <div class="mt-2" *ngIf="productoEditando.imagen">
+                  <small class="text-muted d-block mb-1">Vista previa:</small>
+                  <img [src]="productoEditando.imagen" class="img-thumbnail" 
+                       style="max-width: 100px; max-height: 100px; object-fit: cover;" alt="Vista previa">
+                </div>
+              </div>
+
+              <div class="mb-3" *ngIf="productoEditando.es_combo">
+                <label class="form-label">Descuento del combo</label>
+                <div class="input-group">
+                  <span class="input-group-text">$</span>
+                  <input type="number" class="form-control" name="descuento" [(ngModel)]="productoEditando.descuento" 
+                         min="0" step="0.01" placeholder="0.00">
+                </div>
+                <small class="text-muted">Cantidad de descuento para el combo</small>
+              </div>
+              
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label class="form-label">Descripción *</label>
+            <textarea class="form-control" rows="4" name="descripcion" [(ngModel)]="productoEditando.descripcion" 
+                      required placeholder="Describe el producto..."></textarea>
+          </div>
+          
+          <div class="alert alert-danger" *ngIf="errorEdicion">
+            <strong>Error:</strong> {{ errorEdicion }}
+          </div>
+          
+          <div class="alert alert-success" *ngIf="exitoEdicion">
+            <strong>Éxito!</strong> {{ exitoEdicion }}
+          </div>
+          
+          <div class="text-end">
+            <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-warning" [disabled]="!formularioEdicion.form.valid || guardandoEdicion">
+              <span *ngIf="!guardandoEdicion">
+                <i class="fas fa-save me-2"></i>Guardar Cambios
+              </span>
+              <span *ngIf="guardandoEdicion">
+                <span class="spinner-border spinner-border-sm me-2"></span>Guardando...
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

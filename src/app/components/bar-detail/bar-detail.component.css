@@ -1,0 +1,298 @@
+/* bar-detail.component.css */
+
+/* Header Section */
+.display-4.fw-bold.text-warning {
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+}
+
+.admin-actions .btn-group .btn {
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+}
+
+.admin-actions .btn-group .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+}
+
+/* Main Product Card */
+.card.shadow-lg {
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.admin-highlight {
+  border: 2px solid #ffc107 !important;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.3) !important;
+}
+
+.card-img-top {
+  transition: all 0.3s ease;
+}
+
+.card:hover .card-img-top {
+  transform: scale(1.02);
+}
+
+/* Price and Category Badges */
+.position-absolute .badge {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.card:hover .badge {
+  transform: scale(1.05);
+}
+
+/* Admin Info Card */
+.admin-info .card {
+  background: rgba(255, 193, 7, 0.1) !important;
+  border: 1px solid #ffc107 !important;
+  border-radius: 0.75rem;
+}
+
+/* Product Content */
+.product-content {
+  padding: 0;
+}
+
+.product-content h3 {
+  transition: color 0.3s ease;
+}
+
+/* Customization Section */
+.customization-section .card {
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+}
+
+.customization-section .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+}
+
+/* Size and Extra Options */
+.size-option,
+.extra-option {
+  border-radius: 0.75rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.size-option:hover,
+.extra-option:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.size-option.border-success {
+  border-color: #198754 !important;
+  background: rgba(25, 135, 84, 0.1) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(25, 135, 84, 0.2);
+}
+
+.extra-option.border-warning {
+  border-color: #ffc107 !important;
+  background: rgba(255, 193, 7, 0.1) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(255, 193, 7, 0.2);
+}
+
+/* Quantity Controls */
+.quantity-selection .btn {
+  min-width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.quantity-selection .btn:hover {
+  transform: translateY(-2px) scale(1.1);
+}
+
+.quantity-selection .fs-3 {
+  transition: all 0.3s ease;
+}
+
+/* Price Summary */
+.price-summary .card {
+  border: 2px solid #198754;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  transition: all 0.3s ease;
+}
+
+.price-summary .card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(25, 135, 84, 0.2);
+}
+
+.total-price h4 {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+/* Action Buttons */
+.action-buttons .btn {
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  padding: 0.75rem 1.5rem;
+}
+
+.action-buttons .btn-success {
+  background: linear-gradient(45deg, #198754, #20c997);
+  border: none;
+}
+
+.action-buttons .btn-success:hover {
+  background: linear-gradient(45deg, #20c997, #198754);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(25, 135, 84, 0.4);
+}
+
+.action-buttons .btn-primary {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border: none;
+}
+
+.action-buttons .btn-primary:hover {
+  background: linear-gradient(45deg, #6610f2, #0d6efd);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(13, 110, 253, 0.4);
+}
+
+/* Selection Summary */
+.selection-summary {
+  background: rgba(13, 110, 253, 0.05);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  border-left: 4px solid #0d6efd;
+}
+
+/* Unavailable Message */
+.unavailable-message .alert {
+  border-radius: 1rem;
+  border: 2px solid #dc3545;
+}
+
+/* Navigation Buttons */
+.btn-outline-warning,
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-danger {
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-warning:hover,
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-danger:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+}
+
+/* Modal Styles */
+.modal-content {
+  border-radius: 1rem;
+  border: none;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+.modal-header.bg-warning {
+  background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+  border-radius: 1rem 1rem 0 0;
+}
+
+.modal-body .form-control,
+.modal-body .form-select {
+  border-radius: 0.5rem;
+  border: 2px solid #dee2e6;
+  transition: all 0.3s ease;
+}
+
+.modal-body .form-control:focus,
+.modal-body .form-select:focus {
+  border-color: #ffc107;
+  box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+/* Loading States */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .admin-actions {
+    margin-top: 1rem;
+  }
+  
+  .admin-actions .btn-group {
+    width: 100%;
+  }
+  
+  .admin-actions .btn-group .btn {
+    flex: 1;
+    font-size: 0.85rem;
+  }
+  
+  .card-img-top {
+    height: 350px;
+  }
+  
+  .action-buttons .btn {
+    font-size: 0.9rem;
+  }
+  
+  .quantity-selection .btn {
+    min-width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 576px) {
+  .display-4 {
+    font-size: 2rem;
+  }
+  
+  .card-img-top {
+    height: 300px;
+  }
+  
+  .size-option,
+  .extra-option {
+    margin-bottom: 0.5rem;
+  }
+  
+  .action-buttons .row {
+    flex-direction: column;
+  }
+  
+  .action-buttons .col-md-6 {
+    margin-bottom: 0.75rem;
+  }
+}
+
+/* Animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animated.fadeIn {
+  animation: fadeIn 0.6s ease-out;
+}

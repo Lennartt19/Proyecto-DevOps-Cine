@@ -1,0 +1,654 @@
+<!-- admin-rewards.component.html - VERSIÓN FINAL COMPLETA -->
+<div class="container-fluid py-4">
+  <!-- ENCABEZADO -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h2 class="mb-1">
+            <i class="fas fa-gift text-warning me-2"></i>
+            Gestión de Recompensas
+          </h2>
+          <p class="text-muted mb-0">Administra las recompensas y canjes del sistema de puntos</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary" (click)="refreshData()" [disabled]="loading">
+            <i class="fas fa-sync-alt me-2" [class.fa-spin]="loading"></i>
+            Actualizar
+          </button>
+          <button class="btn btn-warning" (click)="openCreateForm()">
+            <i class="fas fa-plus me-2"></i>
+            Nueva Recompensa
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ESTADÍSTICAS RÁPIDAS -->
+  <div class="row mb-4" *ngIf="rewardsStats && rewardsStats.totalRecompensas > 0">
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card bg-primary text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title">{{ rewardsStats.totalRecompensas || rewards.length }}</h5>
+              <p class="card-text">Total Recompensas</p>
+            </div>
+            <i class="fas fa-gift fa-2x opacity-75"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card bg-success text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title">{{ rewardsStats.recompensasActivas || 0 }}</h5>
+              <p class="card-text">Activas</p>
+            </div>
+            <i class="fas fa-check-circle fa-2x opacity-75"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card bg-warning text-dark h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title">{{ rewardsStats.totalCanjes || 0 }}</h5>
+              <p class="card-text">Total Canjes</p>
+            </div>
+            <i class="fas fa-exchange-alt fa-2x opacity-75"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-6 mb-3">
+      <div class="card bg-info text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between">
+            <div>
+              <h5 class="card-title">{{ categories.length || 4 }}</h5>
+              <p class="card-text">Categorías</p>
+            </div>
+            <i class="fas fa-tags fa-2x opacity-75"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS Y BÚSQUEDA -->
+  <div class="card mb-4">
+    <div class="card-header">
+      <h5 class="card-title mb-0">
+        <i class="fas fa-filter me-2"></i>
+        Filtros y Búsqueda
+      </h5>
+    </div>
+    <div class="card-body">
+      <div class="row g-3">
+        <!-- Búsqueda -->
+        <div class="col-md-4">
+          <label class="form-label">Buscar recompensa</label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fas fa-search"></i>
+            </span>
+            <input type="text" 
+                   class="form-control" 
+                   placeholder="Nombre o descripción..."
+                   [(ngModel)]="searchTerm"
+                   (input)="applyFilters()">
+          </div>
+        </div>
+
+        <!-- Filtro por categoría -->
+        <div class="col-md-3">
+          <label class="form-label">Categoría</label>
+          <select class="form-select" 
+                  [(ngModel)]="selectedCategory" 
+                  (change)="applyFilters()">
+            <option value="">Todas las categorías</option>
+            <option *ngFor="let categoria of CATEGORIAS" [value]="categoria.value">
+              {{ categoria.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtro por estado -->
+        <div class="col-md-3">
+          <label class="form-label">Estado</label>
+          <select class="form-select" 
+                  [(ngModel)]="selectedStatus" 
+                  (change)="applyFilters()">
+            <option value="">Todos los estados</option>
+            <option value="disponible">Disponibles</option>
+            <option value="no_disponible">No disponibles</option>
+            <option value="sin_stock">Sin stock</option>
+          </select>
+        </div>
+
+        <!-- Botón limpiar filtros -->
+        <div class="col-md-2">
+          <label class="form-label">&nbsp;</label>
+          <button class="btn btn-outline-secondary w-100" (click)="clearFilters()">
+            <i class="fas fa-times me-2"></i>
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLA DE RECOMPENSAS -->
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h5 class="card-title mb-0">
+        Lista de Recompensas ({{ filteredRewards.length }})
+      </h5>
+      <div class="d-flex align-items-center gap-2">
+        <span class="text-muted">Mostrando {{ itemsPerPage }} por página</span>
+      </div>
+    </div>
+    
+    <div class="card-body">
+      <!-- Loading -->
+      <div *ngIf="loading" class="text-center py-5">
+        <div class="spinner-border text-warning" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-2 text-muted">Cargando recompensas...</p>
+      </div>
+
+      <!-- Sin resultados -->
+      <div *ngIf="!loading && filteredRewards.length === 0" class="text-center py-5">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <h5>No se encontraron recompensas</h5>
+        <p class="text-muted">
+          {{ searchTerm || selectedCategory || selectedStatus ? 'Intenta cambiar los filtros de búsqueda' : 'Aún no hay recompensas creadas' }}
+        </p>
+        <button *ngIf="!searchTerm && !selectedCategory && !selectedStatus" 
+                class="btn btn-warning" 
+                (click)="openCreateForm()">
+          <i class="fas fa-plus me-2"></i>
+          Crear Primera Recompensa
+        </button>
+      </div>
+
+      <!-- Tabla de recompensas -->
+      <div *ngIf="!loading && filteredRewards.length > 0" class="table-responsive">
+        <table class="table table-striped table-hover">
+          <thead class="table-dark">
+            <tr>
+              <th style="width: 60px;">ID</th>
+              <th>Recompensa</th>
+              <th>Categoría</th>
+              <th>Tipo</th>
+              <th>Puntos</th>
+              <th>Valor/Stock</th>
+              <th>Estado</th>
+              <th style="width: 200px;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let reward of getPaginatedRewards(); trackBy: trackByRewardId">
+              <td>
+                <span class="badge bg-secondary">#{{ reward.id }}</span>
+              </td>
+              
+              <td>
+                <div class="d-flex align-items-center">
+                  <img *ngIf="reward?.imagen_url" 
+                       [src]="reward.imagen_url" 
+                       [alt]="reward.nombre"
+                       class="rounded me-3" 
+                       style="width: 50px; height: 50px; object-fit: cover;">
+                  <div *ngIf="!reward?.imagen_url" 
+                       class="bg-light rounded me-3 d-flex align-items-center justify-content-center"
+                       style="width: 50px; height: 50px;">
+                    <i [class]="getTipoIcon(reward?.tipo || '')" class="text-muted"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-1">{{ reward?.nombre || 'Sin nombre' }}</h6>
+                    <small class="text-muted">{{ (reward?.descripcion || '') | slice:0:50 }}...</small>
+                  </div>
+                </div>
+              </td>
+              
+              <td>
+                <span class="badge rounded-pill" 
+                      [class]="'bg-' + (reward?.categoria === 'peliculas' ? 'primary' : 
+                                      reward?.categoria === 'bar' ? 'success' : 
+                                      reward?.categoria === 'especial' ? 'warning' : 'info')">
+                  <i [class]="getCategoryIcon(reward?.categoria || '')" class="me-1"></i>
+                  {{ getCategoryLabel(reward?.categoria || '') }}
+                </span>
+              </td>
+              
+              <td>
+                <span class="badge bg-light text-dark">
+                  <i [class]="getTipoIcon(reward?.tipo || '')" class="me-1"></i>
+                  {{ getTipoLabel(reward?.tipo || '') }}
+                </span>
+              </td>
+              
+              <td>
+                <span class="fw-bold text-warning">
+                  <i class="fas fa-coins me-1"></i>
+                  {{ reward?.puntos_requeridos || 0 }}
+                </span>
+              </td>
+              
+              <!-- COLUMNA CORREGIDA PARA EVITAR ERRORES TYPESCRIPT -->
+              <td>
+                <div>
+                  <!-- Mostrar valor si existe -->
+                  <span *ngIf="reward && reward.valor && reward.valor > 0" class="d-block">
+                    <i class="fas fa-dollar-sign me-1 text-success"></i>
+                    <span *ngIf="reward.tipo === 'descuento'">${{ reward.valor }}%</span>
+                    <span *ngIf="reward.tipo !== 'descuento'">${{ reward.valor }}</span>
+                  </span>
+                  
+                  <!-- Mostrar stock solo para tipos que lo necesitan -->
+                  <span *ngIf="reward && needsStockForType(reward.tipo)" class="d-block">
+                    <i class="fas fa-boxes me-1" 
+                       [class.text-danger]="reward.stock !== null && reward.stock !== undefined && reward.stock <= 0"
+                       [class.text-warning]="reward.stock !== null && reward.stock !== undefined && reward.stock > 0 && reward.stock <= 5"
+                       [class.text-success]="reward.stock !== null && reward.stock !== undefined && reward.stock > 5"></i>
+                    Stock: 
+                    <span *ngIf="reward.stock === null || reward.stock === undefined">∞</span>
+                    <span *ngIf="reward.stock !== null && reward.stock !== undefined">{{ reward.stock }}</span>
+                  </span>
+                  
+                  <!-- Para tipos sin stock, mostrar indicador -->
+                  <span *ngIf="reward && !needsStockForType(reward.tipo)" class="d-block text-muted">
+                    <i class="fas fa-infinity me-1"></i>
+                    Sin límite
+                  </span>
+
+                  <!-- Si no hay valor ni stock que mostrar, mostrar placeholder -->
+                  <span *ngIf="reward && (!reward.valor || reward.valor <= 0) && !needsStockForType(reward.tipo)" class="text-muted">
+                    <i class="fas fa-minus me-1"></i>
+                    N/A
+                  </span>
+                </div>
+              </td>
+              
+              <td>
+                <span class="badge" [class]="getStatusBadgeClass(reward)">
+                  {{ getStatusText(reward) }}
+                </span>
+              </td>
+              
+              <td>
+                <div class="btn-group btn-group-sm" role="group">
+                  <!-- Botón editar -->
+                  <button type="button" 
+                          class="btn btn-outline-primary" 
+                          (click)="openEditForm(reward)"
+                          title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  
+                  <!-- Botón toggle estado -->
+                  <button type="button" 
+                          class="btn" 
+                          [class.btn-outline-success]="!reward?.disponible"
+                          [class.btn-outline-danger]="reward?.disponible"
+                          (click)="toggleRewardStatus(reward)"
+                          [title]="reward?.disponible ? 'Desactivar' : 'Activar'">
+                    <i class="fas" 
+                       [class.fa-eye]="!reward?.disponible"
+                       [class.fa-eye-slash]="reward?.disponible"></i>
+                  </button>
+                  
+                  <!-- Botón eliminar -->
+                  <button type="button" 
+                          class="btn btn-outline-danger" 
+                          (click)="confirmDelete(reward)"
+                          title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- PAGINACIÓN -->
+      <div *ngIf="totalPages > 1" class="d-flex justify-content-between align-items-center mt-4">
+        <div class="text-muted">
+          Mostrando {{ (currentPage - 1) * itemsPerPage + 1 }} - 
+          {{ getMin(currentPage * itemsPerPage, filteredRewards.length) }} de 
+          {{ filteredRewards.length }} recompensas
+        </div>
+        
+        <nav aria-label="Paginación de recompensas">
+          <ul class="pagination mb-0">
+            <li class="page-item" [class.disabled]="currentPage === 1">
+              <button class="page-link" (click)="goToPage(currentPage - 1)" [disabled]="currentPage === 1">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+            </li>
+            
+            <li *ngFor="let page of getVisiblePages()" 
+                class="page-item" 
+                [class.active]="page === currentPage">
+              <button class="page-link" (click)="goToPage(page)">{{ page }}</button>
+            </li>
+            
+            <li class="page-item" [class.disabled]="currentPage === totalPages">
+              <button class="page-link" (click)="goToPage(currentPage + 1)" [disabled]="currentPage === totalPages">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DE FORMULARIO -->
+<div class="modal fade" id="rewardFormModal" tabindex="-1" aria-labelledby="rewardFormModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="rewardFormModalLabel">
+          <i class="fas fa-gift me-2"></i>
+          {{ editMode ? 'Editar Recompensa' : 'Nueva Recompensa' }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" (click)="closeForm()"></button>
+      </div>
+      
+      <div class="modal-body">
+        <form #rewardFormRef="ngForm" (ngSubmit)="saveReward()">
+          <div class="row">
+            <!-- Nombre -->
+            <div class="col-md-8 mb-3">
+              <label for="nombre" class="form-label">
+                Nombre de la recompensa <span class="text-danger">*</span>
+              </label>
+              <input type="text" 
+                     class="form-control" 
+                     id="nombre"
+                     name="nombre"
+                     [(ngModel)]="rewardForm.nombre"
+                     [class.is-invalid]="formErrors['nombre']"
+                     placeholder="Ej: Entrada gratis para cualquier película"
+                     required>
+              <div *ngIf="formErrors['nombre']" class="invalid-feedback">
+                {{ formErrors['nombre'] }}
+              </div>
+            </div>
+
+            <!-- Puntos requeridos -->
+            <div class="col-md-4 mb-3">
+              <label for="puntos_requeridos" class="form-label">
+                Puntos requeridos <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <span class="input-group-text">
+                  <i class="fas fa-coins text-warning"></i>
+                </span>
+                <input type="number" 
+                       class="form-control" 
+                       id="puntos_requeridos"
+                       name="puntos_requeridos"
+                       [(ngModel)]="rewardForm.puntos_requeridos"
+                       [class.is-invalid]="formErrors['puntos_requeridos']"
+                       min="1"
+                       required>
+              </div>
+              <div *ngIf="formErrors['puntos_requeridos']" class="invalid-feedback">
+                {{ formErrors['puntos_requeridos'] }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Descripción -->
+          <div class="mb-3">
+            <label for="descripcion" class="form-label">
+              Descripción <span class="text-danger">*</span>
+            </label>
+            <textarea class="form-control" 
+                      id="descripcion"
+                      name="descripcion"
+                      [(ngModel)]="rewardForm.descripcion"
+                      [class.is-invalid]="formErrors['descripcion']"
+                      rows="3"
+                      placeholder="Describe los detalles de la recompensa..."
+                      required></textarea>
+            <div *ngIf="formErrors['descripcion']" class="invalid-feedback">
+              {{ formErrors['descripcion'] }}
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Categoría -->
+            <div class="col-md-6 mb-3">
+              <label for="categoria" class="form-label">
+                Categoría <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" 
+                      id="categoria"
+                      name="categoria"
+                      [(ngModel)]="rewardForm.categoria"
+                      required>
+                <option *ngFor="let categoria of CATEGORIAS" [value]="categoria.value">
+                  {{ categoria.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Tipo -->
+            <div class="col-md-6 mb-3">
+              <label for="tipo" class="form-label">
+                Tipo <span class="text-danger">*</span>
+              </label>
+              <select class="form-select" 
+                      id="tipo"
+                      name="tipo"
+                      [(ngModel)]="rewardForm.tipo"
+                      (change)="onTipoChange()"
+                      required>
+                <option *ngFor="let tipo of TIPOS" [value]="tipo.value">
+                  {{ tipo.label }}
+                </option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Valor -->
+            <div class="col-md-4 mb-3" *ngIf="needsValue()">
+              <label for="valor" class="form-label">
+                Valor <span class="text-danger">*</span>
+              </label>
+              <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" 
+                       class="form-control" 
+                       id="valor"
+                       name="valor"
+                       [(ngModel)]="rewardForm.valor"
+                       [class.is-invalid]="formErrors['valor']"
+                       min="0"
+                       step="0.01">
+              </div>
+              <div *ngIf="formErrors['valor']" class="invalid-feedback">
+                {{ formErrors['valor'] }}
+              </div>
+            </div>
+
+            <!-- 🔧 CAMPO DE STOCK -->
+            <div class="col-md-4 mb-3" *ngIf="needsStock()">
+              <label for="stock" class="form-label">
+                Stock disponible <span class="text-danger">*</span>
+              </label>
+              <input type="number" 
+                     class="form-control" 
+                     id="stock"
+                     name="stock"
+                     [(ngModel)]="rewardForm.stock"
+                     [class.is-invalid]="formErrors['stock']"
+                     min="0"
+                     placeholder="Cantidad disponible">
+              <small class="form-text text-muted">
+                Cantidad de unidades disponibles para canje
+              </small>
+              <div *ngIf="formErrors['stock']" class="invalid-feedback">
+                {{ formErrors['stock'] }}
+              </div>
+            </div>
+
+            <!-- Límite por usuario -->
+            <div class="col-md-4 mb-3">
+              <label for="limite_por_usuario" class="form-label">Límite por usuario</label>
+              <input type="number" 
+                     class="form-control" 
+                     id="limite_por_usuario"
+                     name="limite_por_usuario"
+                     [(ngModel)]="rewardForm.limite_por_usuario"
+                     min="1"
+                     value="1">
+              <small class="form-text text-muted">Máximo de canjes por usuario</small>
+            </div>
+          </div>
+
+          <div class="row">
+            <!-- Validez en días -->
+            <div class="col-md-6 mb-3">
+              <label for="validez_dias" class="form-label">Validez (días)</label>
+              <input type="number" 
+                     class="form-control" 
+                     id="validez_dias"
+                     name="validez_dias"
+                     [(ngModel)]="rewardForm.validez_dias"
+                     min="1"
+                     value="30">
+              <small class="form-text text-muted">Días de validez del código después del canje</small>
+            </div>
+
+            <!-- Campo de imagen URL -->
+            <div class="col-md-6 mb-3">
+              <label for="imagen_url" class="form-label fw-semibold">
+                <i class="fas fa-image me-1 text-warning"></i>
+                URL de la Imagen *
+              </label>
+              <input type="url" 
+                     class="form-control" 
+                     id="imagen_url"
+                     name="imagen_url"
+                     [(ngModel)]="rewardForm.imagen_url"
+                     [class.is-invalid]="formErrors['imagen_url']"
+                     placeholder="https://ejemplo.com/recompensa.jpg"
+                     (input)="onImageUrlChange()">
+              <small class="form-text text-muted">
+                URL de la imagen de la recompensa
+              </small>
+              <div *ngIf="formErrors['imagen_url']" class="invalid-feedback">
+                {{ formErrors['imagen_url'] }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Vista previa de imagen -->
+          <div class="mb-3" *ngIf="rewardForm.imagen_url?.trim()">
+            <label class="form-label">Vista previa de la imagen</label>
+            <div class="border rounded p-2 bg-light text-center">
+              <img [src]="rewardForm.imagen_url" 
+                   class="img-fluid rounded" 
+                   style="max-height: 150px; max-width: 100%; object-fit: cover;"
+                   [alt]="rewardForm.nombre || 'Vista previa de recompensa'"
+                   (error)="onRewardImageError($event)"
+                   (load)="onRewardImageLoad($event)">
+              <div class="mt-2">
+                <small class="text-success" *ngIf="rewardImageLoaded">
+                  <i class="fas fa-check-circle"></i> Imagen cargada correctamente
+                </small>
+                <small class="text-danger" *ngIf="rewardImageError">
+                  <i class="fas fa-exclamation-triangle"></i> Error al cargar la imagen
+                </small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Ejemplos de URLs -->
+          <div class="mb-3">
+            <small class="text-muted"><strong>Ejemplos de URLs:</strong></small>
+            <div class="d-flex flex-wrap gap-2 mt-1">
+              <button type="button" 
+                      class="btn btn-outline-warning btn-sm"
+                      (click)="setRewardExampleImage('https://via.placeholder.com/300x300/ffc107/000000?text=Recompensa')">
+                <i class="fas fa-globe me-1"></i>Placeholder
+              </button>
+              <button type="button" 
+                      class="btn btn-outline-warning btn-sm"
+                      (click)="setRewardExampleImage('https://images.unsplash.com/photo-1489599833388-c2c359e01be3?w=300&h=300&fit=crop')">
+                <i class="fas fa-gift me-1"></i>Regalo
+              </button>
+              <button type="button" 
+                      class="btn btn-outline-warning btn-sm"
+                      (click)="setRewardExampleImage('https://images.unsplash.com/photo-1616077167555-51f6bc516dfa?w=300&h=300&fit=crop')">
+                <i class="fas fa-ticket-alt me-1"></i>Ticket
+              </button>
+            </div>
+          </div>
+
+          <!-- Información sobre tipos -->
+          <div class="mb-3">
+            <div class="alert alert-info" role="alert">
+              <h6 class="alert-heading">
+                <i class="fas fa-info-circle me-2"></i>
+                Información sobre tipos de recompensa
+              </h6>
+              <ul class="mb-0 small">
+                <li><strong>Descuento %:</strong> Requiere valor (porcentaje). No necesita stock.</li>
+                <li><strong>Producto Gratis:</strong> Requiere valor y stock. Stock se reduce con cada canje.</li>
+                <li><strong>Paquete Especial:</strong> Requiere valor y stock. Incluye múltiples items.</li>
+                <li><strong>Experiencia VIP:</strong> Requiere stock limitado. Experiencias únicas.</li>
+                <li><strong>Código Promocional:</strong> No requiere stock. Genera códigos únicos.</li>
+                <li><strong>Bonus Extra:</strong> No requiere stock. Bonificaciones adicionales.</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Estado disponible -->
+          <div class="mb-3">
+            <div class="form-check form-switch">
+              <input class="form-check-input" 
+                     type="checkbox" 
+                     id="disponible"
+                     name="disponible"
+                     [(ngModel)]="rewardForm.disponible">
+              <label class="form-check-label" for="disponible">
+                Recompensa disponible para canje
+              </label>
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeForm()">
+          <i class="fas fa-times me-2"></i>
+          Cancelar
+        </button>
+        <button type="button" 
+                class="btn btn-warning" 
+                (click)="saveReward()"
+                [disabled]="loading">
+          <i class="fas fa-spinner fa-spin me-2" *ngIf="loading"></i>
+          <i class="fas fa-save me-2" *ngIf="!loading"></i>
+          {{ editMode ? 'Actualizar' : 'Crear' }} Recompensa
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

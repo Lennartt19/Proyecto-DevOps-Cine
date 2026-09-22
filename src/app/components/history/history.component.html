@@ -1,0 +1,248 @@
+<div class="container mt-4">
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <h1 class="display-5 fw-bold text-primary mb-1">
+            <i class="fas fa-history text-info me-3"></i>
+            Mi Historial
+          </h1>
+          <p class="text-muted mb-0">
+            <span *ngIf="!loading">{{ historialFiltrado.length }} actividad{{ historialFiltrado.length !== 1 ? 'es' : '' }}</span>
+            <span *ngIf="loading">Cargando historial...</span>
+          </p>
+        </div>
+        
+        <!-- Botón Limpiar Historial -->
+        <div *ngIf="historial.length > 0">
+          <button class="btn btn-outline-danger" (click)="clearHistory()">
+            <i class="fas fa-trash me-2"></i>Limpiar Historial
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="row mb-4" *ngIf="historial.length > 0">
+    <div class="col-12">
+      <div class="card border-0 bg-light">
+        <div class="card-body p-4">
+          <div class="row g-3">
+            
+            <!-- Filtro por Tipo de Acción - 🆕 SOLO 2 TIPOS -->
+            <div class="col-md-6">
+              <h6 class="text-primary fw-semibold mb-3">
+                <i class="fas fa-filter me-2"></i>Filtrar por Actividad
+              </h6>
+              <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm"
+                        [class.btn-primary]="filtroTipo === 'todas'"
+                        [class.btn-outline-primary]="filtroTipo !== 'todas'"
+                        (click)="filtrarPorTipo('todas')">
+                  <i class="fas fa-list me-1"></i>Todas
+                </button>
+                <button class="btn btn-sm"
+                        [class.btn-info]="filtroTipo === 'vista'"
+                        [class.btn-outline-info]="filtroTipo !== 'vista'"
+                        (click)="filtrarPorTipo('vista')">
+                  <i class="fas fa-eye me-1"></i>Vistas
+                </button>
+                <button class="btn btn-sm"
+                        [class.btn-success]="filtroTipo === 'comprada'"
+                        [class.btn-outline-success]="filtroTipo !== 'comprada'"
+                        (click)="filtrarPorTipo('comprada')">
+                  <i class="fas fa-shopping-cart me-1"></i>Compradas
+                </button>
+              </div>
+            </div>
+
+            <!-- Filtro por Fecha -->
+            <div class="col-md-6">
+              <h6 class="text-primary fw-semibold mb-3">
+                <i class="fas fa-calendar me-2"></i>Filtrar por Fecha
+              </h6>
+              <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-sm"
+                        [class.btn-secondary]="filtroFecha === 'todas'"
+                        [class.btn-outline-secondary]="filtroFecha !== 'todas'"
+                        (click)="filtrarPorFecha('todas')">
+                  Todas
+                </button>
+                <button class="btn btn-sm"
+                        [class.btn-secondary]="filtroFecha === 'hoy'"
+                        [class.btn-outline-secondary]="filtroFecha !== 'hoy'"
+                        (click)="filtrarPorFecha('hoy')">
+                  Hoy
+                </button>
+                <button class="btn btn-sm"
+                        [class.btn-secondary]="filtroFecha === 'semana'"
+                        [class.btn-outline-secondary]="filtroFecha !== 'semana'"
+                        (click)="filtrarPorFecha('semana')">
+                  Esta Semana
+                </button>
+                <button class="btn btn-sm"
+                        [class.btn-secondary]="filtroFecha === 'mes'"
+                        [class.btn-outline-secondary]="filtroFecha !== 'mes'"
+                        (click)="filtrarPorFecha('mes')">
+                  Este Mes
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Resumen de filtros -->
+          <div class="mt-3 pt-3 border-top">
+            <small class="text-muted">
+              <i class="fas fa-info-circle me-1"></i>
+              Mostrando {{ historialPaginado.length }} de {{ historialFiltrado.length }} actividades
+              <span *ngIf="filtroTipo !== 'todas' || filtroFecha !== 'todas'">
+                • Filtros activos: 
+                <span *ngIf="filtroTipo !== 'todas'" class="fw-bold">{{ getTipoText(filtroTipo) }}</span>
+                <span *ngIf="filtroTipo !== 'todas' && filtroFecha !== 'todas'"> + </span>
+                <span *ngIf="filtroFecha !== 'todas'" class="fw-bold">{{ filtroFecha }}</span>
+              </span>
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="row" *ngIf="loading">
+    <div class="col-12 text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-3 text-muted">Cargando tu historial...</p>
+    </div>
+  </div>
+
+  <!-- Sin Historial -->
+  <div class="row" *ngIf="!loading && historial.length === 0">
+    <div class="col-12 text-center py-5">
+      <div class="empty-state">
+        <i class="fas fa-history fa-5x text-muted mb-4"></i>
+        <h3 class="text-muted mb-3">No tienes historial de actividad</h3>
+        <p class="text-muted mb-4">
+          Tu historial aparecerá aquí cuando veas películas o realices compras.
+        </p>
+        <a class="btn btn-primary btn-lg" [routerLink]="['/movies']">
+          <i class="fas fa-film me-2"></i>Explorar Películas
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sin resultados con filtros -->
+  <div class="row" *ngIf="!loading && historial.length > 0 && historialFiltrado.length === 0">
+    <div class="col-12 text-center py-5">
+      <div class="empty-state">
+        <i class="fas fa-search fa-4x text-muted mb-4"></i>
+        <h4 class="text-muted mb-3">No se encontraron actividades</h4>
+        <p class="text-muted mb-4">
+          No hay actividades que coincidan con los filtros seleccionados.
+        </p>
+        <button class="btn btn-outline-primary" 
+                (click)="filtroTipo = 'todas'; filtroFecha = 'todas'; paginaActual = 1">
+          <i class="fas fa-times me-2"></i>Limpiar Filtros
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lista de Historial -->
+  <div class="row" *ngIf="!loading && historialPaginado.length > 0">
+    <div class="col-12">
+      <div class="timeline">
+        <div class="timeline-item" *ngFor="let item of historialPaginado; let i = index">
+          <div class="card shadow-sm mb-3 timeline-card">
+            <div class="card-body">
+              <div class="row align-items-center">
+                
+                <!-- Poster de la película -->
+                <div class="col-auto">
+                  <img [src]="item.poster" 
+                       class="rounded poster-small" 
+                       style="width: 60px; height: 90px; object-fit: cover;"
+                       [alt]="item.titulo">
+                </div>
+
+                <!-- Información de la película -->
+                <div class="col">
+                  <div class="d-flex align-items-start justify-content-between flex-wrap gap-2">
+                    <div>
+                      <h6 class="mb-1 fw-bold">{{ item.titulo }}</h6>
+                      <div class="mb-2">
+                        <span class="badge bg-primary me-2">{{ item.genero }}</span>
+                        <span class="badge bg-secondary">{{ item.anio }}</span>
+                      </div>
+                      <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        {{ getTimeAgo(item.fechaVista) }}
+                      </small>
+                    </div>
+                    
+                    <!-- Tipo de acción - 🆕 SOLO 2 TIPOS -->
+                    <div class="text-end">
+                      <span class="badge fs-6 px-3 py-2"
+                            [class.bg-info]="item.tipoAccion === 'vista'"
+                            [class.bg-success]="item.tipoAccion === 'comprada'">
+                        <i [class]="getTipoIcon(item.tipoAccion)" class="me-2"></i>
+                        {{ getTipoText(item.tipoAccion) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Acciones -->
+                <div class="col-auto">
+                  <div class="d-flex flex-column gap-2">
+                    <button class="btn btn-sm btn-outline-primary"
+                            (click)="verPelicula(item.peliculaId)"
+                            title="Ver detalles">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Timeline line -->
+            <div class="timeline-line" *ngIf="i < historialPaginado.length - 1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paginación -->
+  <div class="row mt-4" *ngIf="!loading && totalPaginas > 1">
+    <div class="col-12">
+      <nav aria-label="Paginación del historial">
+        <ul class="pagination justify-content-center">
+          <li class="page-item" [class.disabled]="paginaActual === 1">
+            <button class="page-link" (click)="cambiarPagina(paginaActual - 1)">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+          </li>
+          
+          <li class="page-item" *ngFor="let pagina of [].constructor(totalPaginas); let i = index"
+              [class.active]="paginaActual === i + 1">
+            <button class="page-link" (click)="cambiarPagina(i + 1)">
+              {{ i + 1 }}
+            </button>
+          </li>
+          
+          <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+            <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</div>

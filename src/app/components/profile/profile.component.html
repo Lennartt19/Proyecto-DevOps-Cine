@@ -1,0 +1,807 @@
+<!-- profile.component.html - ACTUALIZADO CON PESTAÑAS Y COMENTARIOS CORREGIDOS -->
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12">
+      <!-- Header del Perfil -->
+      <div class="card bg-primary text-white mb-4">
+        <div class="card-body p-4">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              <img [src]="currentUser?.avatar" 
+                   class="rounded-circle border border-3 border-white" 
+                   style="width: 80px; height: 80px; object-fit: cover;"
+                   alt="Avatar">
+            </div>
+            <div class="col">
+              <h2 class="mb-1">{{ currentUser?.nombre }}</h2>
+              <p class="mb-1 opacity-75">{{ currentUser?.email }}</p>
+              <span class="badge" 
+                    [class.bg-danger]="isAdmin()" 
+                    [class.bg-light]="isCliente()"
+                    [class.text-dark]="isCliente()">
+                <i class="fas fa-crown me-1" *ngIf="isAdmin()"></i>
+                <i class="fas fa-user me-1" *ngIf="isCliente()"></i>
+                {{ currentUser?.role }}
+              </span>
+            </div>
+            <div class="col-auto">
+              <button class="btn btn-light" 
+                      (click)="toggleEditMode()"
+                      [disabled]="loading">
+                <i class="fas fa-edit me-2"></i>
+                {{ editMode ? 'Cancelar' : 'Editar Perfil' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🆕 PESTAÑAS DE NAVEGACIÓN -->
+  <div class="row">
+    <div class="col-12">
+      <ul class="nav nav-tabs" id="profileTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" 
+                  id="info-tab" 
+                  data-bs-toggle="tab" 
+                  data-bs-target="#info" 
+                  type="button" 
+                  role="tab"
+                  aria-controls="info"
+                  aria-selected="true">
+            <i class="fas fa-user me-2"></i>Información Personal
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" 
+                  id="points-tab" 
+                  data-bs-toggle="tab" 
+                  data-bs-target="#points" 
+                  type="button" 
+                  role="tab"
+                  aria-controls="points"
+                  aria-selected="false">
+            <i class="fas fa-coins me-2"></i>Sistema de Puntos
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" 
+                  id="comments-tab" 
+                  data-bs-toggle="tab" 
+                  data-bs-target="#comments" 
+                  type="button" 
+                  role="tab"
+                  aria-controls="comments"
+                  aria-selected="false">
+            <i class="fas fa-comments me-2"></i>Mis Comentarios
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" 
+                  id="stats-tab" 
+                  data-bs-toggle="tab" 
+                  data-bs-target="#stats" 
+                  type="button" 
+                  role="tab"
+                  aria-controls="stats"
+                  aria-selected="false">
+            <i class="fas fa-chart-pie me-2"></i>Estadísticas
+          </button>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- CONTENIDO DE LAS PESTAÑAS -->
+  <div class="tab-content" id="profileTabsContent">
+    
+    <!-- 🆕 PESTAÑA 1: INFORMACIÓN PERSONAL -->
+    <div class="tab-pane fade show active" id="info" role="tabpanel" aria-labelledby="info-tab">
+      <div class="row mt-4">
+        <!-- Información del Perfil / Formulario de Edición -->
+        <div class="col-lg-8">
+          <!-- Información del Perfil -->
+          <div class="card shadow-sm">
+            <div class="card-header">
+              <h5 class="mb-0">
+                <i class="fas fa-user-circle me-2"></i>
+                {{ editMode ? 'Editar Información' : 'Información del Perfil' }}
+              </h5>
+            </div>
+            <div class="card-body">
+              
+              <!-- Modo Vista -->
+              <div *ngIf="!editMode">
+                <div class="row mb-3">
+                  <div class="col-sm-3">
+                    <strong>Nombre Completo:</strong>
+                  </div>
+                  <div class="col-sm-9">
+                    {{ currentUser?.nombre }}
+                  </div>
+                </div>
+                <div class="row mb-3">
+                  <div class="col-sm-3">
+                    <strong>Email:</strong>
+                  </div>
+                  <div class="col-sm-9">
+                    {{ currentUser?.email }}
+                  </div>
+                </div>
+                <div class="row mb-3">
+                  <div class="col-sm-3">
+                    <strong>Fecha de Registro:</strong>
+                  </div>
+                  <div class="col-sm-9">
+                    {{ currentUser?.fechaRegistro | date:'longDate' }}
+                  </div>
+                </div>
+                <div class="row mb-3">
+                  <div class="col-sm-3">
+                    <strong>Tiempo en la plataforma:</strong>
+                  </div>
+                  <div class="col-sm-9">
+                    {{ getAccountAge() }}
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-sm-3">
+                    <strong>Estado:</strong>
+                  </div>
+                  <div class="col-sm-9">
+                    <span class="badge bg-success">
+                      <i class="fas fa-check-circle me-1"></i>
+                      Cuenta Activa
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Modo Edición -->
+              <form *ngIf="editMode" (ngSubmit)="saveProfile()">
+                <!-- Nombre -->
+                <div class="mb-3">
+                  <label for="nombre" class="form-label">
+                    <i class="fas fa-user me-1"></i>
+                    Nombre Completo
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         id="nombre"
+                         [(ngModel)]="profileForm.nombre"
+                         name="nombre"
+                         required>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-3">
+                  <label for="email" class="form-label">
+                    <i class="fas fa-envelope me-1"></i>
+                    Email
+                  </label>
+                  <input type="email" 
+                         class="form-control" 
+                         id="email"
+                         [(ngModel)]="profileForm.email"
+                         name="email"
+                         required>
+                </div>
+
+                <!-- Avatar -->
+                <div class="mb-3">
+                  <label class="form-label">
+                    <i class="fas fa-image me-1"></i>
+                    Avatar
+                  </label>
+                  <div class="d-flex align-items-center mb-2">
+                    <img [src]="profileForm.avatar" 
+                         class="rounded-circle me-3" 
+                         style="width: 50px; height: 50px; object-fit: cover;"
+                         alt="Avatar Preview">
+                    <button type="button" 
+                            class="btn btn-outline-primary btn-sm"
+                            (click)="showAvatarOptions = !showAvatarOptions">
+                      <i class="fas fa-palette me-1"></i>
+                      Cambiar Avatar
+                    </button>
+                  </div>
+                  
+                  <!-- Opciones de Avatar -->
+                  <div class="row g-2" *ngIf="showAvatarOptions">
+                    <div class="col-auto" *ngFor="let avatar of avatarOptions">
+                      <img [src]="avatar" 
+                           class="rounded-circle border cursor-pointer" 
+                           style="width: 40px; height: 40px; object-fit: cover;"
+                           [class.border-primary]="profileForm.avatar === avatar"
+                           [class.border-3]="profileForm.avatar === avatar"
+                           (click)="selectAvatar(avatar)"
+                           alt="Avatar Option">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Botones -->
+                <div class="d-flex gap-2">
+                  <button type="submit" 
+                          class="btn btn-primary"
+                          [disabled]="loading">
+                    <span *ngIf="!loading">
+                      <i class="fas fa-save me-2"></i>
+                      Guardar Cambios
+                    </span>
+                    <span *ngIf="loading">
+                      <span class="spinner-border spinner-border-sm me-2"></span>
+                      Guardando...
+                    </span>
+                  </button>
+                  <button type="button" 
+                          class="btn btn-secondary"
+                          (click)="toggleEditMode()"
+                          [disabled]="loading">
+                    <i class="fas fa-times me-2"></i>
+                    Cancelar
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Enlaces Rápidos -->
+        <div class="col-lg-4">
+          <div class="card shadow-sm">
+            <div class="card-header">
+              <h6 class="mb-0">
+                <i class="fas fa-link me-2"></i>
+                Enlaces Rápidos
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="d-grid gap-2">
+                <a class="btn btn-outline-primary" [routerLink]="['/favorites']">
+                  <i class="fas fa-heart me-2"></i>
+                  Mis Favoritas
+                </a>
+                <a class="btn btn-outline-success" [routerLink]="['/history']">
+                  <i class="fas fa-history me-2"></i>
+                  Mi Historial
+                </a>
+                <a class="btn btn-outline-warning" [routerLink]="['/movies']">
+                  <i class="fas fa-film me-2"></i>
+                  Explorar Películas
+                </a>
+                <button class="btn btn-outline-info" (click)="goToRewards()">
+                  <i class="fas fa-gift me-2"></i>
+                  Centro de Recompensas
+                  <span class="badge bg-info ms-2">{{ userPoints }}</span>
+                </button>
+                <!-- 🆕 NUEVO: ENLACE A SUGERENCIAS -->
+                <a class="btn btn-outline-success" [routerLink]="['/suggestions']">
+                  <i class="fas fa-lightbulb me-2"></i>
+                  Enviar Sugerencias
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🆕 PESTAÑA 2: SISTEMA DE PUNTOS -->
+    <div class="tab-pane fade" id="points" role="tabpanel" aria-labelledby="points-tab">
+      <div class="row mt-4">
+        <div class="col-12">
+          <!-- SECCIÓN: SISTEMA DE PUNTOS -->
+          <div class="card shadow-sm mb-4">
+            <div class="card-header bg-gradient text-white" 
+                 style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+              <h5 class="mb-0">
+                <i class="fas fa-coins me-2"></i>
+                Sistema de Puntos y Referidos
+              </h5>
+            </div>
+            <div class="card-body">
+              
+              <!-- Puntos actuales -->
+              <div class="row mb-4">
+                <div class="col-md-6">
+                  <div class="text-center p-4 bg-light rounded-3 border">
+                    <div class="position-relative">
+                      <i class="fas fa-coins fa-3x text-warning mb-2"></i>
+                      <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success"
+                            *ngIf="userPoints >= 1000">
+                        VIP
+                      </span>
+                    </div>
+                    <h2 class="text-success fw-bold mb-1">{{ userPoints }}</h2>
+                    <p class="text-muted mb-2">Puntos Disponibles</p>
+                    <small class="text-success fw-semibold">
+                      <i class="fas fa-dollar-sign me-1"></i>
+                      Equivalente a ${{ getPointsValue().toFixed(2) }}
+                    </small>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="text-center p-4 bg-light rounded-3 border">
+                    <i class="fas fa-users fa-3x text-primary mb-2"></i>
+                    <h2 class="text-primary fw-bold mb-1">{{ pointsStats?.totalReferidos || 0 }}</h2>
+                    <p class="text-muted mb-2">Amigos Referidos</p>
+                    <small class="text-primary fw-semibold">
+                      <i class="fas fa-gift me-1"></i>
+                      +{{ (pointsStats?.totalReferidos || 0) * getPointsConfig().puntosReferido }} puntos ganados
+                    </small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Progreso hacia próxima recompensa -->
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="fw-semibold">
+                    <i class="fas fa-trophy me-2 text-warning"></i>
+                    Progreso hacia próxima recompensa:
+                  </span>
+                  <span class="badge bg-warning text-dark fs-6">{{ getProgressToNextReward() }}%</span>
+                </div>
+                <div class="progress mb-2" style="height: 12px;">
+                  <div class="progress-bar bg-gradient" 
+                       style="background: linear-gradient(90deg, #28a745, #20c997);"
+                       [style.width.%]="getProgressToNextReward()"
+                       role="progressbar">
+                  </div>
+                </div>
+                <small class="text-muted">
+                  <i class="fas fa-target me-1"></i>
+                  Te faltan <strong>{{ getNextRewardPoints() - userPoints }}</strong> puntos para la próxima recompensa
+                </small>
+              </div>
+
+              <!-- Sección de código de referido mejorada -->
+              <div class="mb-4">
+                <h6 class="text-primary mb-3">
+                  <i class="fas fa-share-alt me-2"></i>
+                  Comparte y Gana Puntos
+                </h6>
+                
+                <div class="card border-primary bg-light">
+                  <div class="card-body">
+                    <div class="row align-items-center">
+                      <div class="col-md-7">
+                        <p class="mb-2">
+                          <strong>Tu código de referido único:</strong>
+                        </p>
+                        <div class="input-group mb-3">
+                          <span class="input-group-text bg-primary text-white">
+                            <i class="fas fa-gift"></i>
+                          </span>
+                          <input type="text" 
+                                 class="form-control form-control-lg font-monospace fw-bold text-center" 
+                                 [value]="referralCode" 
+                                 readonly>
+                          <button class="btn btn-outline-primary" 
+                                  (click)="copyReferralCode()"
+                                  [disabled]="copyingCode">
+                            <i class="fas fa-copy me-1" *ngIf="!copyingCode"></i>
+                            <i class="fas fa-spinner fa-spin me-1" *ngIf="copyingCode"></i>
+                            Copiar
+                          </button>
+                        </div>
+                        <div class="alert alert-success mb-0 py-2">
+                          <small class="mb-0">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong>¡Ambos ganan!</strong> Tú recibes {{ getPointsConfig().puntosReferido }} puntos 
+                            y tu amigo recibe {{ getPointsConfig().puntosNuevoUsuario }} puntos de bienvenida.
+                          </small>
+                        </div>
+                      </div>
+                      <div class="col-md-5 text-md-end">
+                        <div class="d-grid gap-2">
+                          <button class="btn btn-primary btn-lg" (click)="shareReferralCode()">
+                            <i class="fas fa-share me-2"></i>
+                            Compartir Código
+                          </button>
+                          <button class="btn btn-outline-info" (click)="showEarnPointsInfo()">
+                            <i class="fas fa-question-circle me-2"></i>
+                            ¿Cómo ganar más puntos?
+                          </button>
+                        </div>
+                        <small class="text-primary d-block mt-2">
+                          <i class="fas fa-chart-line me-1"></i>
+                          {{ pointsStats?.totalReferidos || 0 }} amigos ya se unieron
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Acciones rápidas mejoradas -->
+              <div class="d-flex gap-2 flex-wrap justify-content-center">
+                <button class="btn btn-success" (click)="goToRewards()">
+                  <i class="fas fa-gift me-2"></i>
+                  Ver Recompensas
+                  <span class="badge bg-light text-success ms-2">{{ userPoints }}</span>
+                </button>
+                <button class="btn btn-outline-primary" (click)="goToPointsHistory()">
+                  <i class="fas fa-history me-2"></i>
+                  Historial de Puntos
+                </button>
+                <button class="btn btn-outline-info" (click)="showEarnPointsInfo()">
+                  <i class="fas fa-lightbulb me-2"></i>
+                  Consejos para Ganar Puntos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🆕 PESTAÑA 3: MIS COMENTARIOS (ACTUALIZADA CON REACCIONES) -->
+    <div class="tab-pane fade" id="comments" role="tabpanel" aria-labelledby="comments-tab">
+      <div class="row mt-4">
+        <div class="col-12">
+          <div class="card shadow-sm">
+            <div class="card-header bg-info text-white">
+              <h5 class="mb-0">
+                <i class="fas fa-comments me-2"></i>
+                Historial de Comentarios y Reseñas
+              </h5>
+              <p class="mb-0 opacity-75">Todos tus comentarios y reseñas en un solo lugar</p>
+            </div>
+            <div class="card-body p-4">
+              
+              <!-- ✅ CÓDIGO ACTUALIZADO CON REACCIONES -->
+              <div class="my-comments-section">
+                <!-- Header personalizado -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="mb-0">
+                    <i class="fas fa-comments me-2"></i>
+                    Mis Comentarios y Reseñas
+                  </h6>
+                  <button class="btn btn-outline-primary btn-sm" (click)="refreshUserComments()">
+                    <i class="fas fa-sync-alt me-1"></i>
+                    Actualizar
+                  </button>
+                </div>
+
+                <!-- Loader -->
+                <div *ngIf="loadingUserComments" class="text-center py-4">
+                  <div class="spinner-border" role="status">
+                    <span class="visually-hidden">Cargando comentarios...</span>
+                  </div>
+                </div>
+
+                <!-- Lista de comentarios del usuario CON REACCIONES -->
+                <div *ngIf="!loadingUserComments && userComments.length > 0">
+                  <div *ngFor="let comment of userComments; trackBy: trackByCommentId" 
+                       class="card mb-3 border-start border-4" 
+                       [class.border-warning]="comment.tipo === 'pelicula'"
+                       [class.border-info]="comment.tipo === 'sugerencia'">
+                    <div class="card-body">
+                      <!-- Header del comentario CON AVATAR -->
+                      <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-start">
+                          
+                          <!-- Avatar del usuario -->
+                          <img [src]="comment.usuario_avatar || currentUser?.avatar || 'assets/images/default-avatar.png'" 
+                               [alt]="comment.usuario_nombre || currentUser?.nombre"
+                               class="rounded-circle me-3"
+                               width="40" height="40"
+                               style="object-fit: cover;">
+                          
+                          <div>
+                            <h6 class="card-title mb-1">{{ comment.titulo }}</h6>
+                            <div class="d-flex align-items-center">
+                              <span class="badge me-2" 
+                                    [class.bg-warning]="comment.tipo === 'pelicula'"
+                                    [class.bg-info]="comment.tipo === 'sugerencia'">
+                                <i class="fas fa-film me-1" *ngIf="comment.tipo === 'pelicula'"></i>
+                                <i class="fas fa-lightbulb me-1" *ngIf="comment.tipo === 'sugerencia'"></i>
+                                {{ comment.tipo === 'pelicula' ? 'Reseña' : 'Sugerencia' }}
+                              </span>
+                              <small class="text-muted">{{ formatDate(comment.fecha_creacion) }}</small>
+                              <span *ngIf="comment.fecha_creacion !== comment.fecha_actualizacion"
+                                    class="badge bg-secondary ms-2">Editado</span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <!-- Puntuación (solo para reseñas de películas) -->
+                        <div *ngIf="comment.puntuacion" class="text-end">
+                          <div class="stars-small">
+                            <i *ngFor="let i of [1,2,3,4,5]" 
+                               class="fas fa-star"
+                               [class.text-warning]="i <= comment.puntuacion"
+                               [class.text-muted]="i > comment.puntuacion"></i>
+                          </div>
+                          <small class="text-muted d-block">{{ comment.puntuacion }}/5</small>
+                        </div>
+                      </div>
+
+                      <!-- Contenido -->
+                      <p class="card-text">{{ comment.contenido }}</p>
+
+                      <!-- Información de la película (si aplica) -->
+                      <div *ngIf="comment.pelicula_titulo" class="mt-2">
+                        <small class="text-muted">
+                          <i class="fas fa-film me-1"></i>
+                          Película: <strong>{{ comment.pelicula_titulo }}</strong>
+                        </small>
+                      </div>
+
+                      <!-- 🆕 NUEVA SECCIÓN: REACCIONES EN PERFIL -->
+                      <div class="comment-reactions mt-3">
+                        <div class="reaction-buttons d-flex align-items-center gap-2">
+                          
+                          <!-- Botón Like -->
+                          <button class="btn btn-sm reaction-btn" 
+                                  [class]="getReactionButtonClass(comment, 'like')"
+                                  (click)="toggleUserCommentReaction(comment.id, 'like')"
+                                  title="Me gusta">
+                            <i class="fas fa-thumbs-up me-1"
+                               [class.fa-beat]="isReactionActive(comment, 'like')"></i>
+                            <span>{{ comment.total_likes || 0 }}</span>
+                          </button>
+
+                          <!-- Botón Dislike -->
+                          <button class="btn btn-sm reaction-btn"
+                                  [class]="getReactionButtonClass(comment, 'dislike')"
+                                  (click)="toggleUserCommentReaction(comment.id, 'dislike')"
+                                  title="No me gusta">
+                            <i class="fas fa-thumbs-down me-1"
+                               [class.fa-beat]="isReactionActive(comment, 'dislike')"></i>
+                            <span>{{ comment.total_dislikes || 0 }}</span>
+                          </button>
+
+                          <!-- Estadísticas de reacciones -->
+                          <span *ngIf="(comment.total_likes || 0) + (comment.total_dislikes || 0) > 0" 
+                                class="text-muted ms-2">
+                            <small>
+                              {{ (comment.total_likes || 0) + (comment.total_dislikes || 0) }} 
+                              {{ (comment.total_likes || 0) + (comment.total_dislikes || 0) === 1 ? 'reacción' : 'reacciones' }}
+                            </small>
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- Estado -->
+                      <div class="mt-2">
+                        <span class="badge" 
+                              [class.bg-success]="comment.estado === 'activo'"
+                              [class.bg-warning]="comment.estado === 'moderacion'"
+                              [class.bg-danger]="comment.estado === 'rechazado'">
+                          {{ getCommentStatusText(comment.estado) }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Paginación para comentarios del usuario -->
+                  <nav *ngIf="userCommentsTotalPages > 1" aria-label="Paginación de mis comentarios">
+                    <ul class="pagination justify-content-center">
+                      <li class="page-item" [class.disabled]="userCommentsCurrentPage === 1">
+                        <button class="page-link" (click)="changeUserCommentsPage(userCommentsCurrentPage - 1)" 
+                                [disabled]="userCommentsCurrentPage === 1">
+                          <i class="fas fa-chevron-left"></i>
+                        </button>
+                      </li>
+                      
+                      <li *ngFor="let page of [].constructor(userCommentsTotalPages); let i = index" 
+                          class="page-item" 
+                          [class.active]="i + 1 === userCommentsCurrentPage">
+                        <button class="page-link" (click)="changeUserCommentsPage(i + 1)">{{ i + 1 }}</button>
+                      </li>
+                      
+                      <li class="page-item" [class.disabled]="userCommentsCurrentPage === userCommentsTotalPages">
+                        <button class="page-link" (click)="changeUserCommentsPage(userCommentsCurrentPage + 1)" 
+                                [disabled]="userCommentsCurrentPage === userCommentsTotalPages">
+                          <i class="fas fa-chevron-right"></i>
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
+                </div>
+
+                <!-- Sin comentarios -->
+                <div *ngIf="!loadingUserComments && userComments.length === 0" class="text-center py-5">
+                  <i class="fas fa-comments display-4 text-muted mb-3"></i>
+                  <h6 class="text-muted">No has escrito comentarios aún</h6>
+                  <p class="text-muted">¡Comienza escribiendo reseñas de películas o enviando sugerencias!</p>
+                  <div class="d-flex gap-2 justify-content-center">
+                    <a href="/movies" class="btn btn-outline-primary btn-sm">
+                      <i class="fas fa-film me-1"></i>
+                      Ver Películas
+                    </a>
+                    <a href="/suggestions" class="btn btn-outline-info btn-sm">
+                      <i class="fas fa-lightbulb me-1"></i>
+                      Enviar Sugerencia
+                    </a>
+                  </div>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🆕 PESTAÑA 4: ESTADÍSTICAS -->
+    <div class="tab-pane fade" id="stats" role="tabpanel" aria-labelledby="stats-tab">
+      <div class="row mt-4">
+        <div class="col-lg-6">
+          <!-- RESUMEN DE ACTIVIDAD -->
+          <div class="card shadow-sm mb-3">
+            <div class="card-header bg-warning text-dark">
+              <h6 class="mb-0">
+                <i class="fas fa-trophy me-2"></i>
+                Resumen de Actividad
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="row text-center g-3">
+                <div class="col-6">
+                  <div class="border rounded-3 p-3 bg-light">
+                    <h3 class="text-success mb-1">{{ userPoints }}</h3>
+                    <small class="text-muted fw-semibold">Puntos</small>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="border rounded-3 p-3 bg-light">
+                    <h3 class="text-primary mb-1">{{ pointsStats?.totalReferidos || 0 }}</h3>
+                    <small class="text-muted fw-semibold">Referidos</small>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="border rounded-3 p-3 bg-light">
+                    <h3 class="text-warning mb-1">{{ pointsStats?.totalGanados || 0 }}</h3>
+                    <small class="text-muted fw-semibold">Ganados</small>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="border rounded-3 p-3 bg-light">
+                    <h3 class="text-info mb-1">{{ pointsStats?.totalUsados || 0 }}</h3>
+                    <small class="text-muted fw-semibold">Usados</small>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Progreso visual -->
+              <div class="mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <small class="text-muted">Progreso al siguiente nivel:</small>
+                  <small class="text-muted">{{ getProgressToNextReward() }}%</small>
+                </div>
+                <div class="progress" style="height: 6px;">
+                  <div class="progress-bar bg-success" 
+                       [style.width.%]="getProgressToNextReward()">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <!-- Estadísticas de Películas -->
+          <div class="card shadow-sm mb-3">
+            <div class="card-header">
+              <h6 class="mb-0">
+                <i class="fas fa-chart-pie me-2"></i>
+                Estadísticas de Películas
+              </h6>
+            </div>
+            <div class="card-body">
+              <div class="text-center mb-3" *ngIf="userStats">
+                <div class="row g-3">
+                  <div class="col-6">
+                    <div class="border rounded-3 p-3 bg-light">
+                      <h4 class="text-primary mb-1">{{ getFavoritesCount() }}</h4>
+                      <small class="text-muted fw-semibold">Favoritas</small>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <div class="border rounded-3 p-3 bg-light">
+                      <h4 class="text-success mb-1">{{ userStats.totalVistas }}</h4>
+                      <small class="text-muted fw-semibold">Vistas</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="mb-3" *ngIf="userStats">
+                <strong>Género Favorito:</strong>
+                <span class="badge bg-info ms-2">{{ userStats.generoFavorito }}</span>
+              </div>
+              
+              <div *ngIf="userStats?.ultimaActividad">
+                <strong>Última Actividad:</strong>
+                <p class="text-muted small mb-0">
+                  {{ userStats?.ultimaActividad | date:'short' }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 🆕 ESTILOS CSS PARA REACCIONES EN PERFIL -->
+<style>
+/* Incluir los mismos estilos de reacciones que en comments.component.css */
+.comment-reactions {
+  border-top: 1px solid #e9ecef;
+  padding-top: 15px;
+  margin-top: 15px;
+}
+
+.reaction-btn {
+  min-width: 70px;
+  transition: all 0.2s ease;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+.reaction-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.reaction-btn.btn-success {
+  animation: likeAnimation 0.4s ease;
+  background: linear-gradient(45deg, #28a745, #20c997);
+  border: none;
+}
+
+.reaction-btn.btn-danger {
+  animation: dislikeAnimation 0.4s ease;
+  background: linear-gradient(45deg, #dc3545, #fd7e14);
+  border: none;
+}
+
+.reaction-btn.btn-outline-success:hover {
+  background: linear-gradient(45deg, #28a745, #20c997);
+  border-color: #28a745;
+  color: white;
+}
+
+.reaction-btn.btn-outline-danger:hover {
+  background: linear-gradient(45deg, #dc3545, #fd7e14);
+  border-color: #dc3545;
+  color: white;
+}
+
+@keyframes likeAnimation {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.1) rotate(5deg); }
+  50% { transform: scale(1.15) rotate(-5deg); }
+  75% { transform: scale(1.1) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes dislikeAnimation {
+  0% { transform: scale(1) rotateY(0deg); }
+  25% { transform: scale(1.1) rotateY(10deg); }
+  50% { transform: scale(1.15) rotateY(-10deg); }
+  75% { transform: scale(1.1) rotateY(5deg); }
+  100% { transform: scale(1) rotateY(0deg); }
+}
+
+.fa-beat {
+  animation: fa-beat 1s ease-in-out infinite;
+}
+
+@keyframes fa-beat {
+  0%, 90% { transform: scale(1); }
+  45% { transform: scale(1.1); }
+}
+
+.stars-small .fa-star {
+  margin-right: 1px;
+}
+</style>

@@ -1,0 +1,153 @@
+<!-- coming-soon-detail.component.html -->
+<div class="container mt-4" *ngIf="estreno">
+  
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a [routerLink]="['/home']">Inicio</a>
+          </li> 
+          <li class="breadcrumb-item">
+            <a [routerLink]="['/coming-soon']">Próximos Estrenos</a>
+          </li>
+          <li class="breadcrumb-item active">{{ estreno.titulo }}</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="row">
+    <!-- Columna izquierda - Poster -->
+    <div class="col-lg-4 mb-4">
+      <div class="poster-container">
+        <img [src]="estreno.poster" 
+             class="img-fluid rounded shadow-lg" 
+             [alt]="estreno.titulo">
+      </div>
+      
+      <!-- Botones de acción -->
+      <div class="d-grid gap-2 mt-4">
+        <button class="btn btn-primary btn-lg" (click)="agregarRecordatorio()">
+          <i class="fas fa-bell me-2"></i>
+          Recordarme el Estreno
+        </button>
+        <button class="btn btn-outline-primary" (click)="compartir()">
+          <i class="fas fa-share-alt me-2"></i>
+          Compartir
+        </button>
+        <button class="btn btn-outline-secondary" (click)="volver()">
+          <i class="fas fa-arrow-left me-2"></i>
+          Volver a Estrenos
+        </button>
+        <button class="btn btn-outline-danger" *ngIf="authService.isAdmin()" (click)="irAAdminEstreno()">
+              <i class="fas fa-cogs me-2"></i>Panel Admin
+        </button>
+      </div>
+    </div>
+
+    <!-- Columna derecha - Información -->
+    <div class="col-lg-8">
+      <!-- Título y fecha -->
+      <div class="movie-header mb-4">
+        <h1 class="display-4 fw-bold text-primary mb-3">{{ estreno.titulo }}</h1>
+        <h4 class="text-muted mb-4">
+          <i class="fas fa-calendar-alt me-2"></i>
+          Estreno: {{ formatearFecha(estreno.fechaEstreno) }}
+        </h4>
+      </div>
+
+      <!-- Información básica en cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-md-4">
+          <div class="info-card">
+            <div class="info-icon">
+              <i class="fas fa-film"></i>
+            </div>
+            <div class="info-content">
+              <h6>Género</h6>
+              <p>{{ estreno.genero }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="info-card">
+            <div class="info-icon">
+              <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="info-content">
+              <h6>Director</h6>
+              <p>{{ estreno.director }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="info-card">
+            <div class="info-icon">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="info-content">
+              <h6>Duración</h6>
+              <p>{{ estreno.duracion }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sinopsis -->
+      <div class="synopsis-section mb-4">
+        <h5 class="section-title">
+          <i class="fas fa-align-left me-2"></i>
+          Sinopsis
+        </h5>
+        <p class="lead">{{ estreno.sinopsis }}</p>
+      </div>
+
+      <!-- Reparto -->
+      <div class="cast-section mb-4" *ngIf="estreno.actores && estreno.actores.length > 0">
+        <h5 class="section-title">
+          <i class="fas fa-users me-2"></i>
+          Reparto Principal
+        </h5>
+        <div class="cast-list">
+          <span class="badge bg-secondary me-2 mb-2" *ngFor="let actor of estreno.actores">
+            <i class="fas fa-star me-1"></i>
+            {{ actor }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Trailer -->
+      <div class="trailer-section" *ngIf="showTrailer && trailerUrl">
+        <h5 class="section-title mb-3">
+          <i class="fas fa-play-circle me-2"></i>
+          Trailer Oficial
+        </h5>
+        <div class="ratio ratio-16x9 shadow-lg rounded overflow-hidden">
+          <iframe 
+            [src]="trailerUrl" 
+            title="Trailer de {{ estreno.titulo }}" 
+            frameborder="0" 
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+            allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+
+      <!-- Mensaje de no disponible para compra -->
+      <div class="alert alert-info mt-4">
+        <h5 class="alert-heading">
+          <i class="fas fa-info-circle me-2"></i>
+          ¡Próximamente en Cines!
+        </h5>
+        <p class="mb-0">
+          Esta película aún no está disponible para comprar entradas. 
+          Activa el recordatorio para ser el primero en enterarte cuando las entradas estén a la venta.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+

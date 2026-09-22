@@ -1,0 +1,221 @@
+/* admin-logs.component.css */
+
+.admin-logs {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+/* Navegación por pestañas */
+.nav-tabs {
+  border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link {
+  border: none;
+  color: #6c757d;
+  font-weight: 500;
+  padding: 1rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+  background-color: #f8f9fa;
+  color: #495057;
+  border-color: transparent;
+}
+
+.nav-tabs .nav-link.active {
+  background-color: #fff;
+  color: #007bff;
+  border-color: #007bff #007bff #fff;
+  border-bottom: 2px solid #007bff;
+}
+
+/* Cards y contenedores */
+.card {
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+/* Lista de actividades */
+.list-group-item {
+  border-left: none;
+  border-right: none;
+  padding: 1rem;
+  transition: background-color 0.3s ease;
+}
+
+.list-group-item:hover {
+  background-color: #f8f9fa;
+}
+
+.list-group-item:first-child {
+  border-top: none;
+}
+
+.list-group-item:last-child {
+  border-bottom: none;
+}
+
+/* Tablas */
+.table th {
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  padding: 1rem 0.75rem;
+}
+
+.table td {
+  padding: 1rem 0.75rem;
+  vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Badges */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.4rem 0.6rem;
+  font-weight: 500;
+}
+
+/* Iconos */
+.fas, .far {
+  width: 1.2rem;
+  text-align: center;
+}
+
+/* Estados de color */
+.text-success {
+  color: #28a745 !important;
+}
+
+.text-danger {
+  color: #dc3545 !important;
+}
+
+.text-warning {
+  color: #ffc107 !important;
+}
+
+.text-info {
+  color: #17a2b8 !important;
+}
+
+.text-primary {
+  color: #007bff !important;
+}
+
+/* Estadísticas del sistema */
+.card-header {
+  border-bottom: 1px solid #dee2e6;
+  background-color: #f8f9fa !important;
+  font-weight: 600;
+}
+
+/* Botones */
+.btn {
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-outline-secondary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.btn-outline-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,123,255,0.3);
+}
+
+/* Animaciones de carga */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Estados vacíos */
+.text-center i.fa-3x {
+  opacity: 0.4;
+}
+
+/* Códigos de orden */
+code {
+  background-color: #f8f9fa;
+  color: #495057;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.8rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .nav-tabs .nav-link {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+  
+  .table-responsive {
+    font-size: 0.9rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .list-group-item {
+    padding: 0.75rem;
+  }
+}
+
+/* Alertas */
+.alert {
+  border: none;
+  border-left: 4px solid;
+}
+
+.alert-info {
+  border-left-color: #17a2b8;
+  background-color: #e8f4f8;
+}
+
+/* Hover effects para filas de tabla */
+tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+/* Animación para badges */
+.badge {
+  transition: all 0.2s ease;
+}
+
+.badge:hover {
+  transform: scale(1.05);
+}
+
+/* Mejoras visuales para diferentes tipos de logs */
+.list-group-item[data-type="error"] {
+  border-left: 3px solid #dc3545;
+}
+
+.list-group-item[data-type="warning"] {
+  border-left: 3px solid #ffc107;
+}
+
+.list-group-item[data-type="success"] {
+  border-left: 3px solid #28a745;
+}
+
+.list-group-item[data-type="info"] {
+  border-left: 3px solid #17a2b8;
+}

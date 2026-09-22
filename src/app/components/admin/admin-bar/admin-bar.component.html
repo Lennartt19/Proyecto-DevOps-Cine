@@ -1,0 +1,905 @@
+<!-- src/app/components/admin/admin-bar/admin-bar.component.html -->
+<div class="admin-bar">
+
+  <!-- ==================== LOADING OVERLAY ==================== -->
+  <div class="loading-overlay" *ngIf="cargando">
+    <div class="d-flex align-items-center justify-content-center h-100">
+      <div class="text-center">
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+        <p class="text-muted">Cargando productos del bar...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== VISTA LISTA ==================== -->
+  <ng-container *ngIf="vistaActual === 'lista' && !cargando">
+    
+    <!-- Header Principal -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="welcome-card bg-gradient-warning text-dark p-4 rounded-3 shadow">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h4 class="mb-1">
+                <i class="fas fa-utensils me-2"></i>
+                Gestión del Bar
+              </h4>
+              <p class="mb-0 opacity-75">
+                <i class="fas fa-cubes me-2"></i>
+                {{ estadisticas.total }} productos en total • {{ estadisticas.disponibles }} disponibles
+              </p>
+            </div>
+            <div class="d-none d-md-block">
+              <i class="fas fa-cocktail fa-3x opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estadísticas Rápidas -->
+    <div class="row mb-4 g-3">
+      
+      <!-- Total Productos -->
+      <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card stat-card bg-warning text-dark h-100 border-0 shadow">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="stat-number">{{ estadisticas.total }}</div>
+                <div class="stat-label">Total Productos</div>
+              </div>
+              <div class="stat-icon">
+                <i class="fas fa-cubes fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Disponibles -->
+      <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card stat-card bg-success text-white h-100 border-0 shadow">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="stat-number">{{ estadisticas.disponibles }}</div>
+                <div class="stat-label">Disponibles</div>
+              </div>
+              <div class="stat-icon">
+                <i class="fas fa-check-circle fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Combos -->
+      <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card stat-card bg-danger text-white h-100 border-0 shadow">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="stat-number">{{ estadisticas.combos }}</div>
+                <div class="stat-label">Combos</div>
+              </div>
+              <div class="stat-icon">
+                <i class="fas fa-gift fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- No Disponibles -->
+      <div class="col-lg-3 col-md-6 col-sm-6">
+        <div class="card stat-card bg-secondary text-white h-100 border-0 shadow">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="stat-number">{{ estadisticas.noDisponibles }}</div>
+                <div class="stat-label">No Disponibles</div>
+              </div>
+              <div class="stat-icon">
+                <i class="fas fa-times-circle fa-2x"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+
+    <!-- Panel de Herramientas y Filtros -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          
+          <!-- Header del Panel -->
+          <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="mb-0">
+                <i class="fas fa-filter me-2 text-primary"></i>
+                Filtros y Herramientas
+              </h6>
+              <div class="btn-group" role="group">
+                <button class="btn btn-success btn-sm" (click)="mostrarFormularioAgregar()">
+                  <i class="fas fa-plus me-1"></i>Nuevo Producto
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" (click)="exportarProductos()">
+                  <i class="fas fa-download me-1"></i>Exportar
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Controles de Filtrado -->
+          <div class="card-body">
+            <div class="row g-3">
+              
+              <!-- Búsqueda por Texto -->
+              <div class="col-lg-4 col-md-6">
+                <label class="form-label small fw-semibold">Buscar productos</label>
+                <div class="input-group">
+                  <input type="text" 
+                         class="form-control" 
+                         placeholder="Nombre, descripción..."
+                         [(ngModel)]="terminoBusqueda"
+                         (input)="aplicarFiltros()">
+                  <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Filtro por Categoría -->
+              <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-semibold">Categoría</label>
+                <select class="form-select" 
+                        [(ngModel)]="filtroCategoria"
+                        (change)="aplicarFiltros()">
+                  <option value="">Todas las categorías</option>
+                  <option *ngFor="let categoria of categoriasDisponibles" [value]="categoria">
+                    {{ categoria }}
+                  </option>
+                </select>
+              </div>
+              
+              <!-- Filtro por Disponibilidad -->
+              <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-semibold">Estado</label>
+                <select class="form-select" 
+                        [(ngModel)]="filtroDisponibilidad"
+                        (change)="aplicarFiltros()">
+                  <option value="">Todos los estados</option>
+                  <option value="true">Disponibles</option>
+                  <option value="false">No disponibles</option>
+                </select>
+              </div>
+              
+              <!-- Items por Página -->
+              <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-semibold">Mostrar</label>
+                <select class="form-select" 
+                        [(ngModel)]="productosPorPagina"
+                        (change)="calcularPaginacion()">
+                  <option value="5">5 por página</option>
+                  <option value="10">10 por página</option>
+                  <option value="20">20 por página</option>
+                  <option value="50">50 por página</option>
+                </select>
+              </div>
+              
+              <!-- Botón Limpiar Filtros -->
+              <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-semibold">&nbsp;</label>
+                <div class="d-grid">
+                  <button class="btn btn-outline-danger btn-sm" (click)="limpiarFiltros()">
+                    <i class="fas fa-times me-1"></i>Limpiar
+                  </button>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de Productos -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          
+          <!-- Header de la Lista -->
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+              <i class="fas fa-list me-2 text-success"></i>
+              Productos del Bar ({{ getRangoElementos() }})
+            </h6>
+          </div>
+          
+          <!-- Cuerpo de la Lista -->
+          <div class="card-body p-0">
+            
+            <!-- Estado de Procesamiento -->
+            <div class="text-center p-4" *ngIf="procesando">
+              <div class="spinner-border text-primary"></div>
+              <p class="mt-2 text-muted">Procesando...</p>
+            </div>
+
+            <!-- Tabla de Productos -->
+            <div class="table-responsive" *ngIf="!procesando">
+              <table class="table table-hover mb-0">
+                
+                <!-- Encabezados de la Tabla -->
+                <thead class="bg-light">
+                  <tr>
+                    <th width="60">ID</th>
+                    <th width="300">Producto</th>
+                    <th width="120">Categoría</th>
+                    <th width="100">Precio</th>
+                    <th width="80">Estado</th>
+                    <th width="80">Tipo</th>
+                    <th width="150">Acciones</th>
+                  </tr>
+                </thead>
+                
+                <!-- Filas de Productos -->
+                <tbody>
+                  <tr *ngFor="let producto of getProductosPaginaActual(); trackBy: trackProductoFn" 
+                      class="align-middle">
+                    
+                    <!-- Columna ID -->
+                    <td>
+                      <span class="badge bg-secondary">{{ producto.id }}</span>
+                    </td>
+                    
+                    <!-- Columna Producto con Imagen -->
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <img [src]="producto.imagen" 
+                             class="rounded me-3" 
+                             width="50" height="50"
+                             [alt]="producto.nombre"
+                             style="object-fit: cover;">
+                        <div>
+                          <h6 class="mb-1 fw-bold">{{ producto.nombre }}</h6>
+                          <small class="text-muted">
+                            {{ producto.descripcion | slice:0:50 }}{{ producto.descripcion.length > 50 ? '...' : '' }}
+                          </small>
+                        </div>
+                      </div>
+                    </td>
+                    
+                    <!-- Columna Categoría -->
+                    <td>
+                      <span class="badge fs-6 px-2 py-1" [ngClass]="getCategoriaClass(producto.categoria)">
+                        {{ producto.categoria }}
+                      </span>
+                    </td>
+                    
+                    <!-- Columna Precio -->
+                    <td>
+                      <div>
+                        <span class="fw-bold text-success">${{ formatearPrecio(producto.precio) }}</span>
+                        <div *ngIf="producto.es_combo && producto.descuento" class="small">
+                          <span class="text-decoration-line-through text-muted">
+                            ${{ formatearPrecio(producto.precio + producto.descuento) }}
+                          </span>
+                          <small class="text-danger ms-1">-${{ formatearPrecio(producto.descuento) }}</small>
+                        </div>
+                      </div>
+                    </td>
+                    
+                    <!-- Columna Estado -->
+                    <td>
+                      <div class="form-check form-switch">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               [checked]="producto.disponible"
+                               (change)="toggleDisponibilidad(producto)">
+                        <label class="form-check-label">
+                          <span class="badge" [ngClass]="producto.disponible ? 'bg-success' : 'bg-danger'">
+                            {{ producto.disponible ? 'Activo' : 'Inactivo' }}
+                          </span>
+                        </label>
+                      </div>
+                    </td>
+                    
+                    <!-- Columna Tipo -->
+                    <td>
+                      <div class="d-flex flex-column gap-1">
+                        <span class="badge bg-info" *ngIf="producto.es_combo">
+                          <i class="fas fa-gift me-1"></i>Combo
+                        </span>
+                        <span class="badge bg-secondary" *ngIf="producto.tamanos?.length">
+                          <i class="fas fa-arrows-alt me-1"></i>Tamaños
+                        </span>
+                        <span class="badge bg-warning" *ngIf="producto.extras?.length">
+                          <i class="fas fa-plus me-1"></i>Extras
+                        </span>
+                      </div>
+                    </td>
+                    
+                    <!-- Columna Acciones -->
+                    <td>
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button class="btn btn-outline-primary" 
+                                (click)="mostrarFormularioEditar(producto)"
+                                title="Editar producto">
+                          <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" 
+                                (click)="confirmarEliminarProducto(producto)"
+                                title="Eliminar producto">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                    
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Estado Sin Resultados -->
+            <div class="text-center p-4" *ngIf="!procesando && !getProductosPaginaActual().length">
+              <i class="fas fa-utensils fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No se encontraron productos</h5>
+              <p class="text-muted">
+                {{ (terminoBusqueda || filtroCategoria || filtroDisponibilidad) 
+                   ? 'Intenta cambiar los filtros de búsqueda.' 
+                   : 'No hay productos registrados en el bar.' }}
+              </p>
+              <button class="btn" 
+                      [ngClass]="(terminoBusqueda || filtroCategoria || filtroDisponibilidad) ? 'btn-outline-primary' : 'btn-success'"
+                      (click)="(terminoBusqueda || filtroCategoria || filtroDisponibilidad) ? limpiarFiltros() : mostrarFormularioAgregar()">
+                <i [class]="(terminoBusqueda || filtroCategoria || filtroDisponibilidad) ? 'fas fa-times me-2' : 'fas fa-plus me-2'"></i>
+                {{ (terminoBusqueda || filtroCategoria || filtroDisponibilidad) ? 'Limpiar Filtros' : 'Agregar Primer Producto' }}
+              </button>
+            </div>
+
+          </div>
+          
+          <!-- Paginación -->
+          <div class="card-footer bg-light" *ngIf="!procesando && totalPaginas > 1">
+            <nav aria-label="Paginación de productos">
+              <ul class="pagination pagination-sm justify-content-center mb-0">
+                
+                <!-- Botón Anterior -->
+                <li class="page-item" [class.disabled]="paginaActual === 1">
+                  <button class="page-link" (click)="cambiarPagina(paginaActual - 1)">
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                </li>
+                
+                <!-- Primera Página -->
+                <li class="page-item" *ngIf="paginaActual > 3">
+                  <button class="page-link" (click)="cambiarPagina(1)">1</button>
+                </li>
+                <li class="page-item disabled" *ngIf="paginaActual > 4">
+                  <span class="page-link">...</span>
+                </li>
+                
+                <!-- Números de Página -->
+                <li class="page-item" 
+                    *ngFor="let pagina of getPaginasArray()"
+                    [class.active]="pagina === paginaActual">
+                  <button class="page-link" (click)="cambiarPagina(pagina)">{{ pagina }}</button>
+                </li>
+                
+                <!-- Última Página -->
+                <li class="page-item disabled" *ngIf="paginaActual < totalPaginas - 3">
+                  <span class="page-link">...</span>
+                </li>
+                <li class="page-item" *ngIf="paginaActual < totalPaginas - 2">
+                  <button class="page-link" (click)="cambiarPagina(totalPaginas)">{{ totalPaginas }}</button>
+                </li>
+                
+                <!-- Botón Siguiente -->
+                <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                  <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </li>
+                
+              </ul>
+            </nav>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ==================== VISTA FORMULARIO ==================== -->
+  <ng-container *ngIf="vistaActual === 'agregar' || vistaActual === 'editar'">
+    
+    <!-- Header del Formulario -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card border-success">
+          
+          <!-- Título del Formulario -->
+          <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fas fa-utensils me-2"></i>
+                {{ vistaActual === 'agregar' ? 'Nuevo Producto del Bar' : 'Editar Producto del Bar' }}
+              </h5>
+              <button class="btn btn-outline-light btn-sm" (click)="cambiarVista('lista')">
+                <i class="fas fa-arrow-left me-1"></i>Volver a la Lista
+              </button>
+            </div>
+          </div>
+          
+          <!-- Cuerpo del Formulario -->
+          <div class="card-body">
+            
+            <!-- Errores de Validación -->
+            <div class="alert alert-danger" *ngIf="erroresValidacion.length">
+              <h6 class="alert-heading">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Errores en el formulario:
+              </h6>
+              <ul class="mb-0">
+                <li *ngFor="let error of erroresValidacion">{{ error }}</li>
+              </ul>
+            </div>
+            
+            <!-- Formulario Principal -->
+            <form (ngSubmit)="guardarProducto()" #productoFormRef="ngForm">
+              
+              <!-- Información Básica -->
+              <div class="row g-3 mb-4">
+                <div class="col-12">
+                  <h6 class="text-success border-bottom pb-2">
+                    <i class="fas fa-info-circle me-2"></i>Información Básica
+                  </h6>
+                </div>
+                
+                <!-- Campo Nombre -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-tag me-1 text-success"></i>
+                    Nombre del Producto *
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         [(ngModel)]="productoForm.nombre"
+                         name="nombre"
+                         placeholder="Ej: Coca-Cola Grande"
+                         required>
+                </div>
+                
+                <!-- Campo Categoría -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-list me-1 text-success"></i>
+                    Categoría *
+                  </label>
+                  <select class="form-select" 
+                          [(ngModel)]="productoForm.categoria"
+                          name="categoria"
+                          required>
+                    <option value="">Seleccionar categoría</option>
+                    <option *ngFor="let categoria of categoriasDisponibles" [value]="categoria">
+                      {{ categoria }}
+                    </option>
+                  </select>
+                </div>
+                
+                <!-- Campo Descripción -->
+                <div class="col-12">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-align-left me-1 text-success"></i>
+                    Descripción *
+                  </label>
+                  <textarea class="form-control" 
+                            rows="3"
+                            [(ngModel)]="productoForm.descripcion"
+                            name="descripcion"
+                            placeholder="Describe el producto del bar..."
+                            required></textarea>
+                </div>
+                
+                <!-- Campo Precio -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-dollar-sign me-1 text-success"></i>
+                    Precio Base *
+                  </label>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    <input type="number" 
+                           class="form-control" 
+                           [(ngModel)]="productoForm.precio"
+                           name="precio"
+                           min="0.01"
+                           step="0.01"
+                           placeholder="0.00"
+                           required>
+                  </div>
+                </div>
+                
+                <!-- Campo Imagen con Vista Previa -->
+                <div class="col-12">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-image me-1 text-success"></i>
+                    URL de la Imagen *
+                  </label>
+                  
+                  <div class="row">
+                    
+                    <!-- Input del URL -->
+                    <div class="col-md-8">
+                      <input type="text" 
+                             class="form-control" 
+                             [(ngModel)]="productoForm.imagen"
+                             name="imagen"
+                             placeholder="https://ejemplo.com/imagen.jpg o assets/bar/producto.png"
+                             required>
+                      <small class="form-text text-muted">
+                        Puedes usar URLs de internet o rutas locales como assets/bar/producto.png
+                      </small>
+                    </div>
+                    
+                    <!-- Vista Previa -->
+                    <div class="col-md-4">
+                      <div class="image-preview-container text-center">
+                        <div *ngIf="productoForm.imagen?.trim(); else noImage" 
+                             class="border rounded p-2 bg-light">
+                          <img [src]="productoForm.imagen" 
+                               class="img-fluid rounded" 
+                               style="max-height: 120px; max-width: 100%; object-fit: cover;"
+                               [alt]="productoForm.nombre || 'Vista previa'"
+                               (error)="onImageError($event)"
+                               (load)="onImageLoad($event)">
+                          <div class="mt-1">
+                            <small class="text-success" *ngIf="imageLoaded">
+                              <i class="fas fa-check-circle"></i> Imagen válida
+                            </small>
+                            <small class="text-danger" *ngIf="imageError">
+                              <i class="fas fa-exclamation-triangle"></i> Error al cargar
+                            </small>
+                          </div>
+                        </div>
+                        <ng-template #noImage>
+                          <div class="border rounded p-3 bg-light text-muted">
+                            <i class="fas fa-utensils fa-2x"></i>
+                            <br>
+                            <small>Vista previa del producto</small>
+                          </div>
+                        </ng-template>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Ejemplos de URLs -->
+                  <div class="mt-2">
+                    <small class="text-muted"><strong>Ejemplos para productos del bar:</strong></small>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                      <button type="button" 
+                              class="btn btn-outline-secondary btn-sm"
+                              (click)="setExampleImage('assets/bar/coca-cola.png')">
+                        <i class="fas fa-folder me-1"></i>Bebida Local
+                      </button>
+                      <button type="button" 
+                              class="btn btn-outline-secondary btn-sm"
+                              (click)="setExampleImage('assets/bar/palomitas.png')">
+                        <i class="fas fa-folder me-1"></i>Snack Local
+                      </button>
+                      <button type="button" 
+                              class="btn btn-outline-secondary btn-sm"
+                              (click)="setExampleImage('https://via.placeholder.com/300x300/ffc107/000000?text=Producto+Bar')">
+                        <i class="fas fa-globe me-1"></i>URL Externa
+                      </button>
+                      <button type="button" 
+                              class="btn btn-outline-secondary btn-sm"
+                              (click)="setExampleImage('https://images.unsplash.com/photo-1585936650265-c85cf2d04c95?w=300&h=300&fit=crop')">
+                        <i class="fas fa-cocktail me-1"></i>Ejemplo Bebida
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Estados del Producto -->
+              <div class="row g-3 mb-4">
+                <div class="col-12">
+                  <h6 class="text-success border-bottom pb-2">
+                    <i class="fas fa-toggle-on me-2"></i>Estado del Producto
+                  </h6>
+                </div>
+                
+                <!-- Switch Disponible -->
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" 
+                           type="checkbox" 
+                           [(ngModel)]="productoForm.disponible"
+                           name="disponible"
+                           id="disponibleCheck">
+                    <label class="form-check-label fw-semibold" for="disponibleCheck">
+                      <i class="fas fa-check-circle me-1 text-success"></i>
+                      Producto disponible para venta
+                    </label>
+                  </div>
+                </div>
+                
+                <!-- Switch Es Combo -->
+                <div class="col-md-6">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" 
+                           type="checkbox" 
+                           [(ngModel)]="productoForm.es_combo"
+                           name="esCombo"
+                           id="esComboCheck">
+                    <label class="form-check-label fw-semibold" for="esComboCheck">
+                      <i class="fas fa-gift me-1 text-danger"></i>
+                      Es un combo especial
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Configuración de Combo -->
+              <ng-container *ngIf="productoForm.es_combo">
+                <div class="row g-3 mb-4">
+                  <div class="col-12">
+                    <h6 class="text-danger border-bottom pb-2">
+                      <i class="fas fa-gift me-2"></i>Configuración del Combo
+                    </h6>
+                  </div>
+                  
+                  <!-- Descuento del Combo -->
+                  <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                      <i class="fas fa-percentage me-1 text-danger"></i>
+                      Descuento del Combo
+                    </label>
+                    <div class="input-group">
+                      <span class="input-group-text">$</span>
+                      <input type="number" 
+                             class="form-control" 
+                             [(ngModel)]="productoForm.descuento"
+                             name="descuento"
+                             min="0"
+                             step="0.01"
+                             placeholder="0.00">
+                    </div>
+                    <small class="form-text text-muted">
+                      Cantidad de dinero que se descuenta del precio total
+                    </small>
+                  </div>
+                  
+                  <!-- Items del Combo -->
+                  <div class="col-12">
+                    <label class="form-label fw-semibold">
+                      <i class="fas fa-list me-1 text-danger"></i>
+                      Items Incluidos en el Combo
+                    </label>
+                    
+                    <div class="combo-items">
+                      <div class="row g-2 mb-2" *ngFor="let item of productoForm.combo_items; let i = index">
+                        <div class="col-10">
+                          <input type="text" 
+                                 class="form-control" 
+                                 [(ngModel)]="productoForm.combo_items![i].item_nombre"
+                                 [name]="'combo_item_' + i"
+                                 placeholder="Ej: Palomitas medianas">
+                        </div>
+                        <div class="col-2">
+                          <button type="button" 
+                                  class="btn btn-outline-danger w-100"
+                                  (click)="removerItemCombo(i)">
+                            <i class="fas fa-trash"></i>
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <button type="button" 
+                              class="btn btn-outline-success btn-sm"
+                              (click)="agregarItemCombo()">
+                        <i class="fas fa-plus me-1"></i>Agregar Item al Combo
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </ng-container>
+
+              <!-- Tamaños Disponibles -->
+              <div class="row g-3 mb-4">
+                <div class="col-12">
+                  <h6 class="text-primary border-bottom pb-2">
+                    <i class="fas fa-arrows-alt me-2"></i>Tamaños Disponibles (Opcional)
+                  </h6>
+                </div>
+                
+                <div class="col-12">
+                  <div class="tamanos-container">
+                    <div class="row g-2 mb-2" *ngFor="let tamano of productoForm.tamanos; let i = index">
+                      
+                      <!-- Nombre del Tamaño -->
+                      <div class="col-md-6">
+                        <input type="text" 
+                               class="form-control" 
+                               [(ngModel)]="productoForm.tamanos![i].nombre"
+                               [name]="'tamano_nombre_' + i"
+                               placeholder="Ej: Grande (32oz)">
+                      </div>
+                      
+                      <!-- Precio del Tamaño -->
+                      <div class="col-md-4">
+                        <div class="input-group">
+                          <span class="input-group-text">$</span>
+                          <input type="number" 
+                                 class="form-control" 
+                                 [(ngModel)]="productoForm.tamanos![i].precio"
+                                 [name]="'tamano_precio_' + i"
+                                 min="0"
+                                 step="0.01"
+                                 placeholder="0.00">
+                        </div>
+                      </div>
+                      
+                      <!-- Botón Eliminar Tamaño -->
+                      <div class="col-md-2">
+                        <button type="button" 
+                                class="btn btn-outline-danger w-100"
+                                (click)="removerTamano(i)">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <!-- Botón Agregar Tamaño -->
+                    <button type="button" 
+                            class="btn btn-outline-primary btn-sm"
+                            (click)="agregarTamano()">
+                      <i class="fas fa-plus me-1"></i>Agregar Tamaño
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Extras Disponibles -->
+              <div class="row g-3 mb-4">
+                <div class="col-12">
+                  <h6 class="text-warning border-bottom pb-2">
+                    <i class="fas fa-plus me-2"></i>Extras Disponibles (Opcional)
+                  </h6>
+                </div>
+                
+                <div class="col-12">
+                  <div class="extras-container">
+                    <div class="row g-2 mb-2" *ngFor="let extra of productoForm.extras; let i = index">
+                      
+                      <!-- Nombre del Extra -->
+                      <div class="col-md-6">
+                        <input type="text" 
+                               class="form-control" 
+                               [(ngModel)]="productoForm.extras![i].nombre"
+                               [name]="'extra_nombre_' + i"
+                               placeholder="Ej: Queso extra">
+                      </div>
+                      
+                      <!-- Precio del Extra -->
+                      <div class="col-md-4">
+                        <div class="input-group">
+                          <span class="input-group-text">$</span>
+                          <input type="number" 
+                                 class="form-control" 
+                                 [(ngModel)]="productoForm.extras![i].precio"
+                                 [name]="'extra_precio_' + i"
+                                 min="0"
+                                 step="0.01"
+                                 placeholder="0.00">
+                        </div>
+                      </div>
+                      
+                      <!-- Botón Eliminar Extra -->
+                      <div class="col-md-2">
+                        <button type="button" 
+                                class="btn btn-outline-danger w-100"
+                                (click)="removerExtra(i)">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <!-- Botón Agregar Extra -->
+                    <button type="button" 
+                            class="btn btn-outline-warning btn-sm"
+                            (click)="agregarExtra()">
+                      <i class="fas fa-plus me-1"></i>Agregar Extra
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Botones de Acción del Formulario -->
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-end gap-2">
+                    
+                    <!-- Botón Cancelar -->
+                    <button type="button" 
+                            class="btn btn-outline-secondary"
+                            (click)="cambiarVista('lista')">
+                      <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    
+                    <!-- Botón Guardar -->
+                    <button type="submit" 
+                            class="btn btn-success"
+                            [disabled]="procesando || !productoFormRef.form.valid">
+                      <span *ngIf="procesando" class="spinner-border spinner-border-sm me-2"></span>
+                      <i class="fas fa-save me-1" *ngIf="!procesando"></i>
+                      {{ vistaActual === 'agregar' ? 'Crear Producto' : 'Actualizar Producto' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </ng-container>
+
+</div>
+
+<!-- ==================== MODAL DE CONFIRMACIÓN ==================== -->
+<div class="modal fade" 
+     [class.show]="mostrarModalConfirmacion" 
+     [style.display]="mostrarModalConfirmacion ? 'block' : 'none'"
+     *ngIf="mostrarModalConfirmacion">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      
+      <!-- Header del Modal -->
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Confirmar Eliminación
+        </h5>
+      </div>
+      
+      <!-- Cuerpo del Modal -->
+      <div class="modal-body">
+        <p class="mb-3">
+          <strong>¿Estás seguro de que deseas eliminar este producto?</strong>
+        </p>
+        <p class="text-muted mb-0">
+          Esta acción no se puede deshacer. El producto será eliminado del sistema.
+        </p>
+      </div>
+      
+      <!-- Footer del Modal -->
+      <div class="modal-footer">
+        <button type="button" 
+                class="btn btn-outline-secondary"
+                (click)="cerrarModalConfirmacion()">
+          <i class="fas fa-times me-1"></i>
+          Cancelar
+        </button>
+        <button type="button" 
+                class="btn btn-danger"
+                (click)="eliminarProducto()"
+                [disabled]="procesando">
+          <span *ngIf="procesando" class="spinner-border spinner-border-sm me-2"></span>
+          <i class="fas fa-trash me-1" *ngIf="!procesando"></i>
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop del Modal -->
+<div class="modal-backdrop fade show" *ngIf="mostrarModalConfirmacion"></div>

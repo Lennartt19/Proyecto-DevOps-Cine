@@ -1,0 +1,385 @@
+<!-- order-history.component.html -->
+<div class="container mt-4">
+  
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="fw-bold text-primary">
+        <i class="fas fa-history me-2"></i>
+        Historial de Órdenes
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a [routerLink]="['/profile']">Perfil</a>
+          </li>
+          <li class="breadcrumb-item active">Historial de Órdenes</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Loading inicial -->
+  <div class="row" *ngIf="loading">
+    <div class="col-12 text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando historial...</span>
+      </div>
+      <p class="mt-3 text-muted">Cargando tu historial de órdenes...</p>
+    </div>
+  </div>
+
+  <!-- Error message -->
+  <div class="alert alert-danger" *ngIf="!loading && orders.length === 0 && !loadingStats">
+    <i class="fas fa-exclamation-triangle me-2"></i>
+    No se pudieron cargar las órdenes. 
+    <button class="btn btn-link p-0 ms-2" (click)="refreshData()">
+      Reintentar
+    </button>
+  </div>
+
+  <div *ngIf="!loading" class="row">
+
+    <!-- Estadísticas -->
+    <div class="col-12 mb-4">
+      <div class="row g-3">
+        <div class="col-md-3 col-6">
+          <div class="card bg-primary text-white h-100">
+            <div class="card-body text-center">
+              <i class="fas fa-shopping-cart fa-2x mb-2"></i>
+              <h4 class="mb-1">{{ stats?.totalOrdenes || 0 }}</h4>
+              <small>Total Órdenes</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card bg-success text-white h-100">
+            <div class="card-body text-center">
+              <i class="fas fa-check-circle fa-2x mb-2"></i>
+              <h4 class="mb-1">{{ stats?.ordenesCompletadas || 0 }}</h4>
+              <small>Completadas</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card bg-warning text-dark h-100">
+            <div class="card-body text-center">
+              <i class="fas fa-clock fa-2x mb-2"></i>
+              <h4 class="mb-1">{{ stats?.ordenesPendientes || 0 }}</h4>
+              <small>Pendientes</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3 col-6">
+          <div class="card bg-info text-white h-100">
+            <div class="card-body text-center">
+              <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+              <h4 class="mb-1">{{ formatCurrency(stats?.totalIngresos || 0) }}</h4>
+              <small>Total Gastado</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="col-12 mb-3">
+      <div class="card">
+        <div class="card-header">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+              <i class="fas fa-filter me-2"></i>
+              Filtros
+            </h6>
+            <button class="btn btn-sm btn-outline-secondary" 
+                    (click)="toggleFilters()">
+              <i class="fas fa-chevron-down" [class.fa-rotate-180]="showFilters"></i>
+            </button>
+          </div>
+        </div>
+        <div class="card-body" [class.d-none]="!showFilters">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Estado</label>
+              <select class="form-select" [(ngModel)]="filterStatus">
+                <option value="all">Todos los estados</option>
+                <option value="completada">Completadas</option>
+                <option value="pendiente">Pendientes</option>
+                <option value="cancelada">Canceladas</option>
+                <option value="reembolsada">Reembolsadas</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Método de Pago</label>
+              <select class="form-select" [(ngModel)]="filterPaymentMethod">
+                <option value="all">Todos los métodos</option>
+                <option value="tarjeta">Tarjeta de Crédito</option>
+                <option value="paypal">PayPal</option>
+              </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+              <button class="btn btn-outline-secondary me-2" (click)="resetFilters()">
+                <i class="fas fa-times me-1"></i>
+                Limpiar
+              </button>
+              <button class="btn btn-primary" (click)="exportOrderHistory()">
+                <i class="fas fa-download me-1"></i>
+                Exportar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de órdenes -->
+    <div class="col-12">
+      
+      <!-- Sin órdenes -->
+      <div *ngIf="getFilteredOrders().length === 0" class="text-center py-5">
+        <i class="fas fa-receipt fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">No tienes órdenes aún</h4>
+        <p class="text-muted mb-4">Cuando realices compras aparecerán aquí</p>
+        <div class="d-flex gap-2 justify-content-center">
+          <button class="btn btn-primary" (click)="goToMovies()">
+            <i class="fas fa-film me-2"></i>
+            Ver Películas
+          </button>
+          <button class="btn btn-warning" (click)="goToBar()">
+            <i class="fas fa-utensils me-2"></i>
+            Ver Bar
+          </button>
+        </div>
+      </div>
+
+      <!-- Lista de órdenes -->
+      <div *ngIf="getFilteredOrders().length > 0">
+        <div class="card mb-3" *ngFor="let order of getFilteredOrders(); trackBy: trackByOrderId">
+          <div class="card-body">
+            <div class="row align-items-center">
+              
+              <!-- Información de la orden -->
+              <div class="col-md-8">
+                <div class="d-flex align-items-center mb-2">
+                  <h6 class="mb-0 me-3">
+                    <i class="fas fa-receipt me-1"></i>
+                    Orden #{{ order.id.substring(0, 8) }}
+                  </h6>
+                  <span class="badge me-2" [ngClass]="getStatusBadgeClass(order.estado)">
+                    {{ getStatusText(order.estado) }}
+                  </span>
+                  <span class="badge bg-light text-dark">
+                    <i [ngClass]="getPaymentMethodIcon(order.metodo_pago)" class="me-1"></i>
+                    {{ order.metodo_pago }}
+                  </span>
+                </div>
+                
+                <div class="row">
+                  <div class="col-sm-6">
+                    <small class="text-muted">Fecha:</small>
+                    <p class="mb-1">{{ formatDate(order.fecha_creacion) }}</p>
+                  </div>
+                  <div class="col-sm-6">
+                    <small class="text-muted">Items:</small>
+                    <p class="mb-1">{{ getTotalItems(order) }} productos</p>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Total y acciones -->
+              <div class="col-md-4 text-md-end">
+                <h5 class="text-success mb-2">{{ formatCurrency(order.total) }}</h5>
+                <div class="btn-group btn-group-sm">
+                  <button class="btn btn-outline-primary" 
+                          (click)="viewOrderDetails(order.id)"
+                          [disabled]="loadingOrderDetails">
+                    <i class="fas fa-eye me-1"></i>
+                    Ver
+                  </button>
+                  
+                  <button class="btn btn-outline-warning" 
+                          (click)="reorderItems(order)"
+                          *ngIf="order.estado === 'completada'">
+                    <i class="fas fa-redo me-1"></i>
+                    Reordenar
+                  </button>
+                  
+                  <button class="btn btn-outline-danger" 
+                          (click)="cancelOrder(order.id)"
+                          *ngIf="canCancelOrder(order)">
+                    <i class="fas fa-times me-1"></i>
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón cargar más -->
+        <div class="text-center mt-4" *ngIf="hasMoreOrders">
+          <button class="btn btn-outline-primary" 
+                  (click)="loadMoreOrders()"
+                  [disabled]="loading">
+            <span *ngIf="!loading">
+              <i class="fas fa-plus me-2"></i>
+              Cargar más órdenes
+            </span>
+            <span *ngIf="loading">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Cargando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de detalles de orden -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-receipt me-2"></i>
+          Detalles de Orden
+        </h5>
+        <button type="button" class="btn-close" (click)="closeOrderModal()"></button>
+      </div>
+      
+      <div class="modal-body" *ngIf="selectedOrder">
+        <!-- Loading state -->
+        <div *ngIf="loadingOrderDetails" class="text-center py-4">
+          <div class="spinner-border text-primary"></div>
+          <p class="mt-2 text-muted">Cargando detalles...</p>
+        </div>
+
+        <!-- Order details -->
+        <div *ngIf="!loadingOrderDetails">
+          <!-- Header info -->
+          <div class="row mb-4">
+            <div class="col-md-6">
+              <h6>Información General</h6>
+              <p class="mb-1"><strong>Orden:</strong> #{{ selectedOrder.id.substring(0, 8) }}</p>
+              <p class="mb-1"><strong>Fecha:</strong> {{ formatDate(selectedOrder.fecha_creacion) }}</p>
+              <p class="mb-1"><strong>Estado:</strong> 
+                <span class="badge ms-1" [ngClass]="getStatusBadgeClass(selectedOrder.estado)">
+                  {{ getStatusText(selectedOrder.estado) }}
+                </span>
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h6>Información de Pago</h6>
+              <p class="mb-1"><strong>Método:</strong> {{ selectedOrder.metodo_pago }}</p>
+              <p class="mb-1"><strong>Cliente:</strong> {{ selectedOrder.nombre_cliente }}</p>
+              <p class="mb-1"><strong>Email:</strong> {{ selectedOrder.email_cliente }}</p>
+            </div>
+          </div>
+
+          <!-- Items de películas -->
+          <div *ngIf="hasMovieItems(selectedOrder)" class="mb-4">
+            <h6>
+              <i class="fas fa-film me-2 text-primary"></i>
+              Entradas de Cine
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Película</th>
+                    <th>Función</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of selectedOrder.items_peliculas">
+                    <td>{{ item.peliculaTitulo }}</td>
+                    <td>
+                      {{ item.funcionSala }}<br>
+                      <small class="text-muted">{{ item.funcionFecha }} - {{ item.funcionHora }}</small>
+                    </td>
+                    <td>{{ item.cantidad }}</td>
+                    <td>{{ formatCurrency(item.precioUnitario) }}</td>
+                    <td>{{ formatCurrency(item.subtotal) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Items del bar -->
+          <div *ngIf="hasBarItems(selectedOrder)" class="mb-4">
+            <h6>
+              <i class="fas fa-utensils me-2 text-warning"></i>
+              Productos del Bar
+            </h6>
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Precio</th>
+                    <th>Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of selectedOrder.items_bar">
+                    <td>
+                      {{ item.productoNombre }}
+                      <br>
+                      <small class="text-muted">{{ item.productoCategoria }}</small>
+                    </td>
+                    <td>{{ item.cantidad }}</td>
+                    <td>{{ formatCurrency(item.precioUnitario) }}</td>
+                    <td>{{ formatCurrency(item.subtotal) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Totales -->
+          <div class="border-top pt-3">
+            <div class="row">
+              <div class="col-md-6 offset-md-6">
+                <div class="d-flex justify-content-between mb-1">
+                  <span>Subtotal:</span>
+                  <span>{{ formatCurrency(selectedOrder.subtotal) }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                  <span>Cargo por servicio:</span>
+                  <span>{{ formatCurrency(selectedOrder.cargo_servicio) }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                  <span>Impuestos:</span>
+                  <span>{{ formatCurrency(selectedOrder.impuestos) }}</span>
+                </div>
+                <div class="d-flex justify-content-between h5">
+                  <strong>Total:</strong>
+                  <strong class="text-success">{{ formatCurrency(selectedOrder.total) }}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeOrderModal()">
+          Cerrar
+        </button>
+        <button type="button" 
+                class="btn btn-primary" 
+                (click)="reorderItems(selectedOrder!)"
+                *ngIf="selectedOrder?.estado === 'completada'">
+          <i class="fas fa-redo me-1"></i>
+          Reordenar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

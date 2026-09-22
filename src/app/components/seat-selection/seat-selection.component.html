@@ -1,0 +1,272 @@
+<!-- seat-selection.component.html -->
+<div class="container mt-4">
+  
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="fw-bold text-primary">
+        <i class="fas fa-couch me-2"></i>
+        Selecciona tus Asientos
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a [routerLink]="['/movies']">Películas</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a [routerLink]="['/movie', peliculaId]">{{ pelicula?.titulo }}</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a [routerLink]="['/ticket-purchase', peliculaId]">Comprar Entradas</a>
+          </li>
+          <li class="breadcrumb-item active">Seleccionar Asientos</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="row" *ngIf="cargando">
+    <div class="col-12 text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-3 text-muted">Cargando información de asientos...</p>
+    </div>
+  </div>
+
+  <!-- Error de conexión -->
+  <div class="row" *ngIf="!cargando && errorConexion">
+    <div class="col-12 text-center py-5">
+      <i class="fas fa-exclamation-triangle fa-5x text-danger mb-4"></i>
+      <h3 class="text-danger mb-3">Error de conexión</h3>
+      <p class="text-muted mb-4">No se pudo cargar la información de la función.</p>
+      <button class="btn btn-primary" (click)="reintentarConexion()">
+        <i class="fas fa-refresh me-2"></i>Reintentar
+      </button>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div *ngIf="!cargando && !errorConexion && funcion && pelicula">
+
+    <!-- Información de la función -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card bg-light border-0 shadow-sm">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-2">
+                <img [src]="pelicula.poster" 
+                     class="img-fluid rounded shadow-sm" 
+                     style="max-height: 80px; object-fit: cover;"
+                     alt="{{ pelicula.titulo }}">
+              </div>
+              <div class="col-md-8">
+                <h5 class="mb-1">{{ pelicula.titulo }}</h5>
+                <p class="text-muted mb-1">
+                  <i class="fas fa-door-open me-1"></i>{{ funcion.sala }} • 
+                  <i class="fas fa-calendar me-1"></i>{{ formatearFecha(funcion.fecha) }} • 
+                  <i class="fas fa-clock me-1"></i>{{ funcion.hora }}
+                </p>
+                <span class="badge bg-info me-2">{{ funcion.formato }}</span>
+                <span class="badge bg-secondary">{{ funcion.asientosDisponibles }} asientos disponibles</span>
+              </div>
+              <div class="col-md-2 text-end">
+                <small class="text-muted">Selecciona</small>
+                <h4 class="text-primary mb-0">{{ cantidad }}</h4>
+                <small class="text-muted">asiento{{ cantidad !== 1 ? 's' : '' }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Indicador de progreso -->
+    <div class="row mb-3" *ngIf="cantidad > 1">
+      <div class="col-12">
+        <div class="d-flex align-items-center gap-3">
+          <span class="fw-bold">Progreso:</span>
+          <div class="progress flex-grow-1" style="height: 10px;">
+            <div class="progress-bar bg-success" 
+                 [style.width.%]="(selectedSeats.length / cantidad) * 100"></div>
+          </div>
+          <span class="badge bg-primary">
+            {{ selectedSeats.length }} / {{ cantidad }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pantalla del cine -->
+    <div class="text-center mb-4">
+      <div class="screen">
+        <div class="bg-dark text-white py-2 px-4 rounded-pill shadow">
+          <i class="fas fa-tv me-2"></i>PANTALLA
+        </div>
+      </div>
+    </div>
+
+    <!-- Leyenda de asientos -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card border-0 bg-light">
+          <div class="card-body py-2">
+            <div class="d-flex justify-content-center flex-wrap gap-4">
+              <div class="d-flex align-items-center">
+                <div class="seat-legend available me-2"></div>
+                <small>Disponible</small>
+              </div>
+              <div class="d-flex align-items-center">
+                <div class="seat-legend selected me-2"></div>
+                <small>Seleccionado</small>
+              </div>
+              <div class="d-flex align-items-center">
+                <div class="seat-legend occupied me-2"></div>
+                <small>Ocupado</small>
+              </div>
+              <div class="d-flex align-items-center">
+                <div class="seat-legend vip me-2"></div>
+                <small>VIP (+50%)</small>
+              </div>
+              <div class="d-flex align-items-center">
+                <div class="seat-legend disabled me-2"></div>
+                <small>No disponible</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mapa de asientos -->
+    <div class="seat-map-container">
+      <div class="seat-map">
+        
+        <!-- Fila de asientos -->
+        <div class="seat-row" *ngFor="let row of getUniqueRows()">
+          <div class="row-label">{{ row }}</div>
+          
+          <div class="seats-container">
+            <div class="seat"
+                 *ngFor="let seat of getSeatsByRow(row); trackBy: trackSeat"
+                 [class.available]="isSeatAvailable(seat)"
+                 [class.selected]="seat.isSelected"
+                 [class.occupied]="seat.esta_ocupado"
+                 [class.disabled]="seat.isDisabled"
+                 [class.vip]="seat.es_vip"
+                 [style.cursor]="seat.esta_ocupado || seat.isDisabled ? 'not-allowed' : 'pointer'"
+                 (click)="toggleSeat(seat)"
+                 [title]="getSeatTooltip(seat)">
+              {{ seat.numero }}
+            </div>
+          </div>
+          
+          <div class="row-label">{{ row }}</div>
+        </div>
+        
+      </div>
+    </div>
+
+    <!-- Resumen de selección -->
+    <div class="row mt-5" *ngIf="selectedSeats.length > 0">
+      <div class="col-12">
+        <div class="card border-success shadow-lg">
+          <div class="card-header bg-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fas fa-check-circle me-2"></i>
+                Asientos Seleccionados
+              </h5>
+              <span class="badge bg-light text-dark">
+                {{ selectedSeats.length }} / {{ cantidad }}
+              </span>
+            </div>
+          </div>
+          <div class="card-body">
+            
+            <!-- Lista de asientos seleccionados -->
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <h6>Asientos:</h6>
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge fs-6 px-3 py-2" 
+                        [class.bg-primary]="!seat.es_vip"
+                        [class.bg-warning]="seat.es_vip"
+                        [class.text-dark]="seat.es_vip"
+                        *ngFor="let seat of selectedSeats">
+                    {{ seat.seat_id }}
+                    <span *ngIf="seat.es_vip" class="ms-1">
+                      <i class="fas fa-crown"></i>
+                    </span>
+                  </span>
+                </div>
+                
+                <!-- Mostrar cuántos faltan -->
+                <div class="mt-2" *ngIf="selectedSeats.length < cantidad">
+                  <small class="text-warning">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Selecciona {{ getAsientosRestantes() }} asiento{{ getAsientosRestantes() !== 1 ? 's' : '' }} más
+                  </small>
+                </div>
+              </div>
+              <div class="col-md-4 text-end">
+                <h6>Total:</h6>
+                <h4 class="text-success mb-0">
+                  ${{ getTotalPrice().toFixed(2) }}
+                </h4>
+                <small class="text-muted">{{ selectedSeats.length }} asiento(s)</small>
+              </div>
+            </div>
+            
+            <!-- Desglose de precios -->
+            <div class="small text-muted mb-3" *ngIf="hasVipSeats()">
+              <div *ngIf="getNormalSeats().length > 0">
+                Asientos normales: {{ getNormalSeats().length }} x ${{ (funcion.precio || 0).toFixed(2) }} = ${{ getNormalPrice().toFixed(2) }}
+              </div>
+              <div *ngIf="getVipSeats().length > 0">
+                Asientos VIP: {{ getVipSeats().length }} x ${{ getVipPrice().toFixed(2) }} = ${{ getVipTotalPrice().toFixed(2) }}
+              </div>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="d-flex justify-content-between">
+              <button class="btn btn-outline-secondary" (click)="cancelar()">
+                <i class="fas fa-times me-2"></i>
+                Cancelar
+              </button>
+              <div>
+                <button class="btn btn-outline-warning me-2" 
+                        (click)="limpiarSeleccion()"
+                        [disabled]="selectedSeats.length === 0">
+                  <i class="fas fa-eraser me-2"></i>
+                  Limpiar
+                </button>
+                <button class="btn btn-success btn-lg" 
+                        (click)="confirmarSeleccion()"
+                        [disabled]="selectedSeats.length !== cantidad">
+                  <i class="fas fa-cart-plus me-2"></i>
+                  Agregar al Carrito
+                </button>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mensaje si no hay asientos seleccionados -->
+    <div class="row mt-4" *ngIf="selectedSeats.length === 0">
+      <div class="col-12">
+        <div class="alert alert-info text-center">
+          <i class="fas fa-hand-pointer fa-2x mb-2"></i>
+          <h5>Selecciona {{ cantidad }} asiento{{ cantidad !== 1 ? 's' : '' }}</h5>
+          <p class="mb-0">Haz clic en los asientos disponibles para seleccionarlos</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

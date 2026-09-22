@@ -1,0 +1,627 @@
+<!-- rewards.component.html - VERSIÓN CORREGIDA FINAL -->
+<div class="container mt-4">
+  
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="fw-bold text-warning">
+        <i class="fas fa-gift me-2"></i>
+        Centro de Recompensas
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a routerLink="/profile">Perfil</a>
+          </li>
+          <li class="breadcrumb-item active">Recompensas</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+  
+  <div *ngIf="authService.isAdmin()" class="container">
+  <div class="alert alert-success border-success" role="alert">
+    <div class="d-flex justify-content-between align-items-center">
+      <div>
+        <i class="fas fa-crown me-2"></i>
+        <strong>MODO ADMINISTRADOR</strong> - Gestión de Recompensas
+      </div>
+      <button class="btn btn-success btn-sm" (click)="irAAdminRewards()">
+        <i class="fas fa-cogs me-2"></i>Panel Admin
+      </button>
+    </div>
+  </div>
+</div>
+
+  <!-- Información de puntos del usuario -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card bg-warning text-dark">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+              <i class="fas fa-coins fa-3x mb-2"></i>
+              <h3 class="mb-1">{{ userPoints }}</h3>
+              <p class="mb-0">Puntos Disponibles</p>
+            </div>
+            <div class="col-md-6">
+              <h5 class="mb-2">¡Canjea tus puntos por increíbles recompensas!</h5>
+              <p class="mb-0">
+                Cada punto equivale a $0.01. Compra entradas y productos para ganar más puntos.
+              </p>
+            </div>
+            <div class="col-md-3 text-end">
+              <div class="d-grid gap-2">
+                <button class="btn btn-dark" (click)="goToPointsHistory()">
+                  <i class="fas fa-history me-2"></i>
+                  Ver Historial
+                </button>
+                <small class="text-dark">
+                  <i class="fas fa-dollar-sign me-1"></i>
+                  Valor: ${{ getPointsValueInDollars(userPoints).toFixed(2) }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-lg"
+                [class.btn-success]="currentView === 'catalog'"
+                [class.btn-outline-success]="currentView !== 'catalog'"
+                (click)="switchView('catalog')">
+          <i class="fas fa-store me-2"></i>
+          Catálogo de Recompensas
+        </button>
+        <button class="btn btn-lg"
+                [class.btn-primary]="currentView === 'my-rewards'"
+                [class.btn-outline-primary]="currentView !== 'my-rewards'"
+                (click)="switchView('my-rewards')">
+          <i class="fas fa-ticket-alt me-2"></i>
+          Mis Canjes
+          <span class="badge bg-light text-dark ms-2" *ngIf="activeRedemptions.length > 0">
+            {{ activeRedemptions.length }}
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== CATÁLOGO DE RECOMPENSAS ==================== -->
+  <div *ngIf="currentView === 'catalog'">
+    
+    <!-- Filtros -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card bg-light border-0 shadow-sm">
+          <div class="card-body p-3">
+            
+            <!-- Búsqueda -->
+            <div class="row mb-3">
+              <div class="col-md-8">
+                <div class="input-group">
+                  <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                  </span>
+                  <input type="text" 
+                         class="form-control" 
+                         placeholder="Buscar recompensas..."
+                         [(ngModel)]="searchTerm"
+                         (input)="onSearchChange()">
+                  <button class="btn btn-outline-secondary" 
+                          type="button"
+                          *ngIf="searchTerm"
+                          (click)="searchTerm = ''; onSearchChange()">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" 
+                        type="checkbox" 
+                        id="affordableFilter"
+                        [checked]="showOnlyAffordable"
+                        (click)="toggleAffordableFilter()">
+                  <label class="form-check-label fw-semibold text-success" for="affordableFilter">
+                    <i class="fas fa-coins me-1"></i>
+                    Solo las que puedo canjear
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filtros de categoría y ordenamiento -->
+            <div class="row">
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Categoría:</label>
+                <select class="form-select" 
+                        [(ngModel)]="selectedCategory"
+                        (change)="onCategoryChange()">
+                  <option *ngFor="let category of categories" [value]="category">
+                    {{ getCategoryName(category) }}
+                  </option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Ordenar por:</label>
+                <select class="form-select" 
+                        [(ngModel)]="sortBy"
+                        (change)="onSortChange()">
+                  <option value="puntos-asc">Puntos: Menor a Mayor</option>
+                  <option value="puntos-desc">Puntos: Mayor a Menor</option>
+                  <option value="nombre">Nombre A-Z</option>
+                  <option value="categoria">Categoría</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Resumen de filtros -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+              <small class="text-muted" *ngIf="!hasActiveFilters()">
+                <i class="fas fa-list me-1"></i>
+                Mostrando todas las recompensas ({{ filteredRewards.length }} total)
+              </small>
+              <small class="text-muted" *ngIf="hasActiveFilters()">
+                <i class="fas fa-filter me-1"></i>
+                Filtros: {{ getFilterSummary() }} • {{ filteredRewards.length }} resultados
+              </small>
+              
+              <button class="btn btn-outline-secondary btn-sm"
+                      *ngIf="hasActiveFilters()"
+                      (click)="clearFilters()">
+                <i class="fas fa-times me-1"></i>Limpiar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="text-center my-5" *ngIf="cargando">
+      <div class="spinner-border text-success" role="status">
+        <span class="visually-hidden">Cargando recompensas...</span>
+      </div>
+      <p class="mt-3 text-muted">Cargando recompensas...</p>
+    </div>
+
+    <!-- Grid de Recompensas - VERSIÓN CORREGIDA -->
+    <div class="row g-4" *ngIf="!cargando && filteredRewards.length > 0">
+      <div class="col-xl-3 col-lg-4 col-md-6" *ngFor="let reward of filteredRewards">
+        <div [class]="getRewardCardClasses(reward)">
+          
+          <!-- Imagen de la recompensa -->
+          <div class="position-relative">
+            <img [src]="getRewardImageUrl(reward)"
+                 class="card-img-top" 
+                 style="height: 200px; object-fit: cover;"
+                 [alt]="reward.nombre"
+                 [class.opacity-50]="!validateRewardAccess(reward)"
+                 (error)="onRewardImageError($event)"
+                 loading="lazy">
+            
+            <!-- Badge de categoría -->
+            <div class="position-absolute top-0 start-0 m-2">
+              <span class="badge fs-6 px-3 py-2"
+                    [class.bg-primary]="reward.categoria === 'peliculas'"
+                    [class.bg-warning]="reward.categoria === 'bar'"
+                    [class.bg-info]="reward.categoria === 'especial'"
+                    [class.bg-secondary]="reward.categoria === 'descuentos'">
+                <i [class]="getCategoryIcon(reward.categoria)" class="me-1"></i>
+                {{ getCategoryName(reward.categoria) }}
+              </span>
+            </div>
+
+            <!-- Badge de puntos -->
+            <div class="position-absolute top-0 end-0 m-2">
+              <span [class]="getPointsBadgeClasses(reward)">
+                <i class="fas me-1"
+                   [class.fa-coins]="validateRewardAccess(reward)"
+                   [class.fa-times]="!validateRewardAccess(reward)"></i>
+                {{ getPointsBadgeText(reward) }}
+              </span>
+            </div>
+
+            <!-- Badge de stock bajo -->
+            <div class="position-absolute bottom-0 start-0 m-2" 
+                 *ngIf="isLowStock(reward)">
+              <span class="badge bg-danger text-white">
+                <i class="fas fa-exclamation-triangle me-1"></i>
+                {{ getLowStockMessage(reward) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Información de la recompensa -->
+          <div class="card-body d-flex flex-column">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <h5 class="card-title fw-bold text-success mb-0">{{ reward.nombre }}</h5>
+              <span class="badge bg-light text-dark">
+                <i [class]="getRewardTypeIcon(reward.tipo)" class="me-1"></i>
+                {{ getRewardTypeName(reward.tipo) }}
+              </span>
+            </div>
+            
+            <p class="card-text text-muted flex-grow-1 lh-base">
+              {{ reward.descripcion }}
+            </p>
+
+            <!-- Valor de la recompensa - VERSIÓN CORREGIDA -->
+            <div class="mb-3" *ngIf="shouldShowValue(reward)">
+              <small class="text-muted">Valor:</small>
+              <span class="fw-bold text-success">
+                <!-- 🔧 CORRECCIÓN: Usar el método seguro sin debug y sin toFixed manual -->
+                {{ getRewardValue(reward) }}
+              </span>
+              
+              <!-- Mostrar ahorro si aplica -->
+              <div *ngIf="hasSavings(reward)" class="small text-success mt-1">
+                <i class="fas fa-tag me-1"></i>{{ getSavingsText(reward) }}
+              </div>
+            </div>
+
+            <!-- Progreso hacia la recompensa -->
+            <div class="mb-3" *ngIf="!canAffordReward(reward)">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <small class="text-muted">Progreso:</small>
+                <small class="text-muted">{{ getProgressToReward(reward) }}%</small>
+              </div>
+              <div class="progress" style="height: 6px;">
+                <div class="progress-bar bg-success" 
+                     [style.width.%]="getProgressToReward(reward)">
+                </div>
+              </div>
+              <small class="text-muted">
+                Te faltan {{ reward.puntos_requeridos - userPoints }} puntos
+                <span *ngIf="getPointsValueInDollars(reward.puntos_requeridos - userPoints) > 0">
+                  (${{ getPointsValueInDollars(reward.puntos_requeridos - userPoints).toFixed(2) }})
+                </span>
+              </small>
+            </div>
+
+            <!-- Botón de canje -->
+            <div class="mt-auto">
+              <button class="btn w-100"
+                      [class.btn-success]="canAffordReward(reward) && validateRewardAccess(reward)"
+                      [class.btn-outline-warning]="!canAffordReward(reward) && validateRewardAccess(reward)"
+                      [class.btn-outline-secondary]="!validateRewardAccess(reward)"
+                      [disabled]="isRedeemButtonDisabled(reward)"
+                      (click)="openRewardModal(reward)">
+                <i class="fas me-2"
+                   [class.fa-gift]="canAffordReward(reward) && validateRewardAccess(reward)"
+                   [class.fa-lock]="!canAffordReward(reward) && validateRewardAccess(reward)"
+                   [class.fa-times]="!validateRewardAccess(reward)"></i>
+                {{ getRedeemButtonText(reward) }}
+              </button>
+              
+              <!-- Información adicional -->
+              <div class="mt-2 text-center">
+                <small class="text-muted" *ngIf="reward.validez_dias">
+                  <i class="fas fa-clock me-1"></i>
+                  Válido por {{ reward.validez_dias }} días
+                </small>
+                <br *ngIf="reward.validez_dias && (reward.stock !== null && reward.stock !== undefined)">
+                <small class="text-muted" *ngIf="reward.stock !== null && reward.stock !== undefined">
+                  <i class="fas fa-boxes me-1"></i>
+                  Stock: {{ getFormattedStock(reward.stock) }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sin resultados -->
+    <div class="row" *ngIf="!cargando && filteredRewards.length === 0">
+      <div class="col-12 text-center py-5">
+        <div class="empty-state">
+          <i class="fas fa-search fa-5x text-muted mb-4"></i>
+          <h3 class="text-muted mb-3">No se encontraron recompensas</h3>
+          <p class="text-muted mb-4">
+            <span *ngIf="hasActiveFilters()">
+              Intenta cambiar los filtros o buscar algo diferente.
+            </span>
+            <span *ngIf="!hasActiveFilters()">
+              Parece que no hay recompensas disponibles en este momento.
+            </span>
+          </p>
+          <button class="btn btn-success btn-lg" 
+                  *ngIf="hasActiveFilters()"
+                  (click)="clearFilters()">
+            <i class="fas fa-refresh me-2"></i>Ver Todas las Recompensas
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MIS CANJES ==================== -->
+  <div *ngIf="currentView === 'my-rewards'">
+    
+    <!-- Canjes Activos -->
+    <div class="row mb-4" *ngIf="activeRedemptions.length > 0">
+      <div class="col-12">
+        <h4 class="text-primary mb-3">
+          <i class="fas fa-ticket-alt me-2"></i>
+          Canjes Activos ({{ activeRedemptions.length }})
+        </h4>
+        
+        <div class="row g-3">
+          <div class="col-lg-6" *ngFor="let canje of activeRedemptions">
+            <div class="card border-success shadow-sm">
+              <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                  <h6 class="card-title fw-bold text-success mb-0">
+                    {{ canje.recompensa.nombre }}
+                  </h6>
+                  <span class="badge bg-success">
+                    <i class="fas fa-check me-1"></i>Activo
+                  </span>
+                </div>
+                
+                <p class="card-text text-muted small mb-3">
+                  {{ canje.recompensa.descripcion }}
+                </p>
+                
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <small class="text-muted">Código:</small>
+                    <div class="d-flex align-items-center">
+                      <code class="bg-light px-2 py-1 rounded me-2">{{ canje.codigo }}</code>
+                      <button class="btn btn-sm btn-outline-secondary" 
+                              (click)="copyRedemptionCode(canje.codigo)"
+                              title="Copiar código">
+                        <i class="fas fa-copy"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="col-6">
+                    <small class="text-muted">Expira:</small>
+                    <div class="fw-bold text-danger">
+                      {{ formatDate(canje.fecha_vencimiento) }}
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="d-flex gap-2">
+                  <button class="btn btn-sm btn-primary" 
+                          (click)="useRedemption(canje)">
+                    <i class="fas fa-check me-1"></i>Marcar como Usado
+                  </button>
+                  <button class="btn btn-sm btn-outline-info"
+                          (click)="copyRedemptionCode(canje.codigo)">
+                    <i class="fas fa-share me-1"></i>Compartir Código
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Historial Completo -->
+    <div class="row">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h4 class="text-secondary mb-0">
+            <i class="fas fa-history me-2"></i>
+            Historial de Canjes
+          </h4>
+          <span class="badge bg-secondary fs-6">
+            {{ userRedemptions.length }} canjes totales
+          </span>
+        </div>
+        
+        <!-- Lista de canjes -->
+        <div *ngIf="userRedemptions.length > 0">
+          <div class="card shadow-sm mb-3" *ngFor="let canje of userRedemptions">
+            <div class="card-body">
+              <div class="row align-items-center">
+                <div class="col-md-4">
+                  <h6 class="fw-bold mb-1">{{ canje.recompensa.nombre }}</h6>
+                  <small class="text-muted">{{ canje.recompensa.descripcion }}</small>
+                </div>
+                <div class="col-md-2">
+                  <small class="text-muted">Código:</small>
+                  <div>
+                    <code class="bg-light px-2 py-1 rounded">{{ canje.codigo }}</code>
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <small class="text-muted">Canjeado:</small>
+                  <div>{{ formatDate(canje.fecha_canje) }}</div>
+                </div>
+                <div class="col-md-2">
+                  <small class="text-muted">Expira:</small>
+                  <div [class.text-danger]="isExpired(canje.fecha_vencimiento)">
+                    {{ formatDate(canje.fecha_vencimiento) }}
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <span class="badge" [class]="getCanjeStatusClass(canje)">
+                    <i [class]="getCanjeStatusIcon(canje)" class="me-1"></i>
+                    {{ getCanjeStatusText(canje) }}
+                  </span>
+                  <div class="mt-1">
+                    <button class="btn btn-sm btn-outline-secondary me-1" 
+                            (click)="copyRedemptionCode(canje.codigo)"
+                            title="Copiar código">
+                      <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" 
+                            *ngIf="canMarkAsUsed(canje)"
+                            (click)="useRedemption(canje)"
+                            title="Marcar como usado">
+                      <i class="fas fa-check"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Sin canjes -->
+        <div class="text-center py-5" *ngIf="userRedemptions.length === 0">
+          <i class="fas fa-ticket-alt fa-4x text-muted mb-3"></i>
+          <h5 class="text-muted mb-3">No tienes canjes aún</h5>
+          <p class="text-muted mb-4">Explora nuestro catálogo y canjea tus puntos por increíbles recompensas.</p>
+          <button class="btn btn-success btn-lg" (click)="switchView('catalog')">
+            <i class="fas fa-store me-2"></i>Ver Catálogo
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enlaces rápidos -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card bg-light border-0">
+        <div class="card-body">
+          <h6 class="card-title">
+            <i class="fas fa-bolt me-2 text-warning"></i>
+            Enlaces Rápidos
+          </h6>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-primary btn-sm" (click)="goToMovies()">
+              <i class="fas fa-film me-1"></i>Ver Películas
+            </button>
+            <button class="btn btn-outline-warning btn-sm" (click)="goToBar()">
+              <i class="fas fa-utensils me-1"></i>Productos del Bar
+            </button>
+            <button class="btn btn-outline-info btn-sm" (click)="goToProfile()">
+              <i class="fas fa-user me-1"></i>Mi Perfil
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL DE RECOMPENSA - IMAGEN CORREGIDA ==================== -->
+<div class="modal fade" id="rewardModal" tabindex="-1" aria-labelledby="rewardModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content" *ngIf="selectedReward">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title" id="rewardModalLabel">
+          <i class="fas fa-gift me-2"></i>
+          {{ selectedReward.nombre }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Imagen y descripción -->
+        <div class="row mb-4">
+          <div class="col-md-4">
+            <!-- 🔧 CORRECCIÓN: Usar getRewardImageUrl() en lugar de imagen_url directa -->
+            <img [src]="getRewardImageUrl(selectedReward)"
+                 class="img-fluid rounded shadow-sm"
+                 [alt]="selectedReward.nombre"
+                 (error)="onRewardImageError($event, selectedReward)"
+                 style="width: 100%; height: 200px; object-fit: cover;">
+          </div>
+          <div class="col-md-8">
+            <h6 class="text-success mb-2">{{ selectedReward.nombre }}</h6>
+            <p class="text-muted mb-3">{{ selectedReward.descripcion }}</p>
+            
+            <div class="row g-3">
+              <div class="col-6">
+                <small class="text-muted">Puntos requeridos:</small>
+                <div class="fw-bold text-success fs-5">
+                  <i class="fas fa-coins me-1"></i>{{ selectedReward.puntos_requeridos }}
+                </div>
+              </div>
+              
+              <!-- Valor - VERSIÓN SEGURA -->
+              <div class="col-6" *ngIf="shouldShowValue(selectedReward)">
+                <small class="text-muted">Valor:</small>
+                <div class="fw-bold text-primary fs-5">
+                  {{ getRewardValue(selectedReward) }}
+                </div>
+              </div>
+              
+              <div class="col-6" *ngIf="selectedReward.validez_dias">
+                <small class="text-muted">Válido por:</small>
+                <div class="fw-bold">{{ selectedReward.validez_dias }} días</div>
+              </div>
+              
+              <div class="col-6" *ngIf="selectedReward.stock !== null && selectedReward.stock !== undefined">
+                <small class="text-muted">Stock disponible:</small>
+                <div class="fw-bold" 
+                     [class.text-danger]="selectedReward.stock <= 10"
+                     [class.text-success]="selectedReward.stock > 10">
+                  {{ getFormattedStock(selectedReward.stock) }} unidades
+                </div>
+              </div>
+            </div>
+
+            <!-- Mostrar ahorro si aplica -->
+            <div class="mt-3" *ngIf="hasSavings(selectedReward)">
+              <div class="alert alert-success py-2">
+                <i class="fas fa-tag me-2"></i>
+                <strong>{{ getSavingsText(selectedReward) }}</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estado del usuario -->
+        <div class="alert" 
+             [class.alert-success]="canAffordReward(selectedReward)"
+             [class.alert-warning]="!canAffordReward(selectedReward)">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <strong>Tus puntos:</strong> {{ userPoints }}
+              <span class="text-muted">(${{ getPointsValueInDollars(userPoints).toFixed(2) }})</span>
+              <br>
+              <strong>Puntos necesarios:</strong> {{ selectedReward.puntos_requeridos }}
+              <span class="text-muted">(${{ getPointsValueInDollars(selectedReward.puntos_requeridos).toFixed(2) }})</span>
+            </div>
+            <div class="text-end">
+              <span *ngIf="canAffordReward(selectedReward)" class="text-success">
+                <i class="fas fa-check-circle fa-2x"></i>
+                <br><small>¡Puedes canjearlo!</small>
+              </span>
+              <span *ngIf="!canAffordReward(selectedReward)" class="text-warning">
+                <i class="fas fa-exclamation-triangle fa-2x"></i>
+                <br><small>Te faltan {{ selectedReward.puntos_requeridos - userPoints }} puntos</small>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Modal footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" 
+                class="btn btn-success"
+                [disabled]="isRedeemButtonDisabled(selectedReward)"
+                (click)="confirmRedeem()">
+          <span *ngIf="!canjeando">
+            <i class="fas fa-gift me-2"></i>
+            Canjear por {{ selectedReward.puntos_requeridos }} puntos
+          </span>
+          <span *ngIf="canjeando">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Canjeando...
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

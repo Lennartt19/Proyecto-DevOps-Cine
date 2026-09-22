@@ -1,0 +1,206 @@
+/* Header Section */
+  .header-section {
+    background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .header-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  
+  .text-shadow {
+    text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+  }
+  
+  .header-stats {
+    min-width: 120px;
+  }
+
+  /* Movie Cards */
+  .movie-card {
+    border-radius: 1rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    position: relative;
+  }
+  
+  .movie-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(13, 110, 253, 0.2) !important;
+  }
+  
+  .poster-container {
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .movie-card .card-img-top {
+    transition: all 0.3s ease;
+  }
+  
+  .movie-card:hover .card-img-top {
+    transform: scale(1.1);
+    filter: brightness(0.8);
+  }
+  
+  /* Badges */
+  .rating-badge, .genre-badge {
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    font-size: 0.9rem !important;
+    transition: all 0.3s ease;
+  }
+  
+  .movie-card:hover .rating-badge,
+  .movie-card:hover .genre-badge {
+    transform: scale(1.1);
+  }
+  
+  /* Overlay Effect */
+  .card-overlay {
+    background: rgba(0,0,0,0.7);
+    opacity: 0;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+  }
+  
+  .movie-card:hover .card-overlay {
+    opacity: 1;
+  }
+  
+  .overlay-btn {
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+  }
+  
+  .movie-card:hover .overlay-btn {
+    transform: translateY(0);
+  }
+  
+  /* Card Body */
+  .movie-card .card-body {
+    border-radius: 0 0 1rem 1rem;
+  }
+  
+  .movie-card .card-title {
+    font-size: 1.1rem;
+    line-height: 1.3;
+  }
+  
+  .movie-card .btn-primary {
+    background: linear-gradient(45deg, #0d6efd, #6610f2);
+    border: none;
+    transition: all 0.3s ease;
+  }
+  
+  .movie-card .btn-primary:hover {
+    background: linear-gradient(45deg, #6610f2, #0d6efd);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(13, 110, 253, 0.4);
+  }
+  
+  /* Filter Section */
+  .card.bg-light {
+    border-radius: 1rem;
+  }
+  
+  .btn-outline-primary.btn-sm {
+    border-radius: 1.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .btn-outline-primary.btn-sm:hover {
+    transform: translateY(-2px);
+  }
+  
+  /* Back to Top Button */
+  .back-to-top {
+    width: 50px;
+    height: 50px;
+    border-radius: 50% !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 1000;
+  }
+  
+  .back-to-top:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(13, 110, 253, 0.4);
+  }
+  
+  /* Empty State */
+  .empty-state {
+    padding: 3rem 1rem;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .display-4 {
+      font-size: 2rem;
+    }
+    
+    .header-section {
+      text-align: center;
+    }
+    
+    .header-section .d-flex {
+      flex-direction: column;
+    }
+    
+    .movie-card .card-img-top {
+      height: 300px;
+    }
+    
+    .movie-details .row {
+      text-align: center;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .movie-card .card-img-top {
+      height: 250px;
+    }
+    
+    .card-title {
+      font-size: 1rem;
+    }
+    
+    .back-to-top {
+      width: 45px;
+      height: 45px;
+    }
+  }
+  
+  /* Loading Animation (opcional) */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .movie-card {
+    animation: fadeInUp 0.6s ease forwards;
+  }
+  
+  .movie-card:nth-child(even) {
+    animation-delay: 0.1s;
+  }
+  
+  .movie-card:nth-child(3n) {
+    animation-delay: 0.2s;
+  }

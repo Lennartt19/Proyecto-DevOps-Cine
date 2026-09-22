@@ -1,0 +1,811 @@
+/* frontend/src/app/components/comments/comments.component.css - CORREGIDO */
+
+/* ==================== CONTENEDOR PRINCIPAL ==================== */
+.comments-container {
+  max-width: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ==================== ESTADÍSTICAS DE RATING ==================== */
+.comments-stats {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  padding: 25px;
+  border-radius: 16px;
+  border: 2px solid #e3f2fd;
+  box-shadow: 0 8px 32px rgba(13, 110, 253, 0.1);
+  margin-bottom: 2rem;
+}
+
+.rating-summary h4 {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.stars-display {
+  font-size: 1.8rem;
+}
+
+.stars-display .fa-star {
+  margin-right: 3px;
+  filter: drop-shadow(0 2px 4px rgba(255, 193, 7, 0.3));
+}
+
+.rating-breakdown {
+  font-size: 0.95rem;
+}
+
+.rating-breakdown .progress {
+  background-color: #e9ecef;
+  border-radius: 8px;
+  height: 12px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.rating-breakdown .progress-bar {
+  background: linear-gradient(90deg, #ffc107 0%, #ff8f00 100%) !important;
+  border-radius: 8px;
+}
+
+/* ==================== HEADER Y BOTÓN CREAR ==================== */
+.comments-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e3f2fd;
+}
+
+.comments-header h5 {
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.comments-header .badge {
+  background: linear-gradient(45deg, #0d6efd, #6610f2) !important;
+  color: white;
+  font-size: 0.9rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+}
+
+/* ==================== FORMULARIO DE COMENTARIO ==================== */
+.new-comment-form {
+  border: 2px solid #0d6efd;
+  box-shadow: 0 12px 48px rgba(13, 110, 253, 0.15);
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.new-comment-form .card-header {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+  color: white;
+  border-bottom: none;
+  padding: 1.25rem 1.5rem;
+}
+
+.new-comment-form .card-header h6 {
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.new-comment-form .card-body {
+  padding: 2rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+}
+
+/* ==================== RATING INPUT ==================== */
+.rating-input {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.rating-input:hover {
+  border-color: #ffc107;
+  box-shadow: 0 4px 16px rgba(255, 193, 7, 0.2);
+}
+
+.rating-star {
+  color: #ddd;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-size: 1.8rem;
+  margin-right: 8px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.rating-star:hover {
+  color: #ffc107;
+  transform: scale(1.2);
+}
+
+.rating-star.active {
+  color: #ffc107;
+  animation: starGlow 0.5s ease;
+}
+
+@keyframes starGlow {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* ==================== FORMS MEJORADOS ==================== */
+.form-control {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-control:focus {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+  background: white;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 0.75rem;
+}
+
+.form-text {
+  color: #6c757d;
+  font-size: 0.875rem;
+  text-align: right;
+  margin-top: 0.5rem;
+}
+
+/* ==================== COMENTARIOS PRINCIPALES - CORREGIDO ==================== */
+.comment-item {
+  margin-bottom: 2rem;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.comment-item .card {
+  /* 🔥 FONDO CLARO CORREGIDO */
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #e3f2fd;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  transition: all 0.4s ease;
+  overflow: hidden;
+}
+
+.comment-item .card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 48px rgba(13, 110, 253, 0.15);
+  border-color: #0d6efd;
+}
+
+.comment-item .card-body {
+  padding: 2rem;
+  /* 🔥 FONDO TRANSPARENTE PARA MANTENER GRADIENTE */
+  background: transparent;
+}
+
+/* ==================== HEADER DEL COMENTARIO ==================== */
+.comment-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.comment-header .user-info img {
+  border: 3px solid #fff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  width: 50px;
+  height: 50px;
+}
+
+.comment-header h6 {
+  /* 🔥 COLOR OSCURO PARA MEJOR CONTRASTE */
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.comment-header small {
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.rating-display {
+  text-align: right;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.stars-small {
+  font-size: 1.1rem;
+  margin-bottom: 4px;
+}
+
+.stars-small .fa-star {
+  margin-right: 2px;
+  filter: drop-shadow(0 1px 2px rgba(255, 193, 7, 0.3));
+}
+
+/* ==================== CONTENIDO DEL COMENTARIO - CORREGIDO ==================== */
+.comment-title {
+  /* 🔥 COLOR OSCURO PARA MEJOR LEGIBILIDAD */
+  color: #1a1a1a;
+  font-weight: 700;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  line-height: 1.4;
+}
+
+.comment-text {
+  /* 🔥 COLOR OSCURO PARA MEJOR LEGIBILIDAD */
+  color: #333333;
+  line-height: 1.7;
+  font-size: 1rem;
+  margin-bottom: 0;
+  white-space: pre-line;
+}
+
+.movie-reference {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  border-left: 4px solid #0d6efd;
+  border-radius: 0 12px 12px 0;
+  margin-top: 1rem;
+}
+
+/* ==================== SECCIÓN DE REACCIONES MEJORADA ==================== */
+.comment-reactions {
+  border-top: 2px solid #f1f3f4;
+  padding-top: 1.5rem;
+  margin-top: 1.5rem;
+  /* 🔥 FONDO MÁS CLARO */
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  margin: 1.5rem -2rem -2rem -2rem;
+  padding: 1.5rem 2rem 2rem 2rem;
+  border-radius: 0 0 16px 16px;
+}
+
+.reaction-buttons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.reaction-btn {
+  min-width: 80px;
+  height: 40px;
+  transition: all 0.3s ease;
+  border-radius: 20px;
+  font-weight: 600;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #e9ecef;
+  background: white;
+  color: #6c757d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.reaction-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.reaction-btn:active {
+  transform: translateY(-1px);
+}
+
+/* 🔥 ESTADOS DE REACCIONES ACTIVAS CORREGIDOS */
+.reaction-btn.btn-success {
+  background: linear-gradient(45deg, #28a745, #20c997) !important;
+  border-color: #28a745 !important;
+  color: white !important;
+  animation: likeAnimation 0.6s ease;
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
+.reaction-btn.btn-danger {
+  background: linear-gradient(45deg, #dc3545, #fd7e14) !important;
+  border-color: #dc3545 !important;
+  color: white !important;
+  animation: dislikeAnimation 0.6s ease;
+  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+/* Hover mejorado */
+.reaction-btn.btn-outline-success:hover {
+  background: linear-gradient(45deg, #28a745, #20c997) !important;
+  border-color: #28a745 !important;
+  color: white !important;
+}
+
+.reaction-btn.btn-outline-danger:hover {
+  background: linear-gradient(45deg, #dc3545, #fd7e14) !important;
+  border-color: #dc3545 !important;
+  color: white !important;
+}
+
+.reaction-btn.btn-outline-primary {
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+
+.reaction-btn.btn-outline-primary:hover {
+  background: linear-gradient(45deg, #0d6efd, #6610f2) !important;
+  border-color: #0d6efd !important;
+  color: white !important;
+}
+
+.reaction-btn.btn-outline-secondary:hover {
+  background: linear-gradient(45deg, #6c757d, #495057) !important;
+  border-color: #6c757d !important;
+  color: white !important;
+}
+
+/* Botones deshabilitados */
+.reaction-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  background: #f8f9fa;
+  color: #adb5bd;
+}
+
+/* Separador mejorado */
+.comment-reactions .text-muted {
+  font-weight: 700;
+  opacity: 0.4;
+  color: #0d6efd;
+  font-size: 1.2rem;
+}
+
+/* Enlaces informativos */
+.comment-reactions a {
+  color: #0d6efd;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+
+.comment-reactions a:hover {
+  color: #6610f2;
+  text-decoration: underline;
+}
+
+/* 🔥 ESTADÍSTICAS DE REACCIONES CORREGIDAS */
+.reaction-stats {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  /* 🔥 COLOR OSCURO PARA MEJOR LEGIBILIDAD */
+  color: #495057;
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 8px;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+.reaction-stats .text-success {
+  font-weight: 600;
+  color: #28a745 !important;
+}
+
+.reaction-stats .text-danger {
+  font-weight: 600;
+  color: #dc3545 !important;
+}
+
+/* ==================== FORMULARIOS DE RESPUESTA - CORREGIDOS ==================== */
+.reply-form {
+  /* 🔥 FONDO MÁS CLARO */
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  border: 2px solid #e3f2fd;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.reply-form h6 {
+  color: #0d6efd;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+/* ==================== RESPUESTAS - CORREGIDAS ==================== */
+.replies-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e9ecef;
+}
+
+.replies-list {
+  border-left: 4px solid #0d6efd;
+  padding-left: 2rem;
+  margin-left: 1rem;
+  position: relative;
+}
+
+.replies-list::before {
+  content: '';
+  position: absolute;
+  left: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, #0d6efd, #6610f2);
+  border-radius: 2px;
+}
+
+.reply-item {
+  margin-bottom: 1rem;
+}
+
+.reply-item .card {
+  /* 🔥 FONDO CLARO PARA RESPUESTAS */
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.reply-item .card:hover {
+  transform: translateX(8px);
+  box-shadow: 0 8px 24px rgba(13, 110, 253, 0.1);
+  border-color: #0d6efd;
+}
+
+.reply-header .user-info img {
+  width: 35px;
+  height: 35px;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.reply-header h6 {
+  font-size: 1rem;
+  font-weight: 600;
+  /* 🔥 COLOR OSCURO PARA MEJOR LEGIBILIDAD */
+  color: #1a1a1a;
+}
+
+.reply-content p {
+  /* 🔥 COLOR OSCURO PARA MEJOR LEGIBILIDAD */
+  color: #333333;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* ==================== ACCIONES DEL COMENTARIO ==================== */
+.comment-actions {
+  border-top: 2px solid #f1f3f4;
+  padding-top: 1rem;
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 12px;
+  /* 🔥 FONDO MÁS CLARO */
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+  margin: 1.5rem -2rem -2rem -2rem;
+  padding: 1rem 2rem 2rem 2rem;
+  border-radius: 0 0 16px 16px;
+}
+
+.comment-actions .btn {
+  font-size: 0.9rem;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.comment-actions .btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* ==================== FORMULARIO DE EDICIÓN ==================== */
+.card.border-warning {
+  border-width: 3px !important;
+  border-color: #ffc107 !important;
+  box-shadow: 0 12px 48px rgba(255, 193, 7, 0.2) !important;
+}
+
+.bg-warning.bg-opacity-10 {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05)) !important;
+  border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+/* ==================== PAGINACIÓN MEJORADA ==================== */
+.pagination {
+  margin-bottom: 0;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+.pagination .page-link {
+  color: #0d6efd;
+  border: 2px solid #e9ecef;
+  padding: 12px 16px;
+  margin: 0 4px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.pagination .page-link:hover {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border-color: #0d6efd;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(13, 110, 253, 0.3);
+}
+
+.pagination .page-item.active .page-link {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border-color: #0d6efd;
+  color: white;
+  box-shadow: 0 8px 24px rgba(13, 110, 253, 0.4);
+}
+
+.pagination .page-item.disabled .page-link {
+  color: #adb5bd;
+  background-color: #f8f9fa;
+  border-color: #dee2e6;
+  cursor: not-allowed;
+}
+
+/* ==================== ANIMACIONES MEJORADAS ==================== */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes likeAnimation {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.2) rotate(5deg); }
+  50% { transform: scale(1.3) rotate(-5deg); }
+  75% { transform: scale(1.2) rotate(2deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+@keyframes dislikeAnimation {
+  0% { transform: scale(1) rotateY(0deg); }
+  25% { transform: scale(1.2) rotateY(15deg); }
+  50% { transform: scale(1.3) rotateY(-15deg); }
+  75% { transform: scale(1.2) rotateY(8deg); }
+  100% { transform: scale(1) rotateY(0deg); }
+}
+
+.fa-beat {
+  animation: fa-beat 1.2s ease-in-out infinite;
+}
+
+@keyframes fa-beat {
+  0%, 90% { transform: scale(1); }
+  45% { transform: scale(1.2); }
+}
+
+/* ==================== ESTADOS ESPECIALES ==================== */
+.spinner-border {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #0d6efd;
+}
+
+.btn .spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Estados vacíos mejorados */
+.text-center.py-4 {
+  padding: 3rem 1rem !important;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 16px;
+  border: 2px dashed #dee2e6;
+  margin: 2rem 0;
+}
+
+.text-center.py-4 i {
+  color: #6c757d;
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.text-center.py-4 h6 {
+  color: #495057;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.text-center.py-4 p {
+  color: #6c757d;
+  margin: 0;
+}
+
+/* ==================== RESPONSIVE MEJORADO ==================== */
+@media (max-width: 768px) {
+  .comments-stats {
+    padding: 20px 15px;
+    text-align: center;
+  }
+  
+  .rating-summary h4 {
+    font-size: 2.5rem;
+  }
+  
+  .comment-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .rating-display {
+    text-align: center;
+  }
+  
+  .comment-actions {
+    flex-direction: column;
+  }
+  
+  .comment-actions .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .reaction-buttons {
+    justify-content: center;
+    gap: 8px;
+  }
+  
+  .reaction-btn {
+    min-width: 70px;
+    font-size: 0.875rem;
+  }
+  
+  .replies-list {
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+  }
+  
+  .comment-item .card-body,
+  .new-comment-form .card-body {
+    padding: 1.5rem;
+  }
+  
+  .comment-reactions {
+    margin: 1rem -1.5rem -1.5rem -1.5rem;
+    padding: 1rem 1.5rem 1.5rem 1.5rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .rating-input {
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .rating-star {
+    font-size: 1.5rem;
+    margin: 0 4px;
+  }
+  
+  .pagination .page-link {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    margin: 0 2px;
+  }
+  
+  .comment-title {
+    font-size: 1.1rem;
+  }
+  
+  .comment-text {
+    font-size: 0.95rem;
+  }
+  
+  .comment-item .card-body {
+    padding: 1.25rem;
+  }
+  
+  .new-comment-form .card-body {
+    padding: 1.5rem;
+  }
+}
+
+/* ==================== ACCESIBILIDAD MEJORADA ==================== */
+.rating-star:focus,
+.reaction-btn:focus,
+.btn:focus {
+  outline: 3px solid rgba(255, 193, 7, 0.5);
+  outline-offset: 2px;
+}
+
+/* ==================== MODO OSCURO OPCIONAL ==================== */
+@media (prefers-color-scheme: dark) {
+  .comment-item .card {
+    background: linear-gradient(135deg, #2d3748, #4a5568) !important;
+    border-color: #4a5568;
+    color: #e2e8f0;
+  }
+  
+  .comment-title {
+    color: #e2e8f0 !important;
+  }
+  
+  .comment-text {
+    color: #cbd5e0 !important;
+  }
+   
+  .comment-header h6 {
+    color: #e2e8f0 !important;
+  }
+  
+  .reply-content p {
+    color: #cbd5e0 !important;
+  }
+  
+  .reply-header h6 {
+    color: #e2e8f0 !important;
+  }
+  
+  .reaction-stats {
+    color: #cbd5e0 !important;
+  }
+}
+/* 🔥 FIX TEMPORAL URGENTE - FONDO CLARO FORZADO */
+.comment-item .card {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+  color: #333333 !important;
+}
+
+.comment-title {
+  color: #1a1a1a !important;
+}
+
+.comment-text {
+  color: #333333 !important;
+}
+
+.comment-header h6 {
+  color: #1a1a1a !important;
+}
+
+.comment-header small {
+  color: #6c757d !important;
+}
+
+.reply-content p {
+  color: #333333 !important;
+}
+
+.reply-header h6 {
+  color: #1a1a1a !important;
+}

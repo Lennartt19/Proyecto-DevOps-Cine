@@ -1,0 +1,158 @@
+<!-- frontend/src/app/components/suggestions/suggestions.component.html -->
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      
+      <!-- Header -->
+      <div class="page-header mb-4">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-lightbulb text-primary me-3" style="font-size: 2rem;"></i>
+          <div>
+            <h2 class="mb-1">Sugerencias y Feedback</h2>
+            <p class="text-muted mb-0">Comparte tus ideas para mejorar ParkyFilms</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mensaje de bienvenida personalizado -->
+      <div class="alert alert-info mb-4" *ngIf="isLoggedIn()">
+        <i class="fas fa-user-circle me-2"></i>
+        <strong>¡Hola {{ getCurrentUserName() }}!</strong> 
+        Tu opinión es muy importante para nosotros. Comparte tus ideas, reporta problemas o cuéntanos qué características te gustaría ver en ParkyFilms.
+      </div>
+
+      <!-- Mensaje para usuarios no logueados -->
+      <div class="alert alert-warning mb-4" *ngIf="!isLoggedIn()">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>¡Inicia sesión!</strong> 
+        Necesitas estar logueado para enviar sugerencias. 
+        <a href="/login" class="alert-link">Haz clic aquí para iniciar sesión</a>.
+      </div>
+
+      <!-- Componente de comentarios para sugerencias -->
+      <div class="card" *ngIf="isLoggedIn()">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-comments me-2"></i>
+            Centro de Sugerencias
+          </h5>
+        </div>
+        <div class="card-body">
+          <app-comments 
+            [tipo]="'sugerencia'"
+            [showCreateForm]="true">
+          </app-comments>
+        </div>
+      </div>
+
+      <!-- Información adicional -->
+      <div class="row mt-4">
+        <div class="col-md-4">
+          <div class="card h-100 border-danger">
+            <div class="card-body text-center">
+              <i class="fas fa-bug text-danger mb-3" style="font-size: 2rem;"></i>
+              <h5 class="card-title">Reportar Problemas</h5>
+              <p class="card-text text-muted">¿Encontraste un error? Repórtalo para que podamos solucionarlo rápidamente.</p>
+              <button class="btn btn-outline-danger btn-sm" (click)="showSuggestionTypes()">
+                <i class="fas fa-info-circle me-1"></i>
+                Más Info
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 border-warning">
+            <div class="card-body text-center">
+              <i class="fas fa-star text-warning mb-3" style="font-size: 2rem;"></i>
+              <h5 class="card-title">Nuevas Características</h5>
+              <p class="card-text text-muted">Sugiere nuevas funcionalidades que te gustaría ver en la plataforma.</p>
+              <button class="btn btn-outline-warning btn-sm" (click)="showSuggestionTypes()">
+                <i class="fas fa-lightbulb me-1"></i>
+                Ver Ejemplos
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="card h-100 border-success">
+            <div class="card-body text-center">
+              <i class="fas fa-heart text-success mb-3" style="font-size: 2rem;"></i>
+              <h5 class="card-title">Experiencia General</h5>
+              <p class="card-text text-muted">Comparte tu experiencia general y cómo podemos mejorarla.</p>
+              <button class="btn btn-outline-success btn-sm" (click)="showSuggestionTypes()">
+                <i class="fas fa-comments me-1"></i>
+                Compartir Ideas
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estadísticas y motivación -->
+      <div class="row mt-4" *ngIf="isLoggedIn()">
+        <div class="col-12">
+          <div class="card bg-light">
+            <div class="card-body text-center">
+              <h6 class="card-title text-primary">
+                <i class="fas fa-chart-line me-2"></i>
+                ¡Tu voz importa!
+              </h6>
+              <p class="card-text">
+                Cada sugerencia que envías nos ayuda a mejorar ParkyFilms. 
+                Nuestro equipo revisa todas las sugerencias y las implementa cuando es posible.
+              </p>
+              <div class="row text-center mt-3">
+                <div class="col-md-4">
+                  <div class="stat-item">
+                    <i class="fas fa-users text-info fa-2x mb-2"></i>
+                    <h6>+1,000 usuarios</h6>
+                    <small class="text-muted">han enviado sugerencias</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="stat-item">
+                    <i class="fas fa-check-circle text-success fa-2x mb-2"></i>
+                    <h6>85% implementadas</h6>
+                    <small class="text-muted">de sugerencias viables</small>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="stat-item">
+                    <i class="fas fa-clock text-warning fa-2x mb-2"></i>
+                    <h6>48 horas</h6>
+                    <small class="text-muted">tiempo promedio de respuesta</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Llamada a la acción para usuarios no logueados -->
+      <div class="text-center mt-4" *ngIf="!isLoggedIn()">
+        <div class="card border-primary">
+          <div class="card-body">
+            <h5 class="card-title text-primary">
+              <i class="fas fa-sign-in-alt me-2"></i>
+              ¡Únete a la comunidad ParkyFilms!
+            </h5>
+            <p class="card-text">
+              Inicia sesión o regístrate para poder enviar sugerencias y ser parte activa de nuestra comunidad.
+            </p>
+            <div class="d-flex gap-2 justify-content-center">
+              <a href="/login" class="btn btn-primary">
+                <i class="fas fa-sign-in-alt me-2"></i>
+                Iniciar Sesión
+              </a>
+              <a href="/register" class="btn btn-outline-primary">
+                <i class="fas fa-user-plus me-2"></i>
+                Registrarse
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

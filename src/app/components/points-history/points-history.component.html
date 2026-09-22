@@ -1,0 +1,481 @@
+<!-- points-history.component.html - TEMPLATE COMPLETO -->
+<div class="container mt-4">
+  
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="header-section bg-gradient bg-warning text-dark p-4 rounded-3">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div>
+            <h1 class="display-4 fw-bold mb-2">
+              <i class="fas fa-coins me-3 text-primary"></i>
+              Historial de Puntos
+            </h1>
+            <p class="lead mb-0 fs-5">
+              <i class="fas fa-chart-line me-2"></i>
+              Gestiona tus puntos y referidos
+            </p>
+          </div>
+          <div class="header-stats text-center">
+            <div class="bg-white bg-opacity-20 rounded-3 p-3">
+              <h2 class="fw-bold text-primary mb-1">{{ currentUserPoints }}</h2>
+              <small class="text-dark">Puntos disponibles</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <hr class="border-warning border-2 mt-4">
+    </div>
+  </div>
+
+  <!-- Navigation Tabs -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex gap-2 flex-wrap">
+        <button class="btn btn-lg"
+                [class.btn-warning]="activeTab === 'transactions'"
+                [class.btn-outline-warning]="activeTab !== 'transactions'"
+                (click)="setActiveTab('transactions')">
+          <i class="fas fa-history me-2"></i>
+          Transacciones
+        </button>
+        <button class="btn btn-lg"
+                [class.btn-primary]="activeTab === 'referrals'"
+                [class.btn-outline-primary]="activeTab !== 'referrals'"
+                (click)="setActiveTab('referrals')">
+          <i class="fas fa-users me-2"></i>
+          Referidos
+          <span class="badge bg-light text-primary ms-2" *ngIf="referrals.length > 0">
+            {{ referrals.length }}
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== RESUMEN DE ESTADÍSTICAS ==================== -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card bg-light border-0 shadow-sm">
+        <div class="card-body">
+          <h6 class="card-title text-primary mb-3">
+            <i class="fas fa-chart-bar me-2"></i>
+            Resumen de Puntos
+          </h6>
+          
+          <div class="row g-3">
+            <div class="col-md-3 col-6">
+              <div class="text-center p-3 bg-white rounded border">
+                <h4 class="text-warning mb-1">{{ currentUserPoints }}</h4>
+                <small class="text-muted">
+                  <i class="fas fa-wallet me-1"></i>
+                  Disponibles
+                </small>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="text-center p-3 bg-white rounded border">
+                <h4 class="text-success mb-1">{{ getTotalEarned() }}</h4>
+                <small class="text-muted">
+                  <i class="fas fa-plus-circle me-1"></i>
+                  Total Ganados
+                </small>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="text-center p-3 bg-white rounded border">
+                <h4 class="text-danger mb-1">{{ getTotalUsed() }}</h4>
+                <small class="text-muted">
+                  <i class="fas fa-minus-circle me-1"></i>
+                  Total Usados
+                </small>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="text-center p-3 bg-white rounded border">
+                <h4 class="text-info mb-1">{{ referrals.length }}</h4>
+                <small class="text-muted">
+                  <i class="fas fa-user-friends me-1"></i>
+                  Referidos
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB: TRANSACCIONES ==================== -->
+  <div *ngIf="activeTab === 'transactions'">
+    
+    <!-- Filtros -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card bg-light border-0 shadow-sm">
+          <div class="card-body p-3">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <label class="form-label small text-muted">Filtrar por tipo:</label>
+                <div class="btn-group w-100" role="group">
+                  <button type="button" 
+                          class="btn"
+                          [class.btn-primary]="filterType === 'all'"
+                          [class.btn-outline-primary]="filterType !== 'all'"
+                          (click)="setFilterType('all')">
+                    <i class="fas fa-list me-1"></i>Todas
+                  </button>
+                  <button type="button" 
+                          class="btn"
+                          [class.btn-success]="filterType === 'ganancia'"
+                          [class.btn-outline-success]="filterType !== 'ganancia'"
+                          (click)="setFilterType('ganancia')">
+                    <i class="fas fa-plus me-1"></i>Ganancias
+                  </button>
+                  <button type="button" 
+                          class="btn"
+                          [class.btn-warning]="filterType === 'uso'"
+                          [class.btn-outline-warning]="filterType !== 'uso'"
+                          (click)="setFilterType('uso')">
+                    <i class="fas fa-minus me-1"></i>Usos
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex justify-content-md-end justify-content-start mt-3 mt-md-0">
+                  <span class="badge bg-info fs-6 px-3 py-2">
+                    <i class="fas fa-list me-1"></i>
+                    {{ getFilteredTransactions().length }} transacciones
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div class="text-center my-5" *ngIf="loading">
+      <div class="spinner-border text-warning" role="status">
+        <span class="visually-hidden">Cargando transacciones...</span>
+      </div>
+      <p class="mt-3 text-muted">Cargando historial de puntos...</p>
+    </div>
+
+    <!-- Lista de Transacciones -->
+    <div class="row" *ngIf="!loading && getFilteredTransactions().length > 0">
+      <div class="col-12">
+        <div class="card shadow-sm mb-3" 
+             *ngFor="let transaction of getFilteredTransactions(); trackBy: trackByTransactionId">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-1 text-center">
+                <i [class]="getTransactionIcon(transaction.tipo)" class="fa-2x"></i>
+              </div>
+              <div class="col-md-5">
+                <h6 class="fw-bold mb-1">{{ transaction.concepto }}</h6>
+                <small class="text-muted">
+                  <i class="fas fa-calendar me-1"></i>
+                  {{ formatDate(transaction.fecha) }}
+                </small>
+                
+                <!-- Metadata adicional -->
+                <div *ngIf="transaction.metadata && getMetadataKeys(transaction.metadata).length > 0" class="mt-2">
+                  <div class="d-flex flex-wrap gap-1">
+                    <span *ngFor="let key of getMetadataKeys(transaction.metadata)" 
+                          class="badge bg-light text-dark small">
+                      {{ key }}: {{ transaction.metadata[key] }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-2 text-center">
+                <span class="badge fs-6 px-3 py-2" [class]="getTransactionBadgeClass(transaction.tipo)">
+                  {{ getTransactionText(transaction.tipo) }}
+                </span>
+              </div>
+              <div class="col-md-2 text-center">
+                <div class="fw-bold fs-5"
+                     [class.text-success]="transaction.tipo === 'ganancia'"
+                     [class.text-warning]="transaction.tipo === 'uso'">
+                  {{ transaction.tipo === 'ganancia' ? '+' : '-' }}{{ transaction.puntos }}
+                </div>
+                <small class="text-muted">puntos</small>
+              </div>
+              <div class="col-md-2 text-center">
+                <div class="fw-bold text-info">{{ transaction.puntosNuevos }}</div>
+                <small class="text-muted">balance final</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Botón cargar más -->
+        <div class="text-center mt-4" *ngIf="hasMoreTransactions">
+          <button class="btn btn-outline-warning btn-lg" 
+                  (click)="loadMoreTransactions()"
+                  [disabled]="loading">
+            <span *ngIf="!loading">
+              <i class="fas fa-plus me-2"></i>
+              Cargar más transacciones
+            </span>
+            <span *ngIf="loading">
+              <span class="spinner-border spinner-border-sm me-2"></span>
+              Cargando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sin transacciones -->
+    <div class="row" *ngIf="!loading && getFilteredTransactions().length === 0">
+      <div class="col-12 text-center py-5">
+        <i class="fas fa-history fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted mb-3">No hay transacciones aún</h4>
+        <p class="text-muted mb-4">
+          Cuando tengas actividad con puntos, aparecerá aquí.
+        </p>
+        <button class="btn btn-warning btn-lg" (click)="goToRewards()">
+          <i class="fas fa-gift me-2"></i>Ver Recompensas
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB: REFERIDOS ==================== -->
+  <div *ngIf="activeTab === 'referrals'">
+    
+    <!-- Sección de tu código de referido -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card border-primary shadow-sm">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+              <i class="fas fa-share-alt me-2"></i>
+              Tu Código de Referido
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                <p class="mb-3">
+                  <strong>Comparte tu código único y gana puntos:</strong>
+                </p>
+                <div class="input-group mb-3">
+                  <span class="input-group-text bg-primary text-white">
+                    <i class="fas fa-gift"></i>
+                  </span>
+                  <input type="text" 
+                         class="form-control form-control-lg font-monospace fw-bold text-center" 
+                         [value]="referralCode" 
+                         readonly>
+                  <button class="btn btn-outline-primary" 
+                          (click)="copyReferralCode()"
+                          [disabled]="copyingCode">
+                    <i class="fas fa-copy me-1" *ngIf="!copyingCode"></i>
+                    <i class="fas fa-spinner fa-spin me-1" *ngIf="copyingCode"></i>
+                    Copiar
+                  </button>
+                </div>
+                <div class="alert alert-info mb-0 py-2">
+                  <small>
+                    <i class="fas fa-info-circle me-1"></i>
+                    <strong>¡Ambos ganan!</strong> Tú recibes 100 puntos y tu amigo recibe 25 puntos.
+                  </small>
+                </div>
+              </div>
+              <div class="col-md-4 text-center">
+                <div class="d-grid gap-2">
+                  <button class="btn btn-primary btn-lg" (click)="shareReferralCode()">
+                    <i class="fas fa-share me-2"></i>
+                    Compartir
+                  </button>
+                  <small class="text-primary">
+                    <i class="fas fa-users me-1"></i>
+                    {{ referrals.length }} amigos referidos
+                  </small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario para aplicar código de referido -->
+    <div class="row mb-4" *ngIf="!showApplyReferralForm">
+      <div class="col-12">
+        <div class="card bg-light border-0">
+          <div class="card-body text-center">
+            <h6 class="text-secondary mb-2">
+              <i class="fas fa-plus-circle me-2"></i>
+              ¿Tienes un código de referido?
+            </h6>
+            <button class="btn btn-outline-success" (click)="toggleApplyReferralForm()">
+              <i class="fas fa-ticket-alt me-2"></i>
+              Aplicar Código de Referido
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario activo para aplicar código -->
+    <div class="row mb-4" *ngIf="showApplyReferralForm">
+      <div class="col-12">
+        <div class="card border-success">
+          <div class="card-header bg-success text-white">
+            <h6 class="mb-0">
+              <i class="fas fa-ticket-alt me-2"></i>
+              Aplicar Código de Referido
+            </h6>
+          </div>
+          <div class="card-body">
+            <div class="row align-items-end">
+              <div class="col-md-8">
+                <label class="form-label">Código de referido:</label>
+                <input type="text" 
+                       class="form-control" 
+                       [(ngModel)]="newReferralCode"
+                       placeholder="Ingresa el código de tu amigo"
+                       [disabled]="applyingReferralCode">
+              </div>
+              <div class="col-md-4">
+                <div class="d-grid gap-2">
+                  <button class="btn btn-success" 
+                          (click)="applyReferralCode()"
+                          [disabled]="applyingReferralCode || !newReferralCode.trim()">
+                    <span *ngIf="!applyingReferralCode">
+                      <i class="fas fa-check me-1"></i>Aplicar
+                    </span>
+                    <span *ngIf="applyingReferralCode">
+                      <span class="spinner-border spinner-border-sm me-1"></span>
+                      Aplicando...
+                    </span>
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm" 
+                          (click)="toggleApplyReferralForm()"
+                          [disabled]="applyingReferralCode">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading referidos -->
+    <div class="text-center my-5" *ngIf="loadingReferrals">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando referidos...</span>
+      </div>
+      <p class="mt-3 text-muted">Cargando tus referidos...</p>
+    </div>
+
+    <!-- Lista de referidos -->
+    <div class="row" *ngIf="!loadingReferrals && referrals.length > 0">
+      <div class="col-12">
+        <h5 class="text-primary mb-3">
+          <i class="fas fa-users me-2"></i>
+          Tus Referidos ({{ referrals.length }})
+        </h5>
+        
+        <div class="card shadow-sm mb-3" 
+             *ngFor="let referral of referrals; trackBy: trackByReferralId">
+          <div class="card-body">
+            <div class="row align-items-center">
+              <div class="col-md-1 text-center">
+                <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                     style="width: 40px; height: 40px;">
+                  <i class="fas fa-user"></i>
+                </div>
+              </div>
+              <div class="col-md-5">
+                <h6 class="fw-bold mb-1">{{ referral.referido.nombre }}</h6>
+                <small class="text-muted">
+                  <i class="fas fa-envelope me-1"></i>{{ referral.referido.email }}
+                </small>
+              </div>
+              <div class="col-md-2 text-center">
+                <code class="bg-light px-2 py-1 rounded">{{ referral.codigoUsado }}</code>
+              </div>
+              <div class="col-md-2 text-center">
+                <div class="fw-bold text-success">+{{ referral.puntosOtorgados }}</div>
+                <small class="text-muted">puntos ganados</small>
+              </div>
+              <div class="col-md-2 text-center">
+                <small class="text-muted">{{ formatDate(referral.fechaReferido) }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Estadísticas de referidos -->
+        <div class="card bg-light border-0 mt-4">
+          <div class="card-body">
+            <div class="row text-center">
+              <div class="col-md-4">
+                <h4 class="text-primary">{{ referrals.length }}</h4>
+                <small class="text-muted">Amigos referidos</small>
+              </div>
+              <div class="col-md-4">
+                <h4 class="text-success">{{ getTotalReferralPoints() }}</h4>
+                <small class="text-muted">Puntos por referidos</small>
+              </div>
+              <div class="col-md-4">
+                <h4 class="text-info">{{ getRecentTransactionsCount() }}</h4>
+                <small class="text-muted">Actividad (30 días)</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sin referidos -->
+    <div class="row" *ngIf="!loadingReferrals && referrals.length === 0">
+      <div class="col-12 text-center py-5">
+        <i class="fas fa-user-friends fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted mb-3">No tienes referidos aún</h4>
+        <p class="text-muted mb-4">
+          Comparte tu código con amigos y gana puntos cuando se registren.
+        </p>
+        <button class="btn btn-primary btn-lg" (click)="shareReferralCode()">
+          <i class="fas fa-share me-2"></i>Compartir mi Código
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enlaces rápidos -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card bg-light border-0">
+        <div class="card-body">
+          <h6 class="card-title">
+            <i class="fas fa-bolt me-2 text-warning"></i>
+            Acciones Rápidas
+          </h6>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn btn-outline-success btn-sm" (click)="goToRewards()">
+              <i class="fas fa-gift me-1"></i>Ver Recompensas
+            </button>
+            <button class="btn btn-outline-primary btn-sm" (click)="goToProfile()">
+              <i class="fas fa-user me-1"></i>Mi Perfil
+            </button>
+            <button class="btn btn-outline-info btn-sm" (click)="refreshData()">
+              <i class="fas fa-sync-alt me-1"></i>Actualizar Datos
+            </button>
+            <button class="btn btn-outline-warning btn-sm" (click)="shareReferralCode()">
+              <i class="fas fa-share me-1"></i>Compartir Código
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

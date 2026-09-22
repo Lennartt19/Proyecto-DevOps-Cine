@@ -1,0 +1,24 @@
+# Frontend ParkyFilms (Angular 19) — build + Nginx con inyección en runtime
+# Etapa 1: compilar Angular en producción (deja placeholders __PARKY_API_URL__)
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci && npm cache clean --force
+COPY angular.json tsconfig*.json ./
+COPY src ./src
+COPY public ./public
+RUN npm run build
+
+# Etapa 2: servir estáticos con Nginx
+FROM nginx:1.27-alpine
+# Configuración SPA (try_files -> index.html)
+COPY docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
+# Estáticos compilados (Angular application builder genera subcarpeta browser/)
+COPY --from=build /app/dist/proyecto-cine/browser /usr/share/nginx/html
+# Script que reemplaza __PARKY_API_URL__ / __PARKY_APP_URL__ al arrancar
+COPY docker/frontend/docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
+EXPOSE 80
+ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]

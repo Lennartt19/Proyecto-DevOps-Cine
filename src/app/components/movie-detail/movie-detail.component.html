@@ -1,0 +1,261 @@
+<!-- movie-detail.component.html - ACTUALIZADO CON COMENTARIOS -->
+<div class="container mt-4">
+  <!-- Header con título y años -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+        <div>
+          <h1 class="display-4 fw-bold text-primary">{{ pelicula?.titulo }}</h1>
+          <h2 class="text-muted">({{ pelicula?.anio }})</h2>
+          
+          <!-- 🔥 INDICADOR ADMIN -->
+          <div *ngIf="authService.isAdmin()" class="mt-2">
+            <span class="badge bg-danger fs-6 px-3 py-2">
+              <i class="fas fa-crown me-2"></i>MODO ADMINISTRADOR
+            </span> 
+          </div>
+        </div>
+      </div>
+      <hr class="border-primary border-2">
+    </div>
+  </div>
+  
+  <!-- Contenido principal en 2 columnas -->
+  <div class="row animated fadeIn g-4">
+    
+    <!-- Columna izquierda - Poster y botón -->
+    <div class="col-lg-4 col-md-5">
+      <div class="card shadow-lg border-0"
+           [class.border-warning]="authService.isAdmin()"
+           [class.admin-highlight]="authService.isAdmin()">
+        <img [src]="pelicula.poster" 
+             class="card-img-top rounded-top" 
+             alt="{{ pelicula?.titulo }}" 
+             style="height: 500px; object-fit: cover;">
+        
+        <div class="card-body p-3">
+          <!-- Rating destacado -->
+          <div class="text-center mb-3">
+            <span class="badge bg-warning text-dark fs-5 px-3 py-2">
+              <i class="fas fa-star me-1"></i> {{pelicula.rating}}/10
+            </span>
+          </div>
+          
+          <!-- 🔥 INFORMACIÓN ADMIN -->
+          <div class="admin-info mb-3" *ngIf="authService.isAdmin()">
+            <div class="card bg-light border-warning">
+              <div class="card-body p-2">
+                <h6 class="card-title text-warning mb-2">
+                  <i class="fas fa-info-circle me-1"></i>Info Admin
+                </h6>
+                <small class="text-muted d-block">ID: {{ peliculaId  }}</small>
+                <small class="text-muted d-block">
+                  Funciones: 
+                  <span *ngIf="funcionesLoaded">{{ getFuncionesCount() }}</span>
+                  <span *ngIf="!funcionesLoaded" class="spinner-border spinner-border-sm ms-1"></span>
+                </small>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Botones de acción -->
+          <div class="d-grid gap-2">
+            <a [routerLink]="['/movies']" class="btn btn-outline-primary btn-lg">
+              <i class="fas fa-arrow-left me-2"></i>Regresar
+            </a>
+            
+            <!-- 🔥 BOTÓN ADMIN: VER ESTADÍSTICAS -->
+            <button class="btn btn-outline-warning" 
+                    *ngIf="authService.isAdmin()"
+                    (click)="verEstadisticas()">
+              <i class="fas fa-chart-bar me-2"></i>Estadísticas
+            </button>
+            <button class="btn btn-outline-danger" *ngIf="authService.isAdmin()" (click)="irAAdminMovie()">
+              <i class="fas fa-cogs me-2"></i>Panel Admin
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Columna derecha - Información de la película -->
+    <div class="col-lg-8 col-md-7">
+      <div class="movie-content">
+        
+        <!-- Título y sinopsis -->
+        <div class="mb-4">
+          <h3 class="h2 text-primary fw-bold mb-3">{{ pelicula.titulo }}</h3>
+          <p class="lead text-muted lh-lg">{{ pelicula.sinopsis }}</p>
+        </div>
+        
+        <!-- Información técnica en cards -->
+        <div class="row g-3 mb-4">
+          <div class="col-sm-6">
+            <div class="card bg-light border-0 h-100">
+              <div class="card-body">
+                <h6 class="card-subtitle text-primary mb-2">
+                  <i class="fas fa-video me-2"></i>Director
+                </h6>
+                <p class="card-text fw-semibold">{{ pelicula.director }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-sm-6">
+            <div class="card bg-light border-0 h-100">
+              <div class="card-body">
+                <h6 class="card-subtitle text-primary mb-2">
+                  <i class="fas fa-theater-masks me-2"></i>Género
+                </h6>
+                <p class="card-text fw-semibold">{{ pelicula.genero }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-sm-6">
+            <div class="card bg-light border-0 h-100">
+              <div class="card-body">
+                <h6 class="card-subtitle text-primary mb-2">
+                  <i class="fas fa-clock me-2"></i>Duración
+                </h6>
+                <p class="card-text fw-semibold">{{ pelicula.duracion }}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="col-sm-6">
+            <div class="card bg-light border-0 h-100">
+              <div class="card-body">
+                <h6 class="card-subtitle text-primary mb-2">
+                  <i class="fas fa-calendar-alt me-2"></i>Estreno
+                </h6>
+                <p class="card-text fw-semibold">{{ pelicula.fechaEstreno }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 🔥 PANEL DE FUNCIONES (PARA ADMIN) -->
+        <div class="funciones-admin mb-4" *ngIf="authService.isAdmin()">
+          <h5 class="text-warning mb-3">
+            <i class="fas fa-cog me-2"></i>Gestión de Funciones
+          </h5>
+          <div class="card border-warning">
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-md-6">
+                  <button class="btn btn-outline-success w-100"
+                          (click)="agregarFuncion()">
+                    <i class="fas fa-plus me-2"></i>Agregar Función
+                  </button>
+                </div>
+                <div class="col-md-6">
+                  <button class="btn btn-outline-info w-100"
+                          (click)="verTodasLasFunciones()">
+                    <i class="fas fa-list me-2"></i>Ver Todas 
+                      <span *ngIf="funcionesLoaded">({{ getFuncionesCount() }})</span>
+                      <span *ngIf="!funcionesLoaded" class="spinner-border spinner-border-sm ms-1"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🆕 COMPONENTE DE GESTIÓN DE FUNCIONES -->
+        <div class="mb-4" *ngIf="authService.isAdmin() && showFunctionAdmin">
+          <div class="card border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fas fa-clock me-2"></i>
+                Gestión de Funciones - {{ pelicula?.titulo }}
+              </h5>
+              <button class="btn btn-sm btn-outline-light" 
+                      (click)="showFunctionAdmin = false">
+                <i class="fas fa-times"></i> 
+              </button>
+            </div>
+            <div class="card-body p-0">
+              <app-function-admin 
+                [peliculaId]="peliculaId"
+                (funcionesChanged)="refreshFuncionesCount()">
+              </app-function-admin>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Sección del Trailer -->
+        <div class="trailer-section mb-4" *ngIf="tieneTrailer()">
+          <h5 class="text-primary mb-3">
+            <i class="fas fa-play-circle me-2"></i>Trailer Oficial
+          </h5>
+          <div class="ratio ratio-16x9 shadow-lg rounded overflow-hidden">
+            <iframe 
+              [src]="trailerUrl" 
+              title="Trailer de {{ pelicula?.titulo }}" 
+              frameborder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+              referrerpolicy="strict-origin-when-cross-origin" 
+              allowfullscreen>
+            </iframe>
+          </div>
+        </div>
+        
+        <!-- BOTÓN COMPRAR ENTRADAS -->
+        <div class="purchase-section mt-5">
+          <div class="card border-success shadow-lg">
+            <div class="card-body text-center p-4">
+              <h4 class="text-success mb-3">
+                <i class="fas fa-ticket-alt me-2"></i>
+                ¡Compra tus entradas ahora!
+              </h4>
+              <p class="text-muted mb-4">Funciones disponibles desde $8.50</p>
+              <button class="btn btn-success btn-lg px-5" 
+                      (click)="comprarEntradas()">
+                <i class="fas fa-shopping-cart me-2"></i>
+                Ver Horarios y Comprar
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Logo del estudio más grande y destacado -->
+        <div class="studio-section mt-4">
+          <h5 class="text-primary mb-3">
+            <i class="fas fa-building me-2"></i>Estudio Cinematográfico
+          </h5>
+          <div class="studio-logo-container p-4 bg-light rounded-3 text-center">
+            <img [src]="pelicula.estudio" 
+                 class="estudio-img" 
+                 alt="Logo del Estudio" 
+                 style="max-width: 200px; height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🆕 SECCIÓN DE COMENTARIOS Y RESEÑAS -->
+  <div class="row mt-5">
+    <div class="col-12">
+      <div class="card shadow-lg">
+        <div class="card-header bg-gradient text-white" 
+             style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);">
+          <h4 class="mb-0">
+            <i class="fas fa-comments me-2"></i>
+            Reseñas y Comentarios
+          </h4>
+          <p class="mb-0 opacity-75">Comparte tu opinión sobre esta película</p>
+        </div>
+        <div class="card-body p-4">
+          <!-- Componente de comentarios para esta película -->
+          <app-comments 
+            [peliculaId]="peliculaId"
+            [tipo]="'pelicula'"
+            [showCreateForm]="true">
+          </app-comments>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

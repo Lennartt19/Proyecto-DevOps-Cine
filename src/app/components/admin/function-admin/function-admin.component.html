@@ -1,0 +1,363 @@
+<!-- Header -->
+<div class="container-fluid py-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+          <h2 class="fw-bold text-primary mb-1">
+            <i class="fas fa-clock me-3"></i>
+            Gestión de Funciones
+          </h2>
+          <p class="text-muted mb-0" *ngIf="!peliculaId">
+            Administra los horarios de todas las películas
+          </p>
+          <p class="text-muted mb-0" *ngIf="peliculaId">
+            Gestiona los horarios de esta película
+          </p>
+        </div>
+        
+        <button class="btn btn-primary btn-lg" 
+                (click)="showCreateForm()"
+                [disabled]="loading">
+          <i class="fas fa-plus me-2"></i>
+          Nueva Función
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estadísticas rápidas -->
+  <div class="row mb-4" *ngIf="!loading">
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card bg-primary text-white">
+        <div class="card-body text-center">
+          <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+          <h3 class="mb-0">{{ getTotalFunciones() }}</h3>
+          <small>Total Funciones</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card bg-success text-white">
+        <div class="card-body text-center">
+          <i class="fas fa-couch fa-2x mb-2"></i>
+          <h3 class="mb-0">{{ getPromedioAsientos() }}</h3>
+          <small>Promedio Asientos</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card bg-info text-white">
+        <div class="card-body text-center">
+          <i class="fas fa-door-open fa-2x mb-2"></i>
+          <h3 class="mb-0">{{ getSalasUsadas().length }}</h3>
+          <small>Salas en Uso</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card bg-warning text-white">
+        <div class="card-body text-center">
+          <i class="fas fa-film fa-2x mb-2"></i>
+          <h3 class="mb-0">{{ peliculas.length }}</h3>
+          <small>Películas Disponibles</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="row mb-4" *ngIf="!loading && funciones.length > 0">
+    <div class="col-12">
+      <div class="card border-0 bg-light">
+        <div class="card-body p-3">
+          <div class="row align-items-center">
+            <div class="col-md-4 mb-2">
+              <label class="form-label small fw-bold text-primary">Filtrar por fecha:</label>
+              <select class="form-select form-select-sm" 
+                      [(ngModel)]="filtroFecha"
+                      (change)="aplicarFiltros()">
+                <option value="">Todas las fechas</option>
+                <option *ngFor="let fecha of getFechasDisponibles()" [value]="fecha">
+                  {{ formatDate(fecha) }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-4 mb-2">
+              <label class="form-label small fw-bold text-primary">Filtrar por sala:</label>
+              <select class="form-select form-select-sm" 
+                      [(ngModel)]="filtroSala"
+                      (change)="aplicarFiltros()">
+                <option value="">Todas las salas</option>
+                <option *ngFor="let sala of getSalasUsadas()" [value]="sala">
+                  {{ sala }}
+                </option>
+              </select>
+            </div>
+            <div class="col-md-4 mb-2 d-flex align-items-end">
+              <button class="btn btn-outline-secondary btn-sm w-100" 
+                      (click)="clearFilters()">
+                <i class="fas fa-eraser me-1"></i>
+                Limpiar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="row" *ngIf="loading">
+    <div class="col-12 text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-3 text-muted">Cargando funciones...</p>
+    </div>
+  </div>
+
+  <!-- Sin funciones -->
+  <div class="row" *ngIf="!loading && funciones.length === 0">
+    <div class="col-12 text-center py-5">
+      <i class="fas fa-calendar-times fa-5x text-muted mb-4"></i>
+      <h3 class="text-muted mb-3">No hay funciones programadas</h3>
+      <p class="text-muted mb-4">
+        Comienza creando la primera función para esta película.
+      </p>
+      <button class="btn btn-primary btn-lg" (click)="showCreateForm()">
+        <i class="fas fa-plus me-2"></i>
+        Crear Primera Función
+      </button>
+    </div>
+  </div>
+
+  <!-- Lista de funciones -->
+  <div class="row" *ngIf="!loading && funcionesFiltradas.length > 0">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-list me-2"></i>
+            Funciones Programadas ({{ funcionesFiltradas.length }})
+          </h5>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Película</th>
+                <th>Fecha</th>
+                <th>Hora</th>
+                <th>Sala</th>
+                <th>Formato</th>
+                <th>Precio</th>
+                <th>Asientos</th>
+                <th>Estado</th>
+                <th width="120">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let funcion of funcionesFiltradas; trackBy: trackFunction"
+                  [class.table-warning]="isPastFunction(funcion)">
+                <td>
+                  <div class="d-flex align-items-center">
+                    <img [src]="funcion.pelicula?.poster || 'assets/no-image.png'" 
+                         class="rounded me-2" 
+                         style="width: 40px; height: 60px; object-fit: cover;"
+                         [alt]="funcion.pelicula?.titulo">
+                    <div>
+                      <strong>{{ funcion.pelicula?.titulo || getPeliculaTitulo(funcion.peliculaId) }}</strong>
+                      <br>
+                      <small class="text-muted">{{ funcion.pelicula?.genero }}</small>
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  <strong>{{ formatDate(funcion.fecha) }}</strong>
+                </td>
+                <td>
+                  <span class="badge bg-dark fs-6">{{ funcion.hora }}</span>
+                </td>
+                <td>{{ funcion.sala }}</td>
+                <td>
+                  <span class="badge"
+                        [class.bg-primary]="funcion.formato === '2D'"
+                        [class.bg-success]="funcion.formato === '3D'"
+                        [class.bg-warning]="funcion.formato === 'IMAX'"
+                        [class.bg-danger]="funcion.formato === '4DX'">
+                    {{ funcion.formato }}
+                  </span>
+                </td>
+                <td>
+                  <strong class="text-success">{{ formatPrice(funcion.precio) }}</strong>
+                </td>
+                <td>
+                  <span class="badge bg-info">{{ funcion.asientosDisponibles }}</span>
+                </td>
+                <td>
+                  <span class="badge"
+                        [class.bg-success]="!isPastFunction(funcion)"
+                        [class.bg-secondary]="isPastFunction(funcion)">
+                    {{ isPastFunction(funcion) ? 'Finalizada' : 'Activa' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-primary" 
+                            (click)="editFunction(funcion)"
+                            [disabled]="submitting"
+                            title="Editar función">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" 
+                            (click)="deleteFunction(funcion)"
+                            [disabled]="submitting"
+                            title="Eliminar función">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de formulario -->
+<div class="modal fade" 
+     [class.show]="showForm" 
+     [style.display]="showForm ? 'block' : 'none'"
+     tabindex="-1" 
+     *ngIf="showForm">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-plus me-2" *ngIf="!editMode"></i>
+          <i class="fas fa-edit me-2" *ngIf="editMode"></i>
+          {{ editMode ? 'Editar Función' : 'Nueva Función' }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cancelForm()"></button>
+      </div>
+      
+      <form [formGroup]="functionForm" (ngSubmit)="onSubmit()">
+        <div class="modal-body">
+          <div class="row">
+            <!-- Película -->
+            <div class="col-md-6 mb-3" *ngIf="!peliculaId">
+              <label class="form-label fw-bold">Película *</label>
+              <select class="form-select" 
+                      formControlName="peliculaId"
+                      [class.is-invalid]="isFieldInvalid('peliculaId')">
+                <option value="">Seleccionar película...</option>
+                <option *ngFor="let pelicula of peliculas" [value]="pelicula.id">
+                  {{ pelicula.titulo }}
+                </option>
+              </select>
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('peliculaId')">
+                {{ getFieldError('peliculaId') }}
+              </div>
+            </div>
+
+            <!-- Fecha -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Fecha *</label>
+              <input type="date" 
+                     class="form-control" 
+                     formControlName="fecha"
+                     [min]="getMinDate()"
+                     [class.is-invalid]="isFieldInvalid('fecha')">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('fecha')">
+                {{ getFieldError('fecha') }}
+              </div>
+            </div>
+
+            <!-- Hora -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Hora *</label>
+              <input type="time" 
+                     class="form-control" 
+                     formControlName="hora"
+                     [class.is-invalid]="isFieldInvalid('hora')">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('hora')">
+                {{ getFieldError('hora') }}
+              </div>
+            </div>
+
+            <!-- Sala -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Sala *</label>
+              <select class="form-select" 
+                      formControlName="sala"
+                      [class.is-invalid]="isFieldInvalid('sala')">
+                <option value="">Seleccionar sala...</option>
+                <option *ngFor="let sala of salas" [value]="sala">
+                  {{ sala }}
+                </option>
+              </select>
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('sala')">
+                {{ getFieldError('sala') }}
+              </div>
+            </div>
+
+            <!-- Formato -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Formato *</label>
+              <select class="form-select" formControlName="formato">
+                <option *ngFor="let formato of formatos" [value]="formato">
+                  {{ formato }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Precio -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Precio ($) *</label>
+              <input type="number" 
+                     class="form-control" 
+                     formControlName="precio"
+                     step="0.50"
+                     min="0"
+                     [class.is-invalid]="isFieldInvalid('precio')">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('precio')">
+                {{ getFieldError('precio') }}
+              </div>
+            </div>
+
+            <!-- Asientos -->
+            <div class="col-md-6 mb-3">
+              <label class="form-label fw-bold">Asientos Disponibles *</label>
+              <input type="number" 
+                     class="form-control" 
+                     formControlName="asientosDisponibles"
+                     min="1"
+                     max="100"
+                     [class.is-invalid]="isFieldInvalid('asientosDisponibles')">
+              <div class="invalid-feedback" *ngIf="isFieldInvalid('asientosDisponibles')">
+                {{ getFieldError('asientosDisponibles') }}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="cancelForm()" [disabled]="submitting">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="submitting || functionForm.invalid">
+            <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+            <i class="fas fa-save me-2" *ngIf="!submitting"></i>
+            {{ editMode ? 'Actualizar' : 'Crear' }} Función
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop del modal -->
+<div class="modal-backdrop fade show" *ngIf="showForm"></div>

@@ -1,0 +1,340 @@
+<!-- ticket-purchase.component.html - LIMPIO Y ORGANIZADO -->
+<div class="container mt-4">
+  
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="fw-bold text-primary">
+        <i class="fas fa-ticket-alt me-2"></i>
+        Comprar Entradas
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a [routerLink]="['/movies']">Películas</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a [routerLink]="['/movie', peliculaId]">{{ pelicula?.titulo }}</a>
+          </li>
+          <li class="breadcrumb-item active">Comprar Entradas</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Información de la película -->
+  <div class="row mb-4" *ngIf="pelicula">
+    <div class="col-12">
+      <div class="card bg-light border-0 shadow-sm">
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-2">
+              <img [src]="pelicula.poster" 
+                   class="img-fluid rounded shadow-sm" 
+                   style="max-height: 120px; object-fit: cover;"
+                   alt="{{ pelicula.titulo }}">
+            </div>
+            <div class="col-md-10">
+              <h4 class="mb-1">{{ pelicula.titulo }}</h4>
+              <p class="text-muted mb-2">{{ pelicula.genero }} • {{ pelicula.duracion }} • {{ pelicula.anio }}</p>
+              <div class="d-flex align-items-center">
+                <span class="badge bg-warning text-dark me-2">
+                  <i class="fas fa-star"></i> {{ pelicula.rating }}
+                </span>
+                <span class="text-muted">Dirigida por {{ pelicula.director }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading inicial -->
+  <div class="row" *ngIf="cargando">
+    <div class="col-12 text-center py-5">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-3 text-muted">Cargando funciones disponibles...</p>
+    </div>
+  </div>
+
+  <!-- Error de conexión -->
+  <div class="row" *ngIf="!cargando && errorConexion">
+    <div class="col-12 text-center py-5">
+      <i class="fas fa-exclamation-triangle fa-5x text-danger mb-4"></i>
+      <h3 class="text-danger mb-3">Error de conexión</h3>
+      <p class="text-muted mb-4">No se pudieron cargar las funciones disponibles.</p>
+      <button class="btn btn-primary" (click)="reintentarConexion()">
+        <i class="fas fa-refresh me-2"></i>Reintentar
+      </button>
+    </div>
+  </div>
+
+  <!-- Funciones disponibles -->
+  <div class="row" *ngIf="!cargando && !errorConexion">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4>
+          <i class="fas fa-calendar-alt me-2"></i>
+          Funciones Disponibles
+        </h4>
+        <span class="badge bg-info fs-6" *ngIf="funcionesFuturas.length > 0">
+          {{ funcionesFuturas.length }} función{{ funcionesFuturas.length !== 1 ? 'es' : '' }} disponible{{ funcionesFuturas.length !== 1 ? 's' : '' }}
+        </span>
+      </div>
+
+      <!-- Lista de funciones -->
+      <div class="row" *ngIf="funcionesFuturas.length > 0">
+        <div class="col-lg-6 col-xl-4 mb-4" 
+             *ngFor="let funcion of funcionesFuturas; trackBy: trackFunction">
+          <div class="card h-100 shadow-sm function-card"
+               [class.border-primary]="funcionSeleccionada?.id !== funcion.id"
+               [class.border-success]="funcionSeleccionada?.id === funcion.id"
+               [class.border-3]="funcionSeleccionada?.id === funcion.id">
+            
+            <!-- Header de la función -->
+            <div class="card-header"
+                 [class.bg-primary]="funcionSeleccionada?.id !== funcion.id"
+                 [class.bg-success]="funcionSeleccionada?.id === funcion.id"
+                 [class.text-white]="true">
+              <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                  <i class="fas fa-door-open me-1"></i>
+                  {{ funcion.sala }}
+                </h6>
+                <span class="badge bg-light text-dark">{{ funcion.formato }}</span>
+              </div>
+            </div>
+
+            <!-- Cuerpo de la función -->
+            <div class="card-body">
+              <div class="row mb-3">
+                <div class="col-6">
+                  <small class="text-muted">Fecha</small>
+                  <p class="mb-0 fw-semibold">
+                    <i class="fas fa-calendar me-1 text-primary"></i>
+                    {{ formatearFecha(funcion.fecha) }}
+                  </p>
+                </div>
+                <div class="col-6">
+                  <small class="text-muted">Hora</small>
+                  <p class="mb-0 fw-semibold">
+                    <i class="fas fa-clock me-1 text-primary"></i>
+                    {{ funcion.hora }}
+                  </p>
+                </div>
+              </div>
+              
+              <div class="mb-3">
+                <small class="text-muted">Asientos disponibles</small>
+                <p class="mb-0 fw-semibold" [ngClass]="getAsientosDisponiblesClass(funcion.asientosDisponibles)">
+                  <i class="fas fa-chair me-1"></i>
+                  {{ getAsientosDisponiblesTexto(funcion.asientosDisponibles) }}
+                </p>
+              </div>
+              
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <small class="text-muted">Precio por entrada</small>
+                  <h5 class="text-success mb-0">{{ formatearPrecio(funcion.precio) }}</h5>
+                </div>
+                <button class="btn" 
+                        [class.btn-primary]="funcionSeleccionada?.id !== funcion.id"
+                        [class.btn-success]="funcionSeleccionada?.id === funcion.id"
+                        [disabled]="funcion.asientosDisponibles === 0"
+                        (click)="seleccionarFuncion(funcion)">
+                  <i class="fas fa-check me-1" *ngIf="funcionSeleccionada?.id === funcion.id"></i>
+                  <i class="fas fa-plus me-1" *ngIf="funcionSeleccionada?.id !== funcion.id && funcion.asientosDisponibles > 0"></i>
+                  <i class="fas fa-times me-1" *ngIf="funcion.asientosDisponibles === 0"></i>
+                  
+                  <span *ngIf="funcionSeleccionada?.id === funcion.id">Seleccionada</span>
+                  <span *ngIf="funcionSeleccionada?.id !== funcion.id && funcion.asientosDisponibles > 0">Seleccionar</span>
+                  <span *ngIf="funcion.asientosDisponibles === 0">Agotado</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sin funciones disponibles -->
+      <div class="text-center py-5" *ngIf="funcionesFuturas.length === 0">
+        <i class="fas fa-calendar-times fa-5x text-muted mb-4"></i>
+        <h3 class="text-muted mb-3">No hay funciones disponibles</h3>
+        <p class="text-muted mb-4">
+          No hay funciones programadas para esta película en este momento.<br>
+          Revisa más tarde o selecciona otra película.
+        </p>
+        <button class="btn btn-primary" [routerLink]="['/movies']">
+          <i class="fas fa-film me-2"></i>Ver Otras Películas
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel de compra ORGANIZADO -->
+  <div class="row mt-4" *ngIf="funcionSeleccionada && !cargando">
+    <div class="col-12">
+      <div class="card border-success shadow-lg">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-shopping-cart me-2"></i>
+            Resumen de tu compra
+          </h5>
+        </div>
+        <div class="card-body">
+          
+          <!-- Información de la función seleccionada -->
+          <div class="row align-items-center mb-4">
+            <div class="col-md-8">
+              <h6 class="mb-1">{{ pelicula?.titulo }}</h6>
+              <p class="text-muted mb-1">
+                <i class="fas fa-door-open me-1"></i>{{ funcionSeleccionada.sala }} • 
+                <i class="fas fa-calendar me-1"></i>{{ formatearFecha(funcionSeleccionada.fecha) }} • 
+                <i class="fas fa-clock me-1"></i>{{ funcionSeleccionada.hora }}
+              </p>
+              <span class="badge bg-info me-2">{{ funcionSeleccionada.formato }}</span>
+              <span class="badge bg-secondary">{{ funcionSeleccionada.asientosDisponibles }} asientos disponibles</span>
+            </div>
+            <div class="col-md-4 text-md-end">
+              <small class="text-muted">Precio por entrada</small>
+              <h4 class="text-success mb-0">{{ formatearPrecio(funcionSeleccionada.precio) }}</h4>
+            </div>
+          </div>
+
+          <!-- Mostrar si ya está en carrito -->
+          <div *ngIf="yaEstaEnCarrito()" class="mb-3">
+            <div class="alert alert-info py-2 mb-0">
+              <i class="fas fa-shopping-cart me-2"></i>
+              Ya tienes {{ getCantidadEnCarrito() }} entrada(s) de esta función en tu carrito
+            </div>
+          </div>
+
+          <!-- Selector de cantidad y total -->
+          <div class="row align-items-end mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Cantidad de entradas:</label>
+              <div class="input-group" style="max-width: 200px;">
+                <button class="btn btn-outline-secondary" 
+                        type="button" 
+                        (click)="decrementarCantidad()"
+                        [disabled]="cantidadEntradas <= 1">
+                  <i class="fas fa-minus"></i>
+                </button>
+                
+                <input type="number" 
+                       class="form-control text-center fw-bold" 
+                       [(ngModel)]="cantidadEntradas"
+                       name="cantidad"
+                       min="1"
+                       [max]="getMin(20, funcionSeleccionada.asientosDisponibles)"
+                       readonly>
+                
+                <button class="btn btn-outline-secondary" 
+                        type="button" 
+                        (click)="incrementarCantidad()"
+                        [disabled]="cantidadEntradas >= getMin(20, funcionSeleccionada.asientosDisponibles)">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <small class="text-muted">Máximo {{ getMin(20, funcionSeleccionada.asientosDisponibles) }} entradas</small>
+            </div>
+            <div class="col-md-6 text-md-end mt-3 mt-md-0">
+              <label class="form-label fw-bold">Total a pagar:</label>
+              <h3 class="text-success mb-0">{{ formatearPrecio(getTotal()) }}</h3>
+              <small class="text-muted">{{ cantidadEntradas }} entrada{{ cantidadEntradas !== 1 ? 's' : '' }}</small>
+            </div>
+          </div>
+
+          <hr>
+
+          <!-- Botones de acción ORGANIZADOS -->
+          <div class="row">
+            <div class="col-12">
+              
+              <!-- Botón cancelar -->
+              <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <button class="btn btn-outline-secondary" (click)="cancelar()">
+                  <i class="fas fa-times me-2"></i>
+                  Cancelar
+                </button>
+                
+                <!-- Grupo de botones principales -->
+                <div class="d-flex gap-2 flex-wrap">
+                  
+                  <!-- Ver carrito (solo si ya hay items) -->
+                  <button class="btn btn-outline-info" 
+                          *ngIf="yaEstaEnCarrito()"
+                          (click)="irAlCarrito()">
+                    <i class="fas fa-shopping-cart me-2"></i>
+                    Ver Carrito ({{ getCantidadEnCarrito() }})
+                  </button>
+                  
+                  <!-- Seleccionar asientos (opción principal) -->
+                  <button class="btn btn-primary btn-lg" 
+                          (click)="seleccionarAsientos()"
+                          [disabled]="agregandoCarrito || cantidadEntradas > funcionSeleccionada.asientosDisponibles">
+                    <i class="fas fa-couch me-2"></i>
+                    Seleccionar Asientos
+                  </button>
+                  
+                  <!-- Agregar al carrito (asientos automáticos) -->
+                  <button class="btn btn-warning" 
+                          (click)="agregarAlCarritoDirecto()"
+                          [disabled]="agregandoCarrito || cantidadEntradas > funcionSeleccionada.asientosDisponibles">
+                    <span *ngIf="!agregandoCarrito">
+                      <i class="fas fa-cart-plus me-2"></i>
+                      Agregar al Carrito
+                    </span>
+                    <span *ngIf="agregandoCarrito">
+                      <span class="spinner-border spinner-border-sm me-2"></span>
+                      Agregando...
+                    </span>
+                  </button>
+                  
+                  <!-- Comprar ahora (directo) -->
+                  <button class="btn btn-success" 
+                          (click)="comprarAhora()"
+                          [disabled]="agregandoCarrito || cantidadEntradas > funcionSeleccionada.asientosDisponibles">
+                    <span *ngIf="!agregandoCarrito">
+                      <i class="fas fa-bolt me-2"></i>
+                      Comprar Ahora
+                    </span>
+                    <span *ngIf="agregandoCarrito">
+                      <span class="spinner-border spinner-border-sm me-2"></span>
+                      Procesando...
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Notas explicativas -->
+              <div class="mt-4 p-3 bg-light rounded">
+                <h6 class="fw-bold mb-2">
+                  <i class="fas fa-info-circle me-2"></i>
+                  Opciones de compra:
+                </h6>
+                <div class="row">
+                  <div class="col-md-4 mb-2">
+                    <strong class="text-primary">Seleccionar Asientos:</strong>
+                    <small class="d-block text-muted">Elige tus asientos preferidos en el mapa interactivo</small>
+                  </div>
+                  <div class="col-md-4 mb-2">
+                    <strong class="text-warning">Agregar al Carrito:</strong>
+                    <small class="d-block text-muted">Asientos asignados automáticamente, revisa antes de pagar</small>
+                  </div>
+                  <div class="col-md-4 mb-2">
+                    <strong class="text-success">Comprar Ahora:</strong>
+                    <small class="d-block text-muted">Compra directa con asientos automáticos</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

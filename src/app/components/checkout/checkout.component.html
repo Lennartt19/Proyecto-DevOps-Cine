@@ -1,0 +1,665 @@
+<!-- checkout.component.html - CON INTEGRACIÓN DE PUNTOS - CORREGIDO COMPLETO -->
+<div class="container mt-4">
+  
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h2 class="fw-bold text-success">
+        <i class="fas fa-credit-card me-2"></i>
+        Finalizar Compra
+      </h2>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a [routerLink]="['/movies']">Películas</a>
+          </li>
+          <li class="breadcrumb-item">
+            <a [routerLink]="['/cart']">Carrito</a>
+          </li>
+          <li class="breadcrumb-item active">Checkout</li>
+        </ol>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Loading inicial -->
+  <div *ngIf="inicializandoCheckout" class="row">
+    <div class="col-12 text-center py-5">
+      <div class="spinner-border text-success" role="status">
+        <span class="visually-hidden">Inicializando checkout...</span>
+      </div>
+      <p class="mt-3 text-muted">Preparando tu compra...</p>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="row" *ngIf="!inicializandoCheckout">
+    
+    <!-- Formulario de pago -->
+    <div class="col-lg-8">
+      
+      <!-- 🔧 SECCIÓN DE PUNTOS CORREGIDA -->
+      <div class="card shadow-sm mb-4" *ngIf="userPoints > 0">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="fas fa-coins me-2"></i>
+            Usar Tus Puntos
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <p class="mb-2">
+                <strong>Puntos disponibles:</strong> 
+                <span class="text-warning fs-5 fw-bold">{{ userPoints }}</span>
+              </p>
+              <!-- 🔧 TEXTO CORREGIDO -->
+              <p class="text-muted small mb-3">
+                <i class="fas fa-info-circle me-1"></i>
+                100 puntos = $1.00 de descuento. Máximo {{ getMaxPointsToUse() }} puntos para esta compra.
+              </p>
+              
+              <div class="input-group mb-3" *ngIf="!usandoPuntos">
+                <span class="input-group-text">
+                  <i class="fas fa-coins"></i>
+                </span>
+                <input type="number" 
+                       class="form-control" 
+                       [(ngModel)]="puntosAUsar"
+                       [max]="getMaxPointsToUse()"
+                       [min]="0"
+                       step="10"
+                       (input)="onPuntosAUsarChange()"
+                       placeholder="Cantidad de puntos a usar">
+                <button class="btn btn-warning" 
+                        (click)="aplicarPuntos()"
+                        [disabled]="aplicandoPuntos || puntosAUsar <= 0 || puntosAUsar > getMaxPointsToUse()">
+                  <span *ngIf="!aplicandoPuntos">
+                    <i class="fas fa-check me-1"></i>
+                    Aplicar
+                  </span>
+                  <span *ngIf="aplicandoPuntos">
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                    Aplicando...
+                  </span>
+                </button>
+              </div>
+              
+              <!-- 🔧 PREVIEW DEL DESCUENTO EN TIEMPO REAL -->
+              <div class="alert alert-info py-2" *ngIf="!usandoPuntos && puntosAUsar > 0">
+                <small>
+                  <i class="fas fa-calculator me-1"></i>
+                  <strong>{{ puntosAUsar }} puntos = ${{ calculatePointsDiscount(puntosAUsar).toFixed(2) }} de descuento</strong>
+                </small>
+              </div>
+            </div>
+            
+            <div class="col-md-6" *ngIf="usandoPuntos">
+              <div class="alert alert-success mb-0">
+                <h6 class="alert-heading">
+                  <i class="fas fa-check-circle me-2"></i>
+                  ¡Puntos Aplicados!
+                </h6>
+                <p class="mb-2">
+                  <strong>Puntos usados:</strong> {{ puntosAUsar }}<br>
+                  <strong>Descuento:</strong> ${{ descuentoPuntos.toFixed(2) }}
+                </p>
+                <button class="btn btn-sm btn-outline-warning" (click)="quitarPuntos()">
+                  <i class="fas fa-times me-1"></i>
+                  Quitar puntos
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-user me-2"></i>
+            Información de Pago
+          </h5>
+        </div>
+        <div class="card-body">
+          
+          <form (ngSubmit)="procesarPago()" #checkoutForm="ngForm">
+            
+            <!-- Información personal -->
+            <h6 class="text-primary mb-3">Datos Personales</h6>
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Nombre Completo *</label>
+                <input type="text" 
+                       class="form-control" 
+                       [(ngModel)]="datosCheckout.nombre"
+                       name="nombre"
+                       required
+                       placeholder="Tu nombre completo">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Email *</label>
+                <input type="email" 
+                       class="form-control" 
+                       [(ngModel)]="datosCheckout.email"
+                       name="email"
+                       required
+                       placeholder="tu@email.com">
+              </div>
+            </div>
+            
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" 
+                       class="form-control" 
+                       [(ngModel)]="datosCheckout.telefono"
+                       name="telefono"
+                       placeholder="+1 234 567 8900">
+              </div>
+            </div>
+            
+            <hr>
+            
+            <!-- Método de pago -->
+            <h6 class="text-primary mb-3">Método de Pago</h6>
+            
+            <div class="row mb-3">
+              <div class="col-12">
+                <div class="form-check">
+                  <input class="form-check-input" 
+                         type="radio" 
+                         name="metodoPago" 
+                         id="tarjeta"
+                         value="tarjeta"
+                         [(ngModel)]="datosCheckout.metodoPago"
+                         checked>
+                  <label class="form-check-label" for="tarjeta">
+                    <i class="fas fa-credit-card me-2"></i>
+                    Tarjeta de Crédito/Débito
+                  </label>
+                </div>
+                
+                <div class="form-check">
+                  <input class="form-check-input" 
+                         type="radio" 
+                         name="metodoPago" 
+                         id="paypal"
+                         value="paypal"
+                         [(ngModel)]="datosCheckout.metodoPago">
+                  <label class="form-check-label" for="paypal">
+                    <i class="fab fa-paypal me-2"></i>
+                    PayPal
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Datos de tarjeta con validaciones -->
+            <div *ngIf="datosCheckout.metodoPago === 'tarjeta'">
+              
+              <!-- Número de tarjeta -->
+              <div class="row mb-3">
+                <div class="col-12">
+                  <label class="form-label">Número de Tarjeta *</label>
+                  <div class="input-group">
+                    <input type="text" 
+                           class="form-control"
+                           [class.is-valid]="validacionTarjeta.valid && datosCheckout.numeroTarjeta.length > 0"
+                           [class.is-invalid]="!validacionTarjeta.valid && datosCheckout.numeroTarjeta.length > 0"
+                           [(ngModel)]="datosCheckout.numeroTarjeta"
+                           name="numeroTarjeta"
+                           placeholder="1234 5678 9012 3456"
+                           maxlength="19"
+                           (input)="onNumeroTarjetaChange()"
+                           (keypress)="onlyNumbers($event)">
+                    
+                    <!-- Icono del tipo de tarjeta -->
+                    <span class="input-group-text" *ngIf="validacionTarjeta.tipo && datosCheckout.numeroTarjeta.length > 3">
+                      <i class="fab" 
+                         [class.fa-cc-visa]="validacionTarjeta.tipo === 'Visa'"
+                         [class.fa-cc-mastercard]="validacionTarjeta.tipo === 'MasterCard'"
+                         [class.fa-cc-amex]="validacionTarjeta.tipo === 'American Express'"
+                         [class.text-primary]="validacionTarjeta.tipo === 'Visa'"
+                         [class.text-warning]="validacionTarjeta.tipo === 'MasterCard'"
+                         [class.text-info]="validacionTarjeta.tipo === 'American Express'">
+                      </i>
+                    </span>
+                  </div>
+                  
+                  <!-- Feedback de validación -->
+                  <div class="mt-1">
+                    <small class="text-success" *ngIf="validacionTarjeta.valid && datosCheckout.numeroTarjeta.length > 0">
+                      <i class="fas fa-check-circle me-1"></i>{{ validacionTarjeta.message }}
+                    </small>
+                    <small class="text-danger" *ngIf="!validacionTarjeta.valid && datosCheckout.numeroTarjeta.length > 0">
+                      <i class="fas fa-exclamation-circle me-1"></i>{{ validacionTarjeta.message }}
+                    </small>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="row mb-3">
+                <!-- Mes de expiración -->
+                <div class="col-md-4">
+                  <label class="form-label">Mes *</label>
+                  <select class="form-select"
+                          [class.is-valid]="validacionFecha.valid && datosCheckout.mesExpiracion && datosCheckout.anioExpiracion"
+                          [class.is-invalid]="!validacionFecha.valid && datosCheckout.mesExpiracion && datosCheckout.anioExpiracion"
+                          [(ngModel)]="datosCheckout.mesExpiracion"
+                          name="mesExpiracion"
+                          (change)="onFechaExpiracionChange()">
+                    <option value="">Mes</option>
+                    <option value="01">01</option>
+                    <option value="02">02</option>
+                    <option value="03">03</option>
+                    <option value="04">04</option>
+                    <option value="05">05</option>
+                    <option value="06">06</option>
+                    <option value="07">07</option>
+                    <option value="08">08</option>
+                    <option value="09">09</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                  </select>
+                </div>
+                
+                <!-- Año de expiración -->
+                <div class="col-md-4">
+                  <label class="form-label">Año *</label>
+                  <select class="form-select"
+                          [class.is-valid]="validacionFecha.valid && datosCheckout.mesExpiracion && datosCheckout.anioExpiracion"
+                          [class.is-invalid]="!validacionFecha.valid && datosCheckout.mesExpiracion && datosCheckout.anioExpiracion"
+                          [(ngModel)]="datosCheckout.anioExpiracion"
+                          name="anioExpiracion"
+                          (change)="onFechaExpiracionChange()">
+                    <option value="">Año</option>
+                    <option *ngFor="let year of getYearsArray()" [value]="year">{{ year }}</option>
+                  </select>
+                </div>
+                
+                <!-- CVV -->
+                <div class="col-md-4">
+                  <label class="form-label">
+                    CVV *
+                    <i class="fas fa-question-circle text-muted ms-1" 
+                       title="Código de seguridad de 3-4 dígitos"></i>
+                  </label>
+                  <input type="text" 
+                         class="form-control"
+                         [class.is-valid]="validacionCVV.valid && datosCheckout.cvv.length > 0"
+                         [class.is-invalid]="!validacionCVV.valid && datosCheckout.cvv.length > 0"
+                         [(ngModel)]="datosCheckout.cvv"
+                         name="cvv"
+                         [placeholder]="getCVVPlaceholder()"
+                         [maxlength]="getCVVMaxLength()"
+                         (input)="onCVVChange()"
+                         (keypress)="onlyNumbers($event)">
+                  
+                  <!-- Feedback CVV -->
+                  <div class="mt-1">
+                    <small class="text-success" *ngIf="validacionCVV.valid && datosCheckout.cvv.length > 0">
+                      <i class="fas fa-check-circle me-1"></i>{{ validacionCVV.message }}
+                    </small>
+                    <small class="text-danger" *ngIf="!validacionCVV.valid && datosCheckout.cvv.length > 0">
+                      <i class="fas fa-exclamation-circle me-1"></i>{{ validacionCVV.message }}
+                    </small>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Feedback de fecha -->
+              <div class="row mb-3" *ngIf="datosCheckout.mesExpiracion && datosCheckout.anioExpiracion">
+                <div class="col-12">
+                  <small class="text-success" *ngIf="validacionFecha.valid">
+                    <i class="fas fa-check-circle me-1"></i>{{ validacionFecha.message }}
+                  </small>
+                  <small class="text-danger" *ngIf="!validacionFecha.valid">
+                    <i class="fas fa-exclamation-circle me-1"></i>{{ validacionFecha.message }}
+                  </small>
+                </div>
+              </div>
+              
+            </div>
+            
+            <!-- PayPal -->
+            <div *ngIf="datosCheckout.metodoPago === 'paypal'" class="alert alert-info">
+              <i class="fab fa-paypal me-2"></i>
+              Serás redirigido a PayPal para completar el pago de forma segura.
+            </div>
+            
+            <!-- Términos y condiciones -->
+            <div class="card border-primary mb-4">
+              <div class="card-body">
+                <div class="d-flex align-items-start">
+                  <label class="custom-checkbox me-3">
+                    <input type="checkbox" 
+                           [(ngModel)]="datosCheckout.aceptaTerminos"
+                           name="aceptaTerminos"
+                           required>
+                    <span class="checkmark"></span>
+                  </label>
+                  <div>
+                    <h6 class="mb-2">
+                      <i class="fas fa-shield-alt text-primary me-2"></i>
+                      Términos y Condiciones
+                    </h6>
+                    <p class="mb-2">
+                      Al continuar, acepto los 
+                      <a href="#" class="text-decoration-none fw-bold">términos y condiciones</a> 
+                      y la <a href="#" class="text-decoration-none fw-bold">política de privacidad</a> 
+                      de ParkyFilms.
+                    </p>
+                    <small class="text-muted">
+                      <i class="fas fa-info-circle me-1"></i>
+                      Esta acción es requerida para procesar tu compra de forma segura.
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
+         
+            <!-- Botón de pago -->
+            <div class="d-grid">
+              <button type="submit" 
+                      class="btn btn-success btn-lg"
+                      [disabled]="!isFormValid() || procesandoPago">
+                <span *ngIf="!procesandoPago">
+                  <i class="fas fa-lock me-2"></i>
+                  Pagar ${{ total.toFixed(2) }}
+                </span>
+                <span *ngIf="procesandoPago">
+                  <span class="spinner-border spinner-border-sm me-2"></span>
+                  Procesando pago...
+                </span>
+              </button>
+            </div>
+            
+          </form>
+          
+        </div>
+      </div>
+    </div>
+    
+    <!-- Resumen del pedido -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-receipt me-2"></i>
+            Resumen del Pedido
+          </h5>
+        </div>
+        <div class="card-body">
+           
+          <!-- Items del carrito con información detallada -->
+          <div class="mb-3" *ngFor="let cartItem of cartItems; let last = last">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                
+                <!-- PELÍCULAS -->
+                <div *ngIf="cartItem.tipo === 'pelicula' && cartItem.pelicula">
+                  <h6 class="mb-1 small fw-bold">
+                    <i class="fas fa-film me-1 text-primary"></i>
+                    {{ cartItem.pelicula.titulo }}
+                  </h6>
+                  <small class="text-muted">
+                    <i class="fas fa-door-open me-1"></i>{{ cartItem.funcion?.sala || 'Sala' }} • 
+                    <i class="fas fa-clock me-1"></i>{{ cartItem.funcion?.hora || 'Hora' }}<br>
+                    
+                    <!-- Información de asientos -->
+                    <span class="text-success fw-bold d-block mt-1">
+                      <i class="fas fa-couch me-1"></i>
+                      {{ cartItem.cantidad }} entrada{{ cartItem.cantidad > 1 ? 's' : '' }} - Asientos seleccionados
+                    </span>
+                    
+                    <!-- Tipo de asientos -->
+                    <span *ngIf="cartItem.precio > (cartItem.funcion?.precio || 0)" class="badge bg-warning text-dark ms-0 mt-1">
+                      <i class="fas fa-crown me-1"></i>Asientos VIP
+                    </span>
+                    
+                    <span *ngIf="cartItem.precio === (cartItem.funcion?.precio || 0)" class="badge bg-info ms-0 mt-1">
+                      <i class="fas fa-chair me-1"></i>Asientos Estándar
+                    </span>
+                  </small>
+                </div>
+
+                <!-- PRODUCTOS DEL BAR -->
+                <div *ngIf="cartItem.tipo === 'bar' && cartItem.barProduct">
+                  <h6 class="mb-1 small fw-bold">
+                    <i class="fas fa-utensils me-1 text-warning"></i>
+                    {{ getItemDisplayName(cartItem) }}
+                  </h6>
+                  <small class="text-muted">
+                    <i class="fas fa-tag me-1"></i>{{ cartItem.barProduct.categoria || 'Bar' }}
+                    
+                    <!-- Información de opciones del bar -->
+                    <span *ngIf="getItemDescription(cartItem)" class="d-block mt-1">
+                      <i class="fas fa-info-circle me-1"></i>{{ getItemDescription(cartItem) }}
+                    </span>
+                    
+                    <!-- Badge de combo si aplica -->
+                    <span *ngIf="cartItem.barProduct.es_combo" class="badge bg-danger ms-0 mt-1">
+                      <i class="fas fa-gift me-1"></i>COMBO
+                    </span>
+                    
+                    <!-- Cantidad de productos del bar -->
+                    <span class="text-success fw-bold d-block mt-1">
+                      <i class="fas fa-shopping-basket me-1"></i>
+                      Cantidad: {{ cartItem.cantidad }}
+                    </span>
+                  </small>
+                </div>
+
+                <!-- FALLBACK para items sin tipo definido -->
+                <div *ngIf="!cartItem.tipo || (cartItem.tipo !== 'pelicula' && cartItem.tipo !== 'bar')">
+                  <h6 class="mb-1 small fw-bold text-muted">
+                    <i class="fas fa-question-circle me-1"></i>
+                    Item desconocido
+                  </h6>
+                  <small class="text-muted">
+                    Cantidad: {{ cartItem.cantidad }}
+                  </small>
+                </div>
+
+              </div>
+              
+              <div class="text-end">
+                <span class="fw-bold text-success">${{ cartItem.subtotal.toFixed(2) }}</span>
+                <br>
+                <small class="text-muted">${{ cartItem.precio.toFixed(2) }} por {{ cartItem.tipo === 'pelicula' ? 'entrada' : 'unidad' }}</small>
+              </div>
+            </div>
+            <hr *ngIf="!last" class="my-3">
+          </div>
+          
+          <!-- Totales -->
+          <div class="border-top pt-3">
+            <div class="d-flex justify-content-between mb-2">
+              <span>Subtotal</span>
+              <span>${{ subtotal.toFixed(2) }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Cargo por servicio</span>
+              <span>${{ serviceFee.toFixed(2) }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+              <span>Impuestos</span>
+              <span>${{ taxes.toFixed(2) }}</span>
+            </div>
+            
+            <!-- 🔧 NUEVO: Mostrar descuento por puntos -->
+            <div class="d-flex justify-content-between mb-2 text-warning" *ngIf="usandoPuntos">
+              <span>
+                <i class="fas fa-coins me-1"></i>
+                Descuento por puntos ({{ puntosAUsar }})
+              </span>
+              <span>-${{ descuentoPuntos.toFixed(2) }}</span>
+            </div>
+            
+            <hr>
+            <div class="d-flex justify-content-between fw-bold h5">
+              <span>Total</span>
+              <span class="text-success">${{ total.toFixed(2) }}</span>
+            </div>
+            
+            <!-- 🔧 NUEVO: Información de puntos a ganar -->
+            <div class="alert alert-info mt-3" *ngIf="pointsToEarn > 0">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-coins fa-2x text-warning me-3"></i>
+                <div>
+                  <h6 class="mb-1">¡Ganarás puntos con esta compra!</h6>
+                  <p class="mb-0">
+                    <strong>+{{ pointsToEarn }} puntos</strong> 
+                    <small class="text-muted">(equivalente a ${{ (pointsToEarn / 100).toFixed(2) }})</small>
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 🔧 NUEVO: Recordatorio sobre puntos usados -->
+            <div class="alert alert-warning mt-3" *ngIf="usandoPuntos">
+              <h6 class="alert-heading mb-1">
+                <i class="fas fa-info-circle me-1"></i>
+                Puntos aplicados
+              </h6>
+              <small>
+                Se descontarán {{ puntosAUsar }} puntos de tu saldo actual ({{ userPoints }} puntos).
+                Saldo restante: {{ userPoints - puntosAUsar }} puntos.
+              </small>
+            </div>
+          </div>
+          
+        </div>
+      </div>
+
+      <!-- 🔧 TARJETA DE PUNTOS CORREGIDA -->
+      <div class="card shadow-sm mt-3" *ngIf="authService.isLoggedIn()">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0">
+            <i class="fas fa-coins me-2"></i>
+            Tu Sistema de Puntos
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center">
+            <div class="col-6">
+              <div class="border rounded p-2">
+                <h5 class="text-warning mb-1">{{ userPoints }}</h5>
+                <small class="text-muted">Disponibles</small>
+                <!-- 🔧 VALOR CORREGIDO -->
+                <div class="mt-1">
+                  <small class="text-muted">${{ getUserPointsValue().toFixed(2) }}</small>
+                </div>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="border rounded p-2">
+                <h5 class="text-success mb-1">+{{ pointsToEarn }}</h5>
+                <small class="text-muted">Ganarás</small>
+                <!-- 🔧 VALOR CORREGIDO -->
+                <div class="mt-1">
+                  <small class="text-muted">${{ (pointsToEarn / 100).toFixed(2) }}</small>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-3">
+            <small class="text-muted">
+              <i class="fas fa-lightbulb me-1"></i>
+              <!-- 🔧 TEXTO CORREGIDO -->
+              Consejo: 100 puntos = $1.00 de descuento en futuras compras.
+            </small>
+          </div>
+          
+          <div class="d-grid mt-2">
+            <button class="btn btn-sm btn-outline-warning" 
+                    *ngIf="!usandoPuntos && userPoints > 0"
+                    (click)="showPointsUsageInfo()">
+              <i class="fas fa-question-circle me-1"></i>
+              ¿Cómo usar mis puntos?
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </div>
+</div>
+
+<!-- 🔧 MODAL CORREGIDO: Información sobre uso de puntos -->
+<div class="modal fade" id="pointsUsageModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title">
+          <i class="fas fa-coins me-2"></i>
+          ¿Cómo usar tus puntos?
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <i class="fas fa-coins fa-4x text-warning"></i>
+          <h4 class="mt-3">Tienes {{ userPoints }} puntos disponibles</h4>
+          <!-- 🔧 VALOR CORREGIDO -->
+          <p class="text-muted">{{ getPointsValueText() }}</p>
+        </div>
+        
+        <div class="alert alert-info">
+          <h6 class="alert-heading">
+            <i class="fas fa-calculator me-2"></i>
+            ¿Cuánto puedes ahorrar?
+          </h6>
+          <ul class="mb-0">
+            <!-- 🔧 CONVERSIÓN CORREGIDA -->
+            <li>100 puntos = $1.00 de descuento</li>
+            <li>Máximo {{ getMaxPointsToUse() }} puntos para esta compra</li>
+            <li>Los puntos se descuentan antes de impuestos</li>
+          </ul>
+        </div>
+        
+        <div class="border rounded p-3 bg-light">
+          <h6>Ejemplos de uso:</h6>
+          <div class="row">
+            <div class="col-6">
+              <small class="text-muted">500 puntos →</small>
+            </div>
+            <div class="col-6">
+              <small class="fw-bold">$5.00 de descuento</small>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-6">
+              <small class="text-muted">1000 puntos →</small>
+            </div>
+            <div class="col-6">
+              <small class="fw-bold">$10.00 de descuento</small>
+            </div>
+          </div>
+          <!-- 🔧 EJEMPLO ESPECÍFICO PARA LA COMPRA ACTUAL -->
+          <hr class="my-2">
+          <div class="row">
+            <div class="col-6">
+              <small class="text-success">Para esta compra:</small>
+            </div>
+            <div class="col-6">
+              <small class="fw-bold text-success">Máximo {{ getMaxPointsToUse() }} puntos</small>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cerrar
+        </button>
+        <button type="button" class="btn btn-warning" data-bs-dismiss="modal">
+          <i class="fas fa-coins me-2"></i>
+          ¡Entendido!
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

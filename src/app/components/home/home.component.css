@@ -1,0 +1,747 @@
+/* home.component.css - TEMA PARKY FILMS */
+
+/* Reset y configuración base */
+* {
+  box-sizing: border-box;
+}
+
+/* 🎬 HERO CAROUSEL PRINCIPAL (Estilo Parky Films) */
+.hero-carousel-section {
+  position: relative;
+  height: 100vh;
+  min-height: 600px;
+  overflow: hidden;
+}
+
+.loading-hero {
+  height: 100vh;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #0d6efd 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-loading-content {
+  text-align: center;
+}
+
+/* Carrusel hero principal */
+.hero-carousel {
+  height: 100%;
+  width: 100%;
+}
+
+.hero-slide {
+  height: 100vh;
+  min-height: 600px;
+  position: relative;
+}
+
+/* Imagen de fondo */
+.hero-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.hero-bg-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(0.4) contrast(1.1);
+}
+
+/* Overlay gradiente - MÁS SUTIL Y CINEMATOGRÁFICO */
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.7) 0%,
+    rgba(26, 26, 26, 0.5) 30%,
+    rgba(13, 110, 253, 0.2) 70%,
+    rgba(0, 0, 0, 0.3) 100%
+  );
+  z-index: 2;
+}
+
+/* Contenido superpuesto */
+.hero-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  z-index: 3;
+  padding: 2rem 0;
+}
+
+/* Labels y badges - COLORES PARKY FILMS */
+.recommendation-label {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  color: #333;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.welcome-label {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+/* Título principal */
+.hero-title {
+  font-size: 4rem;
+  font-weight: 900;
+  color: white;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 193, 7, 0.3);
+  margin: 1rem 0;
+  line-height: 1.1;
+}
+
+/* Metadatos - TEMA PARKY FILMS */
+.hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.rating-badge,
+.year-badge,
+.duration-badge,
+.genre-badge,
+.highlight-badge {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.rating-badge {
+  background: linear-gradient(45deg, rgba(255, 193, 7, 0.3), rgba(255, 143, 0, 0.3));
+  border-color: rgba(255, 193, 7, 0.5);
+  color: #ffc107;
+}
+
+.highlight-badge {
+  background: linear-gradient(45deg, rgba(13, 110, 253, 0.3), rgba(102, 16, 242, 0.3));
+  border-color: rgba(13, 110, 253, 0.5);
+  color: #87ceeb;
+}
+
+.year-badge {
+  background: rgba(108, 117, 125, 0.3);
+  border-color: rgba(108, 117, 125, 0.5);
+  color: #e9ecef;
+}
+
+.duration-badge,
+.genre-badge {
+  background: rgba(13, 110, 253, 0.2);
+  border-color: rgba(13, 110, 253, 0.4);
+  color: #87ceeb;
+}
+
+/* Descripción */
+.hero-description {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  margin: 1.5rem 0;
+  max-width: 600px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Botones de acción - ESTILO PARKY FILMS */
+.hero-actions {
+  margin-top: 2rem;
+}
+
+.hero-actions .btn {
+  padding: 0.8rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border-radius: 25px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  border: none;
+}
+
+.hero-actions .btn-light {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  color: #333;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.hero-actions .btn-light:hover {
+  background: linear-gradient(45deg, #ff8f00, #ffc107);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+  color: #333;
+}
+
+.hero-actions .btn-outline-light {
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  color: white;
+}
+
+.hero-actions .btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #ffc107;
+  color: #ffc107;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.2);
+}
+
+.hero-actions .btn-warning {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  color: #333;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.hero-actions .btn-warning:hover {
+  background: linear-gradient(45deg, #ff8f00, #ffc107);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+  color: #333;
+}
+
+/* Indicadores del hero carousel - TEMA PARKY FILMS */
+.hero-indicators {
+  bottom: 30px;
+  z-index: 4;
+}
+
+.hero-indicators button {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 193, 7, 0.5);
+  background: transparent;
+  margin: 0 6px;
+  transition: all 0.3s ease;
+}
+
+.hero-indicators button.active {
+  background: #ffc107;
+  border-color: #ffc107;
+  transform: scale(1.3);
+  box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+}
+
+.hero-indicators button:hover {
+  border-color: #ffc107;
+  transform: scale(1.1);
+}
+
+/* Controles del hero carousel - MÁS SUTIL */
+.hero-control {
+  width: 60px;
+  height: 60px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+}
+
+.hero-control:hover {
+  opacity: 1;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.hero-control-icon {
+  width: 50px;
+  height: 50px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(15px);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.hero-control:hover .hero-control-icon {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.2), rgba(13, 110, 253, 0.2));
+  border-color: rgba(255, 193, 7, 0.6);
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.3);
+}
+
+/* Botón flotante de actualizar recomendaciones - TEMA PARKY FILMS */
+.refresh-recommendations-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #ffc107, #ff8f00);
+  backdrop-filter: blur(10px);
+  border: none;
+  border-radius: 50%;
+  color: #333;
+  font-size: 1.2rem;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.refresh-recommendations-btn:hover {
+  background: linear-gradient(135deg, #ff8f00, #ffc107);
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+  color: #333;
+}
+
+.refresh-recommendations-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 🎬 SECCIÓN DE PELÍCULAS DESTACADAS - TEMA PARKY FILMS */
+.featured-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  position: relative;
+  z-index: 10;
+  margin-top: -100px;
+  padding-top: 150px;
+}
+
+.section-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #0d6efd;
+  margin-bottom: 1rem;
+  text-shadow: 1px 1px 3px rgba(13, 110, 253, 0.1);
+}
+
+.featured-carousel {
+  overflow: hidden;
+}
+
+.featured-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.1);
+  border: 1px solid rgba(13, 110, 253, 0.05);
+}
+
+.featured-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(13, 110, 253, 0.2);
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.featured-poster {
+  position: relative;
+  overflow: hidden;
+  height: 300px;
+}
+
+.featured-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: all 0.3s ease;
+}
+
+.featured-card:hover .featured-poster img {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+.featured-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(13, 110, 253, 0.8), rgba(102, 16, 242, 0.8));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  opacity: 0;
+  transition: all 0.3s ease;
+}
+
+.featured-card:hover .featured-overlay {
+  opacity: 1;
+}
+
+.featured-info {
+  padding: 1rem;
+  background: linear-gradient(to bottom, white, #f8f9fa);
+}
+
+.featured-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #0d6efd;
+  margin-bottom: 0.5rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.featured-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.featured-meta .rating {
+  color: #ffc107;
+  font-weight: 600;
+}
+
+.featured-meta .year {
+  color: #6c757d;
+}
+
+/* 🎭 SECCIÓN DE GÉNEROS - TEMA PARKY FILMS */
+.genres-section {
+  padding: 4rem 0;
+  background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+}
+
+.section-subtitle {
+  font-size: 1.1rem;
+  color: #6c757d;
+  margin-bottom: 2rem;
+}
+
+.genre-card {
+  background: linear-gradient(135deg, white, #f8f9fa);
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  border-radius: 15px;
+  padding: 2rem 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.05);
+  height: 100%;
+}
+
+.genre-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(13, 110, 253, 0.15);
+  border-color: rgba(255, 193, 7, 0.3);
+  background: linear-gradient(135deg, #f8f9fa, white);
+}
+
+.genre-icon {
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+}
+
+.genre-card:hover .genre-icon i {
+  transform: scale(1.2) rotate(5deg);
+}
+
+.genre-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #0d6efd;
+  margin-bottom: 0.5rem;
+}
+
+.genre-description {
+  font-size: 0.9rem;
+  color: #6c757d;
+  margin: 0;
+}
+
+/* 📱 RESPONSIVE DESIGN */
+@media (max-width: 1200px) {
+  .hero-title {
+    font-size: 3rem;
+  }
+  
+  .hero-content {
+    padding: 1.5rem 0;
+  }
+}
+
+@media (max-width: 992px) {
+  .hero-carousel-section {
+    height: 80vh;
+    min-height: 500px;
+  }
+  
+  .hero-slide {
+    height: 80vh;
+    min-height: 500px;
+  }
+  
+  .hero-title {
+    font-size: 2.5rem;
+  }
+  
+  .hero-description {
+    font-size: 1rem;
+    max-width: 500px;
+  }
+  
+  .featured-section {
+    margin-top: -50px;
+    padding-top: 100px;
+  }
+  
+  .section-title {
+    font-size: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-carousel-section {
+    height: 70vh;
+    min-height: 450px;
+  }
+  
+  .hero-slide {
+    height: 70vh;
+    min-height: 450px;
+  }
+  
+  .hero-title {
+    font-size: 2rem;
+  }
+  
+  .hero-meta {
+    gap: 0.5rem;
+  }
+  
+  .hero-meta > * {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+  }
+  
+  .hero-description {
+    font-size: 0.9rem;
+    margin: 1rem 0;
+  }
+  
+  .hero-actions .btn {
+    padding: 0.6rem 1.5rem;
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .hero-control {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .hero-control-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  
+  .featured-section {
+    margin-top: 0;
+    padding-top: 50px;
+  }
+  
+  .featured-poster {
+    height: 250px;
+  }
+  
+  .refresh-recommendations-btn {
+    width: 45px;
+    height: 45px;
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .hero-title {
+    font-size: 1.8rem;
+  }
+  
+  .hero-content {
+    padding: 1rem 0;
+  }
+  
+  .hero-actions {
+    margin-top: 1rem;
+  }
+  
+  .hero-actions .btn {
+    display: block;
+    width: 100%;
+    margin-bottom: 0.75rem;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+  
+  .genre-card {
+    padding: 1.5rem 0.75rem;
+  }
+  
+  .featured-poster {
+    height: 200px;
+  }
+}
+
+/* ✨ ANIMACIONES ESPECIALES */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+  }
+  50% {
+    box-shadow: 0 6px 25px rgba(255, 193, 7, 0.5);
+  }
+}
+
+/* Aplicar animaciones */
+.hero-content > div {
+  animation: fadeInUp 1s ease-out;
+}
+
+.featured-card {
+  animation: slideInRight 0.6s ease-out;
+}
+
+.featured-card:nth-child(1) { animation-delay: 0.1s; }
+.featured-card:nth-child(2) { animation-delay: 0.2s; }
+.featured-card:nth-child(3) { animation-delay: 0.3s; }
+.featured-card:nth-child(4) { animation-delay: 0.4s; }
+
+.genre-card:hover {
+  animation: pulse 0.6s ease-in-out;
+}
+
+.refresh-recommendations-btn {
+  animation: glow 3s ease-in-out infinite;
+}
+
+/* Estados de carga */
+.hero-bg-image {
+  transition: opacity 0.5s ease;
+}
+
+.hero-bg-image[src=""] {
+  opacity: 0;
+}
+
+/* Mejoras de accesibilidad - TEMA PARKY FILMS */
+.hero-control:focus,
+.refresh-recommendations-btn:focus,
+.featured-card:focus,
+.genre-card:focus {
+  outline: 2px solid #ffc107;
+  outline-offset: 2px;
+}
+
+/* Estados de hover para mejor UX */
+.carousel:hover .hero-control {
+  opacity: 1;
+}
+
+.carousel:hover .hero-indicators {
+  opacity: 1;
+}
+
+/* Transiciones suaves para el carrusel */
+.carousel-item {
+  transition: transform 0.8s ease-in-out;
+}
+
+.carousel-item-next,
+.carousel-item-prev {
+  transition: transform 0.8s ease-in-out;
+}
+
+/* Efectos especiales para las transiciones - MÁS SUTIL */
+.hero-slide::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.05));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+}
+
+.hero-slide:hover::before {
+  opacity: 1;
+}

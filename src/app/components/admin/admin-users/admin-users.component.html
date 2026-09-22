@@ -1,0 +1,477 @@
+<!-- admin-users.component.html -->
+<div class="admin-users">
+  
+  <!-- Header de la sección -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h4 class="mb-1">
+            <i class="fas fa-users me-2 text-info"></i>
+            Gestión de Usuarios
+          </h4>
+          <p class="text-muted mb-0">Administra usuarios, roles y permisos del sistema</p>
+        </div>
+        <div>
+          <button class="btn btn-outline-primary" (click)="refreshData()" [disabled]="loading">
+            <i class="fas fa-sync-alt me-1" [class.fa-spin]="loading"></i>
+            Actualizar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estadísticas rápidas -->
+  <div class="row mb-4 g-3">
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-primary text-white border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">{{ getTotalUsers() }}</div>
+              <div class="stat-label">Total Usuarios</div>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-users fa-2x opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-success text-white border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">{{ getActiveUsers() }}</div>
+              <div class="stat-label">Usuarios Activos</div>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-user-check fa-2x opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-warning text-dark border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">{{ getAdminUsers() }}</div>
+              <div class="stat-label">Administradores</div>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-crown fa-2x opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-info text-white border-0">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">{{ getRecentUsers() }}</div>
+              <div class="stat-label">Nuevos (30d)</div>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-user-plus fa-2x opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros y búsqueda -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card bg-light border-0">
+        <div class="card-body">
+          <div class="row g-3">
+            
+            <!-- Búsqueda -->
+            <div class="col-lg-4 col-md-6">
+              <label class="form-label fw-semibold">
+                <i class="fas fa-search me-1"></i>Buscar Usuario
+              </label>
+              <input type="text" 
+                     class="form-control" 
+                     placeholder="Nombre o email..."
+                     [(ngModel)]="searchTerm"
+                     (input)="applyFilters()">
+            </div>
+            
+            <!-- Filtro por rol -->
+            <div class="col-lg-2 col-md-3">
+              <label class="form-label fw-semibold">
+                <i class="fas fa-filter me-1"></i>Rol
+              </label>
+              <select class="form-select" 
+                      [(ngModel)]="roleFilter"
+                      (change)="applyFilters()">
+                <option value="">Todos</option>
+                <option value="admin">Admin</option>
+                <option value="cliente">Cliente</option>
+              </select>
+            </div>
+            
+            <!-- Filtro por estado - COMENTADO
+            <div class="col-lg-2 col-md-3">
+              <label class="form-label fw-semibold">
+                <i class="fas fa-toggle-on me-1"></i>Estado
+              </label>
+              <select class="form-select" 
+                      [(ngModel)]="statusFilter"
+                      (change)="applyFilters()">
+                <option value="">Todos</option>
+                <option value="true">Activos</option>
+                <option value="false">Inactivos</option>
+              </select>
+            </div>
+            -->
+            
+            <!-- Ordenamiento -->
+            <div class="col-lg-2 col-md-6">
+              <label class="form-label fw-semibold">
+                <i class="fas fa-sort me-1"></i>Ordenar por
+              </label>
+              <select class="form-select" 
+                      [(ngModel)]="sortBy"
+                      (change)="applyFilters()">
+                <option value="nombre">Nombre</option>
+                <option value="email">Email</option>
+                <option value="fechaRegistro">Fecha Registro</option>
+                <option value="role">Rol</option>
+              </select>
+            </div>
+            
+            <!-- Botón limpiar filtros -->
+            <div class="col-lg-2 col-md-6 d-flex align-items-end">
+              <button class="btn btn-outline-secondary w-100" 
+                      (click)="clearFilters()"
+                      [disabled]="!hasActiveFilters()">
+                <i class="fas fa-times me-1"></i>Limpiar
+              </button>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acciones masivas -->
+  <div class="row mb-3" *ngIf="selectedUsers.length > 0">
+    <div class="col-12">
+      <div class="alert alert-warning">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ selectedUsers.length }} usuario(s) seleccionado(s)</strong>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-warning btn-sm" 
+                    (click)="bulkChangeRole('admin')"
+                    [disabled]="processing">
+              <i class="fas fa-crown me-1"></i>Hacer Admin
+            </button>
+            <button class="btn btn-primary btn-sm" 
+                    (click)="bulkChangeRole('cliente')"
+                    [disabled]="processing">
+              <i class="fas fa-user me-1"></i>Hacer Cliente
+            </button>
+            <!-- Botones de activar/desactivar eliminados -->
+            <button class="btn btn-outline-secondary btn-sm" 
+                    (click)="clearSelection()">
+              <i class="fas fa-times me-1"></i>Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de usuarios -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-white">
+          <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+              <i class="fas fa-table me-2"></i>
+              Lista de Usuarios ({{ filteredUsers.length }})
+            </h6>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-primary" 
+                      (click)="exportUsers()"
+                      [disabled]="processing">
+                <i class="fas fa-download me-1"></i>Exportar
+              </button>
+              <button class="btn btn-sm btn-outline-success" 
+                      (click)="generateUserReport()"
+                      [disabled]="processing">
+                <i class="fas fa-file-alt me-1"></i>Reporte
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          
+          <!-- Loading -->
+          <div class="text-center p-4" *ngIf="loading">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-2 text-muted">Cargando usuarios...</p>
+          </div>
+
+          <!-- Tabla -->
+          <div class="table-responsive" *ngIf="!loading">
+            <table class="table table-hover mb-0">
+              <thead class="bg-light">
+                <tr>
+                  <th width="40">
+                    <input type="checkbox" 
+                           class="form-check-input"
+                           [(ngModel)]="selectAll"
+                           (change)="toggleSelectAll()">
+                  </th>
+                  <th>Usuario</th>
+                  <th>Email</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Registro</th>
+                  <th>Estadísticas</th>
+                  <th width="200">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let user of filteredUsers; trackBy: trackUser" 
+                    [class.table-warning]="isUserSelected(user.id)">
+                  
+                  <!-- Checkbox -->
+                  <td>
+                    <input type="checkbox" 
+                           class="form-check-input"
+                           [checked]="isUserSelected(user.id)"
+                           (change)="toggleUserSelection(user.id)">
+                  </td>
+                  
+                  <!-- Usuario -->
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <img [src]="user.avatar" 
+                           class="rounded-circle me-3" 
+                           width="40" height="40"
+                           [alt]="user.nombre">
+                      <div>
+                        <div class="fw-semibold">{{ user.nombre }}</div>
+                        <small class="text-muted">ID: {{ user.id }}</small>
+                      </div>
+                    </div>
+                  </td>
+                  
+                  <!-- Email -->
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-envelope me-2 text-muted"></i>
+                      {{ user.email }}
+                    </div>
+                  </td>
+                  
+                  <!-- Rol -->
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button class="btn"
+                              [class.btn-danger]="user.role === 'admin'"
+                              [class.btn-primary]="user.role === 'cliente'"
+                              [class.btn-outline-secondary]="user.role !== 'admin' && user.role !== 'cliente'"
+                              (click)="toggleUserRole(user)"
+                              [disabled]="user.id === currentUserId || processing">
+                        <i class="fas fa-crown me-1" *ngIf="user.role === 'admin'"></i>
+                        <i class="fas fa-user me-1" *ngIf="user.role === 'cliente'"></i>
+                        {{ user.role }}
+                      </button>
+                    </div>
+                  </td>
+                  
+                  <!-- Estado (sin toggle - solo mostrar) -->
+                  <td>
+                    <span class="badge bg-success">
+                      <i class="fas fa-check-circle me-1"></i>
+                      Activo
+                    </span>
+                    <!-- Opcional: Mostrar tooltip explicando que solo se puede eliminar -->
+                    <small class="d-block text-muted mt-1">
+                      Solo eliminación disponible
+                    </small>
+                  </td>
+                  
+                  <!-- Fecha Registro -->
+                  <td>
+                    <small class="text-muted">
+                      <i class="fas fa-calendar me-1"></i>
+                      {{ formatDate(user.fechaRegistro || '') }}
+                      <br>
+                      <span class="badge bg-light text-dark">
+                        {{ getDaysAgo(user.fechaRegistro ?? '') }} días
+                      </span>
+                    </small>
+                  </td>
+                  
+                  <!-- Estadísticas -->
+                  <td>
+                    <div class="small text-muted">
+                      <div>
+                        <i class="fas fa-heart text-danger me-1"></i>
+                        {{ getUserFavorites(user.id) }} favoritas
+                      </div>
+                      <div>
+                        <i class="fas fa-history text-info me-1"></i>
+                        {{ getUserHistory(user.id) }} vistas
+                      </div>
+                    </div>
+                  </td>
+                  
+                  <!-- Acciones -->
+                  <td>
+                  <div class="btn-group btn-group-sm">
+                    <button class="btn btn-outline-info" 
+                            (click)="viewUserDetails(user)"
+                            title="Ver detalles">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-primary" 
+                            (click)="editUser(user)"
+                            title="Editar usuario">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <!-- 🆕 NUEVO BOTÓN DE HISTORIAL -->
+                    <button class="btn btn-outline-success" 
+                            (click)="viewUserHistory(user)"
+                            title="Ver historial de actividad">
+                      <i class="fas fa-history"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" 
+                            (click)="sendEmailToUser(user)"
+                            title="Enviar email"
+                            [disabled]="processing">
+                      <i class="fas fa-envelope"></i>
+                    </button>
+                    <button class="btn btn-outline-danger" 
+                            (click)="confirmDeleteUser(user)"
+                            [disabled]="user.id === currentUserId"
+                            title="Eliminar usuario">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+                  
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Sin resultados -->
+          <div class="text-center p-4" *ngIf="!loading && filteredUsers.length === 0">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No se encontraron usuarios</h5>
+            <p class="text-muted">
+              <span *ngIf="hasActiveFilters()">
+                Intenta cambiar los filtros de búsqueda.
+              </span>
+              <span *ngIf="!hasActiveFilters()">
+                No hay usuarios registrados en el sistema.
+              </span>
+            </p>
+            <button class="btn btn-outline-primary" 
+                    (click)="clearFilters()"
+                    *ngIf="hasActiveFilters()">
+              <i class="fas fa-times me-2"></i>Limpiar Filtros
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal para detalles de usuario -->
+<div class="modal fade" id="userDetailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-user-circle me-2"></i>
+          Detalles del Usuario
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" *ngIf="selectedUserDetails">
+        <div class="row">
+          <div class="col-md-4 text-center">
+            <img [src]="selectedUserDetails.avatar" 
+                 class="rounded-circle mb-3" 
+                 width="120" height="120"
+                 [alt]="selectedUserDetails.nombre">
+            <h5>{{ selectedUserDetails.nombre }}</h5>
+            <span class="badge fs-6 px-3 py-2"
+                  [class.bg-danger]="selectedUserDetails.role === 'admin'"
+                  [class.bg-primary]="selectedUserDetails.role === 'cliente'">
+              <i class="fas fa-crown me-1" *ngIf="selectedUserDetails.role === 'admin'"></i>
+              <i class="fas fa-user me-1" *ngIf="selectedUserDetails.role === 'cliente'"></i>
+              {{ selectedUserDetails.role }}
+            </span>
+          </div>
+          <div class="col-md-8">
+            <table class="table table-borderless">
+              <tr>
+                <td class="fw-semibold">Email:</td>
+                <td>{{ selectedUserDetails.email }}</td>
+              </tr>
+              <tr>
+                <td class="fw-semibold">ID:</td>
+                <td>{{ selectedUserDetails.id }}</td>
+              </tr>
+              <tr>
+                <td class="fw-semibold">Estado:</td>
+                <td>
+                  <span class="badge bg-success">
+                    <i class="fas fa-check-circle me-1"></i>
+                    Activo
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td class="fw-semibold">Registro:</td>
+                <td>{{ formatDate(selectedUserDetails.fechaRegistro || '') }}</td>
+              </tr>
+              <tr>
+                <td class="fw-semibold">Favoritas:</td>
+                <td>{{ getUserFavorites(selectedUserDetails.id) }} películas</td>
+              </tr>
+              <tr>
+                <td class="fw-semibold">Historial:</td>
+                <td>{{ getUserHistory(selectedUserDetails.id) }} películas vistas</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cerrar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="editUser(selectedUserDetails!)">
+          <i class="fas fa-edit me-2"></i>Editar Usuario
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,199 @@
+<!-- footer.component.html -->
+<footer class="footer text-light mt-5">
+  <!-- Main Footer Content -->
+  <div class="container py-5">
+    <div class="row g-4">
+      
+      <!-- Company Info -->
+      <div class="col-lg-4 col-md-6">
+        <div class="footer-section">
+          <h5 class="fw-bold mb-4 text-white">
+            <i class="fas fa-film me-2 text-warning"></i>
+            Parky Films
+          </h5>
+          <p class="text-light lh-lg mb-4" style="opacity: 0.9;">
+            Tu plataforma de entretenimiento favorita. Descubre las mejores películas, 
+            desde los últimos estrenos hasta los clásicos de todos los tiempos.
+          </p>
+          
+          <!-- Social Media -->
+          <div class="social-links">
+            <h6 class="fw-semibold mb-3 text-white">
+              <i class="fas fa-share-alt me-2"></i>Síguenos
+            </h6>
+            <div class="d-flex gap-3">
+              <a href="https://www.facebook.com/melissa.campos.71066700?locale=es_LA" class="social-link text-light" title="Facebook">
+                <i class="fab fa-facebook-f fa-lg"></i>
+              </a>
+              <a href="https://x.com/angular" class="social-link text-light" title="Twitter">
+                <i class="fab fa-twitter fa-lg"></i>
+              </a>
+              <a href="https://www.instagram.com/cristopher1gonzalez/?hl=es" class="social-link text-light" title="Instagram">
+                <i class="fab fa-instagram fa-lg"></i>
+              </a>
+              <a href="https://www.youtube.com/@SergieCode" class="social-link text-light" title="YouTube">
+                <i class="fab fa-youtube fa-lg"></i>
+              </a>
+              <a href="https://www.tiktok.com/@duss._01" class="social-link text-light" title="TikTok">
+                <i class="fab fa-tiktok fa-lg"></i>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Links -->
+      <div class="col-lg-2 col-md-6">
+        <div class="footer-section">
+          <h6 class="fw-semibold mb-4 text-white">
+            <i class="fas fa-link me-2"></i>Enlaces Rápidos
+          </h6>
+          <ul class="footer-links list-unstyled">
+            <li class="mb-2">
+              <a routerLink="/home" class="text-light footer-link">
+                <i class="fas fa-home me-2"></i>Inicio
+              </a>
+            </li>
+            <li class="mb-2">
+              <a routerLink="/movies" class="text-light footer-link">
+                <i class="fas fa-film me-2"></i>Películas
+              </a>
+            </li>
+            <li class="mb-2">
+              <a routerLink="/coming-soon" class="text-light footer-link">
+                <i class="fas fa-calendar-alt me-2"></i>Estrenos
+              </a>
+            </li>
+            <li class="mb-2">
+              <a routerLink="/bar" class="text-light footer-link">
+                <i class="fas fa-utensils me-2"></i>Bar
+              </a>
+            </li>
+            <li class="mb-2">
+              <a routerLink="/favorites" class="text-light footer-link">
+                <i class="fas fa-heart me-2"></i>Favoritas
+              </a>
+            </li>
+            <li class="mb-2">
+              <a routerLink="/rewards" class="text-light footer-link">
+                <i class="fas fa-gift me-2"></i>Recompensas
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Categories -->
+      <div class="col-lg-3 col-md-6">
+        <div class="footer-section">
+          <h6 class="fw-semibold mb-4 text-white">
+            <i class="fas fa-theater-masks me-2"></i>Géneros Populares
+          </h6>
+          <ul class="footer-links list-unstyled">
+            <li class="mb-2">
+              <a href="#" class="text-light footer-link">
+                <i class="fas fa-rocket me-2"></i>Acción
+              </a>
+            </li>
+            <li class="mb-2">
+              <a href="#" class="text-light footer-link">
+                <i class="fas fa-heart me-2"></i>Romance
+              </a>
+            </li>
+            <li class="mb-2">
+              <a href="#" class="text-light footer-link">
+                <i class="fas fa-laugh me-2"></i>Comedia
+              </a>
+            </li>
+            <li class="mb-2">
+              <a href="#" class="text-light footer-link">
+                <i class="fas fa-ghost me-2"></i>Terror
+              </a>
+            </li>
+            <li class="mb-2">
+              <a href="#" class="text-light footer-link">
+                <i class="fas fa-magic me-2"></i>Fantasía
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Contact & Newsletter -->
+      <div class="col-lg-3 col-md-6">
+        <div class="footer-section">
+          <h6 class="fw-semibold mb-4 text-white">
+            <i class="fas fa-envelope me-2"></i>Mantente Conectado
+          </h6>
+          
+          <!-- Newsletter -->
+          <div class="newsletter mb-4">
+            <p class="text-light mb-3" style="opacity: 0.9;">
+              Suscríbete para recibir noticias sobre estrenos y ofertas especiales.
+            </p>
+            <form class="newsletter-form">
+              <div class="input-group">
+                <input type="email" 
+                       class="form-control border-0 text-dark" 
+                       placeholder="Tu email"
+                       style="background-color: #f8f9fa !important;">
+                <button class="btn btn-primary" type="submit">
+                  <i class="fas fa-paper-plane"></i>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Contact Info -->
+          <div class="contact-info">
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-map-marker-alt me-3 text-primary"></i>
+              <small class="text-light">Machala, El Oro, Ecuador</small>
+            </div>
+            <div class="d-flex align-items-center mb-2">
+              <i class="fas fa-phone me-3 text-primary"></i>
+              <small class="text-light">+593 123 456 789</small>
+            </div>
+            <div class="d-flex align-items-center">
+              <i class="fas fa-envelope me-3 text-primary"></i>
+              <small class="text-light">info&#64;parkyfilms.com</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="footer-bottom py-3">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-md-6">
+          <p class="mb-0 text-light">
+            <i class="fas fa-copyright me-2"></i>
+            2025 <strong class="text-primary">Parky Films</strong>. 
+            Todos los derechos reservados.
+          </p>
+        </div>
+        <div class="col-md-6 text-md-end">
+          <div class="footer-legal d-flex justify-content-md-end gap-3 flex-wrap">
+            <a href="#" class="text-light footer-link small">Política de Privacidad</a>
+            <span class="text-light" style="opacity: 0.5;">•</span>
+            <a href="#" class="text-light footer-link small">Términos de Uso</a>
+            <span class="text-light" style="opacity: 0.5;">•</span>
+            <a href="#" class="text-light footer-link small">Cookies</a>
+            <span class="text-light" style="opacity: 0.5;">•</span>
+            <a href="#" class="text-light footer-link small">Ayuda</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Back to Top Button -->
+  <button class="btn btn-primary position-fixed bottom-0 end-0 m-4 rounded-circle back-to-top shadow-lg" 
+          onclick="window.scrollTo({top: 0, behavior: 'smooth'})"
+          style="width: 50px; height: 50px; z-index: 1000;">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+</footer>

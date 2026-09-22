@@ -1,0 +1,443 @@
+/* navbar.component.css - TEMA PARKY FILMS SUTIL Y LIMPIO - CORREGIDO Z-INDEX */
+
+/* ======================================
+   🎬 NAVBAR BASE - Estilo sutil CON Z-INDEX CORREGIDO
+   ====================================== */
+
+.navbar {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%) !important;
+  border-bottom: 2px solid rgba(255, 193, 7, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  z-index: 1060 !important; /* CORREGIDO: Z-index más alto que el sidebar */
+}
+
+/* CORREGIDO: Asegurar que el navbar tenga posición relativa */
+.navbar.sticky-top {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1060 !important;
+}
+
+/* ======================================
+   🎭 NAVBAR BRAND
+   ====================================== */
+
+.navbar-brand {
+  font-size: 1.6rem !important;
+  font-weight: 700 !important;
+  color: white !important;
+  text-decoration: none !important;
+  transition: all 0.3s ease;
+}
+
+.navbar-brand:hover {
+  color: #ffc107 !important;
+  transform: scale(1.05);
+}
+
+.navbar-brand i {
+  color: #ffc107;
+  margin-right: 0.5rem;
+}
+
+/* ======================================
+   🔗 NAVBAR LINKS
+   ====================================== */
+
+.navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-weight: 600;
+  padding: 0.75rem 1rem !important;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  margin: 0 0.25rem;
+}
+
+.navbar-nav .nav-link:hover {
+  color: #ffc107 !important;
+  background: rgba(255, 193, 7, 0.1);
+  transform: translateY(-2px);
+}
+
+.navbar-nav .nav-link.active {
+  color: #ffc107 !important;
+  background: rgba(255, 193, 7, 0.2);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.navbar-nav .nav-link i {
+  margin-right: 0.5rem;
+}
+
+/* ======================================
+   🛒 BOTONES - Carrito y Puntos
+   ====================================== */
+
+.btn-outline-success,
+.btn-outline-warning {
+  border-width: 2px;
+  font-weight: 600;
+  border-radius: 25px;
+  padding: 0.5rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-success {
+  border-color: #20c997;
+  color: #20c997;
+  background: rgba(32, 201, 151, 0.1);
+}
+
+.btn-outline-success:hover,
+.btn-success {
+  background: linear-gradient(45deg, #198754, #20c997);
+  border-color: #20c997;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(32, 201, 151, 0.3);
+}
+
+.btn-outline-warning {
+  border-color: #ffc107;
+  color: #ffc107;
+  background: rgba(255, 193, 7, 0.1);
+}
+
+.btn-outline-warning:hover {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  border-color: #ffc107;
+  color: #333;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+}
+
+/* Badge en botones */
+.badge {
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ======================================
+   🔍 BARRA DE BÚSQUEDA - Z-INDEX CORREGIDO
+   ====================================== */
+
+.search-container {
+  min-width: 280px;
+  position: relative; /* CORREGIDO: Posición relativa para z-index */
+}
+
+.search-container .form-control {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  border-radius: 25px 0 0 25px;
+  padding: 0.6rem 1rem;
+  transition: all 0.3s ease;
+}
+
+.search-container .form-control::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.search-container .form-control:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #ffc107;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2);
+  color: white;
+}
+
+.search-container .btn-outline-success {
+  border-radius: 0 25px 25px 0;
+  border-left: none;
+  padding: 0.6rem 1.2rem;
+}
+
+/* CORREGIDO: Dropdown de sugerencias con z-index más alto */
+.suggestions-dropdown {
+  z-index: 1070 !important; /* MÁS ALTO que el sidebar */
+}
+
+.suggestions-dropdown .card {
+  background: white;
+  border: 1px solid rgba(13, 110, 253, 0.2);
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.suggestions-dropdown .list-group-item {
+  background: transparent;
+  border: none;
+  transition: all 0.3s ease;
+  padding: 0.75rem 1rem;
+}
+
+.suggestions-dropdown .list-group-item:hover,
+.suggestions-dropdown .list-group-item.active {
+  background: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+}
+
+.suggestions-dropdown img {
+  border: 1px solid rgba(13, 110, 253, 0.2);
+  transition: all 0.3s ease;
+}
+
+/* ======================================
+   👤 BOTONES DE USUARIO
+   ====================================== */
+
+.btn-outline-light {
+  border-color: rgba(255, 255, 255, 0.6);
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 25px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  padding: 0.5rem 1rem;
+}
+
+.btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #ffc107;
+  color: #ffc107;
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border: none;
+  border-radius: 25px;
+  font-weight: 600;
+  padding: 0.5rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #6610f2, #0d6efd);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3);
+}
+
+/* Avatar en dropdown */
+.dropdown-toggle img {
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  transition: all 0.3s ease;
+}
+
+.dropdown-toggle:hover img {
+  border-color: #ffc107;
+}
+
+/* ======================================
+   📋 DROPDOWN MENU - Z-INDEX CORREGIDO
+   ====================================== */
+
+.dropdown {
+  position: relative; /* CORREGIDO */
+}
+
+.dropdown-menu {
+  background: white;
+  border: 1px solid rgba(13, 110, 253, 0.2);
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  padding: 0.5rem;
+  min-width: 250px;
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1070 !important; /* CORREGIDO: Z-index más alto que el sidebar */
+  position: absolute !important; /* CORREGIDO */
+}
+
+/* Estilo de la barra de scroll */
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: rgba(13, 110, 253, 0.1);
+  border-radius: 10px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #0d6efd, #ffc107);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #ffc107, #0d6efd);
+}
+
+.dropdown-header {
+  color: #0d6efd !important;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(13, 110, 253, 0.2);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.dropdown-item {
+  color: #495057;
+  font-weight: 500;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  margin: 0.15rem 0;
+  transition: all 0.3s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+}
+
+.dropdown-item.text-danger:hover {
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+}
+
+.dropdown-item i {
+  width: 20px;
+  text-align: center;
+}
+
+.dropdown-divider {
+  border-color: rgba(13, 110, 253, 0.2);
+  margin: 0.5rem 0;
+}
+
+/* ======================================
+   📱 RESPONSIVE DESIGN
+   ====================================== */
+
+@media (max-width: 992px) {
+  .search-container {
+    min-width: 200px;
+    margin-bottom: 1rem;
+  }
+  
+  .navbar-brand {
+    font-size: 1.4rem !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .search-container {
+    min-width: 100%;
+    margin: 1rem 0;
+  }
+  
+  .navbar-collapse {
+    background: rgba(26, 26, 26, 0.95);
+    border-radius: 15px;
+    padding: 1rem;
+    margin-top: 1rem;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+    z-index: 1060 !important; /* CORREGIDO */
+  }
+  
+  .navbar-nav {
+    text-align: center;
+  }
+  
+  .navbar-nav .nav-link {
+    margin: 0.25rem auto;
+    max-width: 200px;
+  }
+  
+  .btn-outline-light,
+  .btn-primary,
+  .btn-outline-success,
+  .btn-outline-warning {
+    width: 100%;
+    margin: 0.5rem 0;
+  }
+  
+  .dropdown-menu {
+    position: static !important;
+    transform: none !important;
+    width: 100%;
+    margin-top: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    z-index: 1070 !important; /* CORREGIDO */
+  }
+}
+
+@media (max-width: 576px) {
+  .navbar-brand {
+    font-size: 1.2rem !important;
+  }
+  
+  .badge {
+    font-size: 0.6rem;
+    min-width: 18px;
+    height: 18px;
+  }
+}
+
+/* ======================================
+   🎪 NAVBAR TOGGLER Y COLAPSO ANIMADO
+   ====================================== */
+
+.navbar-toggler {
+  border: 1px solid rgba(255, 193, 7, 0.5);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  transition: all 0.3s ease;
+  z-index: 1061 !important; /* CORREGIDO */
+}
+
+.badge.bg-success {
+  background: linear-gradient(45deg, #198754, #20c997) !important;
+}
+
+/* Estado de carga en botones */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* CORREGIDO: Overlay para cerrar sugerencias con z-index correcto */
+.search-overlay {
+  background: rgba(0, 0, 0, 0.05);
+  z-index: 1065 !important; /* Entre el sidebar y el dropdown */
+}
+
+/* ======================================
+   🎨 ACCESIBILIDAD
+   ====================================== */
+
+.nav-link:focus,
+.btn:focus,
+.form-control:focus,
+.dropdown-item:focus {
+  outline: 2px solid #ffc107;
+  outline-offset: 2px;
+}
+
+/* ======================================
+   🚨 FIXES ADICIONALES PARA Z-INDEX
+   ====================================== */
+
+/* CORREGIDO: Toast debe estar por encima de todo */
+.toast {
+  z-index: 1080 !important;
+}
+
+/* CORREGIDO: Modal debe estar por encima de todo */
+.modal {
+  z-index: 1075 !important;
+}
+
+.modal-backdrop {
+  z-index: 1074 !important;
+}

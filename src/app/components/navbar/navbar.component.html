@@ -1,0 +1,391 @@
+<!-- navbar.component.html - CON SISTEMA DE PUNTOS INTEGRADO - CORREGIDO -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+  <div class="container">
+    <!-- Logo/Brand -->
+    <a class="navbar-brand fw-bold" [routerLink]="['/home']">
+      <i class="fas fa-film me-2"></i>
+      Parky Films
+    </a>
+    
+    <!-- Toggle button para móvil -->
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    
+    <!-- Links del navbar -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto">
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/home']">
+            <i class="fas fa-home me-1"></i>Home
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/movies']">
+            <i class="fas fa-film me-1"></i>Películas
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/coming-soon']">
+            <i class="fas fa-calendar-alt me-1"></i>Estrenos
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/bar']">
+            <i class="fas fa-utensils me-1"></i>Bar
+          </a>
+        </li>
+        <!-- NUEVO: ENLACE A RECOMPENSAS -->
+        <li class="nav-item" *ngIf="authService.isLoggedIn()">
+          <a class="nav-link" routerLinkActive="active" [routerLink]="['/rewards']">
+            <i class="fas fa-gift me-1"></i>Recompensas
+          </a>
+        </li>
+      </ul>
+      
+      <!-- NUEVO: BADGE DE PUNTOS -->
+      <div class="me-3" *ngIf="shouldShowPoints()">
+        <button class="btn btn-outline-warning position-relative" 
+                (click)="onPointsClick()"
+                [title]="getPointsTooltip()">
+          <i class="fas fa-coins me-1"></i>
+          <span class="d-none d-md-inline">{{ getPointsDisplayText() }}</span>
+          <span class="d-md-none">{{ getPointsDisplayText() }}</span>
+          
+          <!-- Badge de nivel VIP -->
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success"
+                *ngIf="userPoints >= 1000">
+            VIP
+          </span>
+        </button>
+      </div>
+      
+      <!-- CARRITO DE COMPRAS -->
+      <div class="position-relative me-3">
+        <button class="btn btn-outline-success position-relative" 
+                [routerLink]="['/cart']"
+                [class.btn-success]="cartService.getTotalItems() > 0">
+          <i class="fas fa-shopping-cart"></i>
+          <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                *ngIf="cartService.getTotalItems() > 0">
+            {{ cartService.getTotalItems() }}
+          </span>
+        </button>
+      </div>
+      
+      <!-- Barra de búsqueda mejorada con autocompletado -->
+      <div class="search-container position-relative me-3">
+        <form class="d-flex" role="search" (ngSubmit)="buscarPelicula(buscarTexto.value)" #formBuscar="ngForm">
+          <div class="input-group">
+            <input class="form-control" 
+                   type="search" 
+                   placeholder="Buscar película..." 
+                   aria-label="Search" 
+                   #buscarTexto
+                   name="buscar"
+                   (input)="onBuscarInput($event)"
+                   (focus)="mostrarSugerencias = true"
+                   autocomplete="off">
+            <button class="btn btn-outline-success" type="submit">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+        </form>
+        
+        <!-- Dropdown de sugerencias -->
+        <div class="suggestions-dropdown position-absolute w-100 mt-1" 
+             *ngIf="mostrarSugerencias && sugerencias.length > 0"
+             style="z-index: 1050;">
+          <div class="card shadow-lg border-0">
+            <div class="list-group list-group-flush">
+              <button type="button" 
+                      class="list-group-item list-group-item-action d-flex align-items-center py-2"
+                      *ngFor="let sugerencia of sugerencias; let i = index"
+                      (click)="seleccionarSugerencia(sugerencia)"
+                      [class.active]="i === sugerenciaSeleccionada">
+                <img [src]="sugerencia.poster" 
+                     class="me-3 rounded" 
+                     style="width: 40px; height: 60px; object-fit: cover;"
+                     alt="{{ sugerencia.titulo }}">
+                <div class="flex-grow-1">
+                  <h6 class="mb-1 fw-semibold">{{ sugerencia.titulo }}</h6>
+                  <small class="text-muted">{{ sugerencia.anio }} • {{ sugerencia.genero }}</small>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- SECCIÓN DE USUARIO - ACTUALIZADA CON PUNTOS -->
+      <div class="d-flex align-items-center">
+        
+        <!-- SI NO ESTÁ LOGUEADO - Mostrar botones Login y Registro -->
+        <ng-container *ngIf="!authService.isLoggedIn()">
+          <button class="btn btn-outline-light me-2" [routerLink]="['/login']">
+            <i class="fas fa-sign-in-alt me-1"></i>Login
+          </button>
+          <button class="btn btn-primary" [routerLink]="['/register']">
+            <i class="fas fa-user-plus me-1"></i>Registro
+          </button>
+        </ng-container>
+        
+        <!-- SI ESTÁ LOGUEADO - Mostrar usuario y opciones según rol -->
+        <ng-container *ngIf="authService.isLoggedIn()">
+          <!-- Dropdown del usuario -->
+          <div class="dropdown">
+            <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" 
+                    type="button"
+                    data-bs-toggle="dropdown" 
+                    aria-expanded="false">
+              <img [src]="authService.getCurrentUser()?.avatar || 'https://ui-avatars.com/api/?name=U&background=6c757d&color=fff&size=128'" 
+                   class="rounded-circle me-2" 
+                   style="width: 24px; height: 24px; object-fit: cover;"
+                   alt="Avatar">
+              <span>{{ authService.getCurrentUser()?.nombre }}</span>
+              
+              <!-- Badge de rol -->
+              <span class="badge ms-2" 
+                    [class.bg-danger]="authService.isAdmin()" 
+                    [class.bg-primary]="authService.getCurrentUser()?.role === 'cliente'">
+                {{ authService.getCurrentUser()?.role }}
+              </span>
+              
+              <!-- NUEVO: Badge de puntos en el dropdown -->
+              <span class="badge bg-warning text-dark ms-1" 
+                    *ngIf="shouldShowPoints()">
+                <i class="fas fa-coins me-1"></i>{{ getPointsDisplayText() }}
+              </span>
+            </button>
+            
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <h6 class="dropdown-header">
+                  <i class="fas fa-user-circle me-2"></i>
+                  {{ authService.getCurrentUser()?.nombre }}
+                  
+                  <!-- NUEVO: Información de puntos en header -->
+                  <div *ngIf="shouldShowPoints()" class="mt-1">
+                    <small class="text-warning">
+                      <i class="fas fa-coins me-1"></i>
+                      {{ userPoints }} puntos disponibles
+                    </small>
+                  </div>
+                </h6>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              
+              <!-- OPCIONES DE CLIENTE (TODOS LOS USUARIOS) -->
+              <li>
+                <a class="dropdown-item" [routerLink]="['/profile']">
+                  <i class="fas fa-user me-2"></i>Mi Perfil
+                </a>
+              </li>
+              
+              <!-- NUEVO: Sección de puntos y recompensas -->
+              <li *ngIf="authService.isLoggedIn()">
+                <a class="dropdown-item" [routerLink]="['/rewards']" 
+                   [class.active]="isRewardsActive()">
+                  <i class="fas fa-gift me-2 text-warning"></i>
+                  Mis Recompensas
+                  <span class="badge bg-warning text-dark ms-auto" *ngIf="shouldShowPoints()">
+                    {{ userPoints }}
+                  </span>
+                </a>
+              </li>
+              <li *ngIf="authService.isLoggedIn()">
+                <a class="dropdown-item" (click)="goToPointsHistory()">
+                  <i class="fas fa-history me-2 text-info"></i>
+                  Historial de Puntos
+                </a>
+              </li>
+              
+              <li><hr class="dropdown-divider"></li>
+              
+              <li>
+                <a class="dropdown-item" [routerLink]="['/favorites']">
+                  <i class="fas fa-heart me-2 text-danger"></i>Mis Favoritas
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item" [routerLink]="['/history']">
+                  <i class="fas fa-history me-2"></i>Historial
+                </a>
+              </li>
+               <li>
+                <a class="dropdown-item" [routerLink]="['/order-history']">
+                  <i class="fas fa-receipt me-2"></i>Historial de Órdenes
+                </a>
+              </li>
+              <!-- SEPARADOR Y OPCIONES DE ADMIN (SOLO ADMINS) -->
+              <ng-container *ngIf="authService.isAdmin()">
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <h6 class="dropdown-header text-danger">
+                    <i class="fas fa-crown me-2"></i>
+                    Panel de Administración
+                  </h6>
+                </li>
+                <li>
+                  <a class="dropdown-item text-danger" [routerLink]="['/admin/dashboard']">
+                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard Admin
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item text-danger" [routerLink]="['/admin/movies']">
+                    <i class="fas fa-film me-2"></i>Gestionar Películas
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item text-danger" [routerLink]="['/admin/bar']">
+                    <i class="fas fa-utensils me-2"></i>Gestionar Bar
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item text-danger" [routerLink]="['/admin/users']">
+                    <i class="fas fa-users me-2"></i>Gestionar Usuarios
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item text-danger" [routerLink]="['/admin/coming-soon']">
+                    <i class="fas fa-star me-2"></i>Gestionar Estrenos
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item text-danger" [routerLink]="['/admin/functions']">
+                    <i class="fas fa-clock me-2"></i>Gestionar Funciones
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item text-danger" [routerLink]="['/admin/points']">
+                    <i class="fas fa-coins me-2"></i>Gestionar Puntos
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item text-danger" [routerLink]="['/admin/rewards']">
+                    <i class="fas fa-gift me-2"></i>Gestionar Recompensas
+                  </a>
+                </li>
+              </ng-container>
+              
+              <li><hr class="dropdown-divider"></li>
+              <li *ngIf="shouldShowPoints()">
+                <button class="dropdown-item" (click)="refreshPoints()">
+                  <i class="fas fa-sync-alt me-2 text-primary"></i>
+                  Actualizar Puntos
+                </button>
+              </li>
+              <li *ngIf="shouldShowPoints()">
+                <button class="dropdown-item" (click)="shareReferralCode()">
+                  <i class="fas fa-share me-2 text-info"></i>
+                  Compartir Código de Referido
+                </button>
+              </li>
+              
+              <li><hr class="dropdown-divider"></li>
+              
+              <li>
+                <button class="dropdown-item text-danger" (click)="logout()">
+                  <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+                </button>
+              </li>
+            </ul>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- NUEVO: Toast de notificaciones de puntos -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1055;">
+  <div class="toast align-items-center text-white bg-success border-0" 
+       id="pointsToast" 
+       role="alert" 
+       aria-live="assertive" 
+       aria-atomic="true">
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="fas fa-coins me-2"></i>
+        <span id="pointsToastMessage">¡Has ganado puntos!</span>
+      </div>
+      <button type="button" 
+              class="btn-close btn-close-white me-2 m-auto" 
+              data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+</div>
+
+<!-- NUEVO: Overlay para cerrar sugerencias al hacer clic fuera -->
+<div class="search-overlay" 
+     *ngIf="mostrarSugerencias" 
+     (click)="cerrarSugerencias()"
+     style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1040;">
+</div>
+
+<!-- NUEVO: Modal de información de puntos -->
+<div class="modal fade" id="pointsInfoModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title">
+          <i class="fas fa-coins me-2"></i>
+          Sistema de Puntos
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="text-center mb-4">
+          <i class="fas fa-coins fa-4x text-warning mb-3"></i>
+          <h4>¡Gana puntos con cada compra!</h4>
+        </div>
+        
+        <div class="row g-3 mb-4">
+          <div class="col-6 text-center">
+            <div class="border rounded p-3">
+              <i class="fas fa-shopping-cart fa-2x text-primary mb-2"></i>
+              <h6>Por cada $1 gastado</h6>
+              <span class="badge bg-success fs-6">1 punto</span>
+            </div>
+          </div>
+          <div class="col-6 text-center">
+            <div class="border rounded p-3">
+              <i class="fas fa-users fa-2x text-info mb-2"></i>
+              <h6>Por referir amigos</h6>
+              <span class="badge bg-info fs-6">100 puntos</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="alert alert-success">
+          <h6 class="alert-heading">
+            <i class="fas fa-gift me-2"></i>
+            ¿Qué puedes hacer con tus puntos?
+          </h6>
+          <ul class="mb-0">
+            <li>Canjear entradas gratis</li>
+            <li>Obtener descuentos en el bar</li>
+            <li>Acceder a experiencias VIP</li>
+            <li>Conseguir productos exclusivos</li>
+          </ul>
+        </div>
+        
+        <div class="text-center">
+          <p class="text-muted mb-0">
+            <strong>Tu saldo actual:</strong> 
+            <span class="text-warning fs-5 fw-bold">{{ userPoints }} puntos</span>
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cerrar
+        </button>
+        <button type="button" class="btn btn-warning" (click)="goToRewards()">
+          <i class="fas fa-gift me-2"></i>
+          Ver Recompensas
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

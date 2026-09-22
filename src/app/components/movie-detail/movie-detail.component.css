@@ -1,0 +1,1566 @@
+/* ======================================
+   🎬 CSS UNIFICADO FASE 3 - TEMA PARKY FILMS
+   Movie Detail, Search, Favorites, Coming Soon
+   ====================================== */
+
+/* ======================================
+   📋 BASE STYLES - Headers y contenedores
+   ====================================== */
+
+.container {
+  max-width: 1200px;
+}
+
+.header-section {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem !important;
+}
+
+.header-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.text-shadow {
+  text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+}
+
+.header-stats {
+  min-width: 120px;
+}
+
+.search-header {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+}
+
+/* ======================================
+   🎥 MOVIE CARDS - Estilo unificado
+   ====================================== */
+
+.movie-card,
+.coming-soon-card {
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+.movie-card:hover,
+.coming-soon-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 20px 40px rgba(13, 110, 253, 0.2) !important;
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.shadow-hover {
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.1);
+  transition: all 0.3s ease;
+}
+
+/* Poster containers */
+.poster-container {
+  overflow: hidden;
+  position: relative;
+}
+
+.movie-card .card-img-top,
+.coming-soon-card .card-img-top,
+.movie-poster {
+  transition: all 0.3s ease;
+  border-radius: 1rem 1rem 0 0;
+}
+
+.movie-card:hover .card-img-top,
+.coming-soon-card:hover .card-img-top,
+.movie-card:hover .movie-poster {
+  transform: scale(1.05);
+  filter: brightness(0.9);
+}
+
+/* Poster overlays */
+.card-overlay,
+.poster-overlay {
+  background: rgba(0,0,0,0.8);
+  opacity: 0;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.movie-card:hover .card-overlay,
+.coming-soon-card:hover .poster-overlay {
+  opacity: 1;
+}
+
+.overlay-btn {
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+}
+
+.movie-card:hover .overlay-btn,
+.coming-soon-card:hover .overlay-btn {
+  transform: translateY(0);
+}
+
+/* ======================================
+   🏷️ BADGES - Rating, géneros, etc.
+   ====================================== */
+
+.badge {
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.badge.bg-warning {
+  background: linear-gradient(45deg, #ffc107, #ff8f00) !important;
+  color: #333 !important;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.badge.bg-primary {
+  background: linear-gradient(45deg, #0d6efd, #6610f2) !important;
+}
+
+.badge.bg-success {
+  background: linear-gradient(45deg, #198754, #20c997) !important;
+}
+
+.badge.bg-info {
+  background: linear-gradient(45deg, #0dcaf0, #17a2b8) !important;
+}
+
+.badge.bg-secondary {
+  background: linear-gradient(45deg, #6c757d, #495057) !important;
+}
+
+.badge.bg-danger {
+  background: linear-gradient(45deg, #dc3545, #c82333) !important;
+}
+
+.movie-card:hover .badge,
+.coming-soon-card:hover .badge {
+  transform: scale(1.1);
+}
+
+/* ======================================
+   🔘 BOTONES - Estilo unificado
+   ====================================== */
+
+.btn {
+  border-radius: 25px;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border: none;
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #6610f2, #0d6efd);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 110, 253, 0.4);
+}
+
+.btn-success {
+  background: linear-gradient(45deg, #198754, #20c997);
+  border: none;
+  box-shadow: 0 4px 15px rgba(25, 135, 84, 0.3);
+}
+
+.btn-success:hover {
+  background: linear-gradient(45deg, #20c997, #198754);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(32, 201, 151, 0.4);
+}
+
+.btn-warning {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  border: none;
+  color: #333;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.btn-warning:hover {
+  background: linear-gradient(45deg, #ff8f00, #ffc107);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+  color: #333;
+}
+
+.btn-outline-primary,
+.btn-outline-success,
+.btn-outline-warning,
+.btn-outline-danger,
+.btn-outline-secondary {
+  border-width: 2px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 110, 253, 0.3);
+}
+
+.btn-outline-success:hover {
+  background: linear-gradient(45deg, #198754, #20c997);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(25, 135, 84, 0.3);
+}
+
+.btn-outline-warning:hover {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  color: #333;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+}
+
+.btn-outline-danger:hover {
+  background: linear-gradient(45deg, #dc3545, #c82333);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(220, 53, 69, 0.3);
+}
+
+.btn-outline-secondary:hover {
+  background: linear-gradient(45deg, #6c757d, #495057);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+}
+
+/* ======================================
+   📋 CARDS - Información y detalles
+   ====================================== */
+
+.card {
+  border-radius: 1rem;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(13, 110, 253, 0.15);
+}
+
+.card-header {
+  border-radius: 1rem 1rem 0 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card-header.bg-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.card-footer {
+  background: rgba(248, 249, 250, 0.8);
+  border-top: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+/* Info cards especiales */
+.info-card {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  height: 100%;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.info-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 35px rgba(13, 110, 253, 0.15);
+  border-color: rgba(255, 193, 7, 0.3);
+}
+
+.info-icon {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #0d6efd, #6610f2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  margin: 0 auto 1rem;
+  transition: all 0.3s ease;
+}
+
+.info-card:hover .info-icon {
+  transform: scale(1.1);
+  box-shadow: 0 8px 20px rgba(13, 110, 253, 0.4);
+}
+
+.info-content h6 {
+  color: #0d6efd;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.info-content p {
+  color: #495057;
+  font-weight: 600;
+  margin: 0;
+}
+
+/* ======================================
+   🎬 MOVIE DETAIL - Estilos específicos
+   ====================================== */
+
+/* Admin highlights */
+.admin-highlight {
+  border: 2px solid #ffc107 !important;
+  box-shadow: 0 0 20px rgba(255, 193, 7, 0.3) !important;
+}
+
+.admin-info .card {
+  background: rgba(255, 193, 7, 0.1) !important;
+  border: 1px solid #ffc107 !important;
+  border-radius: 0.75rem;
+}
+
+/* Purchase section */
+.purchase-section .card {
+  border: 2px solid #198754;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  transition: all 0.3s ease;
+}
+
+.purchase-section .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(25, 135, 84, 0.2);
+}
+
+/* Studio section */
+.studio-logo-container {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  border-radius: 1rem !important;
+  padding: 2rem !important;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+.studio-logo-container:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.estudio-img {
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+  transition: all 0.3s ease;
+}
+
+.estudio-img:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.2));
+}
+
+/* Trailer section */
+.trailer-section .ratio {
+  border-radius: 1rem;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+}
+
+.trailer-section .ratio:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+}
+
+/* ======================================
+   🔍 SEARCH - Estilos específicos
+   ====================================== */
+
+.movie-info {
+  font-size: 0.9rem;
+}
+
+.movie-info i {
+  color: #0d6efd;
+  width: 16px;
+}
+
+/* ======================================
+   ❤️ FAVORITES - Estilos específicos
+   ====================================== */
+
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.empty-state i {
+  opacity: 0.5;
+}
+
+/* Vista de tabla */
+.table-responsive {
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table-primary {
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(102, 16, 242, 0.1));
+}
+
+.table-hover tbody tr:hover {
+  background: rgba(13, 110, 253, 0.05);
+}
+
+/* Paginación */
+.pagination {
+  border-radius: 1rem;
+}
+
+.page-item .page-link {
+  border-radius: 0.5rem;
+  margin: 0 0.25rem;
+  border: 2px solid rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.page-item.active .page-link {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border-color: #0d6efd;
+}
+
+.page-item .page-link:hover {
+  background: rgba(13, 110, 253, 0.1);
+  border-color: #ffc107;
+  color: #0d6efd;
+  transform: translateY(-2px);
+}
+
+/* ======================================
+   📅 COMING SOON - Estilos específicos
+   ====================================== */
+
+.month-header h2 {
+  color: #0d6efd;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.month-header hr {
+  border-color: #0d6efd;
+  border-width: 2px;
+  width: 100px;
+  margin: 0;
+}
+
+.month-section {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ======================================
+   🎨 SECTION TITLES
+   ====================================== */
+
+.section-title {
+  color: #0d6efd;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid #0d6efd;
+  position: relative;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: linear-gradient(45deg, #6610f2, #ffc107);
+}
+
+/* ======================================
+   🚨 ALERTS
+   ====================================== */
+
+.alert {
+  border-radius: 1rem;
+  border: none;
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid;
+}
+
+.alert-danger {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
+  color: #dc3545;
+  border-left-color: #dc3545;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, rgba(25, 135, 84, 0.1), rgba(25, 135, 84, 0.05));
+  color: #198754;
+  border-left-color: #198754;
+}
+
+.alert-info {
+  background: linear-gradient(135deg, rgba(13, 202, 240, 0.1), rgba(13, 202, 240, 0.05));
+  color: #0dcaf0;
+  border-left-color: #0dcaf0;
+}
+
+.alert-primary {
+  background: linear-gradient(135deg, rgba(13, 110, 253, 0.1), rgba(13, 110, 253, 0.05));
+  color: #0d6efd;
+  border-left-color: #0d6efd;
+}
+
+.alert-heading {
+  font-weight: 700;
+}
+
+/* ======================================
+   🔗 BREADCRUMBS
+   ====================================== */
+
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-item a {
+  color: #0d6efd;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.breadcrumb-item a:hover {
+  color: #ffc107;
+  transform: translateX(3px);
+}
+
+.breadcrumb-item.active {
+  color: #6c757d;
+  font-weight: 600;
+}
+
+/* ======================================
+   💬 COMENTARIOS INTEGRADOS EN MOVIE DETAIL
+   ====================================== */
+
+/* Sección de comentarios en movie detail */
+.row.mt-5 .card {
+  border: 2px solid #e3f2fd;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 15px 40px rgba(13, 110, 253, 0.15);
+  transition: all 0.4s ease;
+  position: relative;
+}
+
+.row.mt-5 .card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #0d6efd, #6610f2, #ffc107);
+  z-index: 1;
+}
+
+.row.mt-5 .card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 50px rgba(13, 110, 253, 0.2);
+  border-color: #0d6efd;
+}
+
+/* Header de la sección de comentarios */
+.row.mt-5 .card-header {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+  color: white;
+  border-bottom: none;
+  padding: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.row.mt-5 .card-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+.row.mt-5 .card-header h4 {
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+  font-size: 1.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+.row.mt-5 .card-header p {
+  margin-bottom: 0;
+  font-weight: 500;
+  font-size: 1.1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.row.mt-5 .card-header i {
+  filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2));
+}
+
+/* Body de la sección de comentarios */
+.row.mt-5 .card-body {
+  padding: 2.5rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  position: relative;
+}
+
+.row.mt-5 .card-body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(13, 110, 253, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(102, 16, 242, 0.05) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* Componente de comentarios dentro del movie detail */
+.row.mt-5 app-comments {
+  position: relative;
+  z-index: 1;
+}
+
+/* ==================== MEJORAS PARA EL CONTENIDO EXISTENTE ==================== */
+
+/* Header principal de la película */
+.display-4.fw-bold.text-primary {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  font-weight: 900;
+}
+
+/* Indicador admin mejorado */
+.badge.bg-danger.fs-6 {
+  background: linear-gradient(45deg, #dc3545, #fd7e14) !important;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+  border-radius: 25px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Cards de información mejorados */
+.card.bg-light.border-0.h-100 {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+  border: 2px solid #e3f2fd !important;
+  border-radius: 15px;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.card.bg-light.border-0.h-100::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0d6efd, #6610f2);
+  transition: height 0.3s ease;
+}
+
+.card.bg-light.border-0.h-100:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 30px rgba(13, 110, 253, 0.15);
+  border-color: #0d6efd !important;
+}
+
+.card.bg-light.border-0.h-100:hover::before {
+  height: 5px;
+}
+
+.card.bg-light.border-0.h-100 .card-body {
+  padding: 1.5rem;
+  background: transparent;
+}
+
+.card.bg-light.border-0.h-100 h6 {
+  color: #0d6efd;
+  font-weight: 700;
+  margin-bottom: 0.75rem;
+}
+
+.card.bg-light.border-0.h-100 p {
+  color: #495057;
+  font-weight: 600;
+  margin: 0;
+}
+
+.card.bg-light.border-0.h-100 i {
+  color: #0d6efd;
+  filter: drop-shadow(1px 1px 2px rgba(0,0,0,0.1));
+}
+
+/* Badge de rating mejorado */
+.badge.bg-warning.text-dark.fs-5 {
+  background: linear-gradient(45deg, #ffc107, #ff8f00) !important;
+  color: #333 !important;
+  border-radius: 20px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+  border: 2px solid #fff;
+}
+
+/* Panel admin mejorado */
+.admin-info .card.bg-light.border-warning {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 248, 220, 0.3)) !important;
+  border: 2px solid #ffc107 !important;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2);
+}
+
+.admin-info .card-title.text-warning {
+  color: #996404 !important;
+  font-weight: 700;
+}
+
+/* Sección de compra mejorada */
+.purchase-section .card.border-success {
+  border: 3px solid #28a745 !important;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fff9 100%);
+  transition: all 0.4s ease;
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.purchase-section .card.border-success::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.purchase-section .card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 40px rgba(40, 167, 69, 0.25);
+}
+
+.purchase-section .card-body {
+  padding: 3rem 2rem !important;
+  background: transparent;
+}
+
+.purchase-section h4.text-success {
+  color: #28a745 !important;
+  font-weight: 800;
+  font-size: 1.8rem;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.purchase-section .btn.btn-success.btn-lg {
+  background: linear-gradient(45deg, #28a745, #20c997);
+  border: none;
+  border-radius: 30px;
+  padding: 1rem 2.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 6px 20px rgba(40, 167, 69, 0.3);
+  transition: all 0.3s ease;
+}
+
+.purchase-section .btn.btn-success.btn-lg:hover {
+  background: linear-gradient(45deg, #20c997, #28a745);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 30px rgba(40, 167, 69, 0.4);
+}
+
+/* Funciones admin mejorado */
+.funciones-admin .card.border-warning {
+  border: 2px solid #ffc107 !important;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #ffffff 0%, #fffbf0 100%);
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.15);
+}
+
+.funciones-admin h5.text-warning {
+  color: #996404 !important;
+  font-weight: 800;
+}
+
+/* Gestión de funciones panel */
+.card.border-primary .card-header.bg-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+  border-radius: 15px 15px 0 0;
+  padding: 1.5rem;
+}
+
+.card.border-primary .card-header h5 {
+  font-weight: 700;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+/* Trailer section mejorado */
+.trailer-section h5.text-primary {
+  color: #0d6efd !important;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  font-size: 1.3rem;
+}
+
+.trailer-section .ratio.ratio-16x9 {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+  transition: all 0.4s ease;
+  border: 3px solid #fff;
+}
+
+.trailer-section .ratio:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+}
+
+/* Studio section mejorado */
+.studio-section h5.text-primary {
+  color: #0d6efd !important;
+  font-weight: 800;
+  font-size: 1.3rem;
+}
+
+.studio-logo-container {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+  border-radius: 20px !important;
+  padding: 3rem 2rem !important;
+  transition: all 0.4s ease;
+  border: 2px solid #e3f2fd !important;
+  box-shadow: 0 8px 25px rgba(13, 110, 253, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.studio-logo-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 30% 40%, rgba(13, 110, 253, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 70% 60%, rgba(102, 16, 242, 0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+.studio-logo-container:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(13, 110, 253, 0.2);
+  border-color: #0d6efd !important;
+}
+
+.estudio-img {
+  filter: drop-shadow(0 6px 15px rgba(0,0,0,0.1));
+  transition: all 0.4s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.estudio-img:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.2));
+}
+
+/* ======================================
+   📱 RESPONSIVE DESIGN
+   ====================================== */
+
+@media (max-width: 1200px) {
+  .display-4 {
+    font-size: 2.5rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .display-4 {
+    font-size: 2rem;
+  }
+  
+  .header-section {
+    text-align: center;
+  }
+  
+  .header-section .d-flex {
+    flex-direction: column;
+  }
+  
+  .movie-card .card-img-top,
+  .coming-soon-card .card-img-top {
+    height: 300px;
+  }
+}
+
+@media (max-width: 768px) {
+  .display-4 {
+    font-size: 1.8rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .info-card {
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+  
+  .info-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+  
+  .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .movie-card .card-img-top,
+  .coming-soon-card .card-img-top {
+    height: 250px;
+  }
+  
+  /* Responsive para comentarios en movie detail */
+  .row.mt-5 .card-header {
+    padding: 1.5rem;
+    text-align: center;
+  }
+  
+  .row.mt-5 .card-header h4 {
+    font-size: 1.3rem;
+  }
+  
+  .row.mt-5 .card-body {
+    padding: 1.5rem;
+  }
+  
+  .purchase-section .card-body {
+    padding: 2rem 1.5rem !important;
+  }
+  
+  .purchase-section h4.text-success {
+    font-size: 1.5rem;
+  }
+  
+  .studio-logo-container {
+    padding: 2rem 1.5rem !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 0 0.5rem;
+  }
+  
+  .display-4 {
+    font-size: 1.5rem;
+  }
+  
+  .btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .section-title {
+    font-size: 1.25rem;
+    text-align: center;
+  }
+  
+  /* Responsive para comentarios en movie detail - móvil */
+  .row.mt-5 .card-header {
+    padding: 1rem;
+  }
+  
+  .row.mt-5 .card-header h4 {
+    font-size: 1.2rem;
+  }
+  
+  .row.mt-5 .card-body {
+    padding: 1rem;
+  }
+  
+  .display-4.fw-bold.text-primary {
+    font-size: 1.8rem;
+  }
+  
+  .purchase-section .card-body {
+    padding: 1.5rem 1rem !important;
+  }
+  
+  .purchase-section h4.text-success {
+    font-size: 1.3rem;
+  }
+  
+  .purchase-section .btn.btn-success.btn-lg {
+    padding: 0.8rem 2rem;
+    font-size: 0.9rem;
+  }
+  
+  .studio-logo-container {
+    padding: 1.5rem 1rem !important;
+  }
+}
+
+/* ======================================
+   ✨ ANIMACIONES
+   ====================================== */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(50px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(13, 110, 253, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(13, 110, 253, 0.5);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animated {
+  animation-duration: 0.8s;
+  animation-fill-mode: both;
+}
+
+.fadeIn {
+  animation-name: fadeIn;
+}
+
+.fadeInUp {
+  animation-name: fadeInUp;
+}
+
+.fast {
+  animation-duration: 0.4s;
+}
+
+/* Aplicar animaciones */
+.row.mt-5 .card {
+  animation: slideInFromBottom 0.8s ease-out;
+}
+
+.card.bg-light.border-0.h-100:nth-child(1) {
+  animation: fadeInScale 0.6s ease-out 0.1s both;
+}
+
+.card.bg-light.border-0.h-100:nth-child(2) {
+  animation: fadeInScale 0.6s ease-out 0.2s both;
+}
+
+.card.bg-light.border-0.h-100:nth-child(3) {
+  animation: fadeInScale 0.6s ease-out 0.3s both;
+}
+
+.card.bg-light.border-0.h-100:nth-child(4) {
+  animation: fadeInScale 0.6s ease-out 0.4s both;
+}
+
+.purchase-section .card {
+  animation: fadeInScale 0.8s ease-out 0.5s both;
+}
+
+.admin-highlight {
+  animation: glow 2s ease-in-out infinite;
+}
+
+.badge.bg-danger.fs-6:hover {
+  animation: pulse 0.6s ease-in-out;
+}
+
+.badge.bg-warning.text-dark.fs-5:hover {
+  animation: pulse 0.6s ease-in-out;
+}
+
+/* Delays para animaciones escalonadas */
+.row:nth-child(even) {
+  animation-delay: 0.1s;
+}
+
+.row:nth-child(3n) {
+  animation-delay: 0.2s;
+}
+
+.movie-card:nth-child(1) { animation-delay: 0.1s; }
+.movie-card:nth-child(2) { animation-delay: 0.2s; }
+.movie-card:nth-child(3) { animation-delay: 0.3s; }
+.movie-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Efecto de aparición suave para el contenido */
+.movie-content > * {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.movie-content > *:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.movie-content > *:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.movie-content > *:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+/* Contenedor principal */
+.container.mt-4 {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ======================================
+   🎯 ESTADOS ESPECIALES
+   ====================================== */
+
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.spinner-border {
+  color: #0d6efd;
+}
+
+.text-primary {
+  color: #0d6efd !important;
+}
+
+.text-muted {
+  opacity: 0.8;
+}
+
+/* Hover effects para cards principales */
+.movie-content .card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+/* ======================================
+   🔧 UTILIDADES
+   ====================================== */
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.overflow-hidden {
+  overflow: hidden;
+}
+
+.position-relative {
+  position: relative;
+}
+
+.w-100 {
+  width: 100% !important;
+}
+
+.h-100 {
+  height: 100% !important;
+}
+
+/* Grid gaps mejorados */
+.g-4 {
+  --bs-gutter-x: 2rem;
+  --bs-gutter-y: 2rem;
+}
+
+.g-3 {
+  --bs-gutter-x: 1.5rem;
+  --bs-gutter-y: 1.5rem;
+}
+
+.g-2 {
+  --bs-gutter-x: 1rem;
+  --bs-gutter-y: 1rem;
+}
+
+/* Hr mejorado */
+.border-primary.border-2 {
+  border-color: #0d6efd !important;
+  border-width: 3px !important;
+  opacity: 1;
+  background: linear-gradient(90deg, #0d6efd, #6610f2, transparent);
+  height: 3px;
+  border: none;
+  border-radius: 2px;
+}
+
+/* Botones generales mejorados */
+.btn.btn-outline-primary.btn-lg {
+  border: 2px solid #0d6efd;
+  color: #0d6efd;
+  border-radius: 25px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.btn.btn-outline-primary.btn-lg:hover {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border-color: #0d6efd;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 110, 253, 0.4);
+}
+
+.btn.btn-outline-warning {
+  border: 2px solid #ffc107;
+  color: #996404;
+  background: white;
+  border-radius: 25px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn.btn-outline-warning:hover {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  border-color: #ffc107;
+  color: #333;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+}
+
+.btn.btn-outline-danger {
+  border: 2px solid #dc3545;
+  color: #dc3545;
+  background: white;
+  border-radius: 25px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn.btn-outline-danger:hover {
+  background: linear-gradient(45deg, #dc3545, #fd7e14);
+  border-color: #dc3545;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(220, 53, 69, 0.4);
+}
+
+.btn.btn-outline-success,
+.btn.btn-outline-info {
+  border: 2px solid;
+  border-radius: 25px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.btn.btn-outline-success {
+  border-color: #28a745;
+  color: #28a745;
+}
+
+.btn.btn-outline-success:hover {
+  background: linear-gradient(45deg, #28a745, #20c997);
+  border-color: #28a745;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4);
+}
+
+.btn.btn-outline-info {
+  border-color: #0dcaf0;
+  color: #0dcaf0;
+}
+
+.btn.btn-outline-info:hover {
+  background: linear-gradient(45deg, #0dcaf0, #17a2b8);
+  border-color: #0dcaf0;
+  color: white;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 202, 240, 0.4);
+}
+
+/* Mejoras para spinner y estados de carga */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+  color: #0d6efd;
+}
+
+/* Text mejorados */
+.lead {
+  font-size: 1.15rem;
+  font-weight: 400;
+  line-height: 1.7;
+  color: #495057;
+}
+
+/* ======================================
+   🎨 ACCESIBILIDAD
+   ====================================== */
+
+.btn:focus,
+.page-link:focus,
+.card:focus {
+  outline: 2px solid #ffc107;
+  outline-offset: 2px;
+}
+
+/* Focus visible mejorado */
+*:focus-visible {
+  outline: 2px solid #ffc107;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Contraste mejorado para enlaces */
+a {
+  color: #0d6efd;
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: #0056b3;
+}
+
+/* Modo de alto contraste */
+@media (prefers-contrast: high) {
+  .card {
+    border: 2px solid #000000;
+  }
+  
+  .btn-primary {
+    background: #0000ff !important;
+  }
+  
+  .text-primary {
+    color: #0000ff !important;
+  }
+  
+  .card.bg-light.border-0.h-100 {
+    background: linear-gradient(135deg, #343a40 0%, #495057 100%) !important;
+    border-color: #495057 !important;
+    color: #fff;
+  }
+  
+  .card.bg-light.border-0.h-100 h6 {
+    color: #17a2b8 !important;
+  }
+  
+  .card.bg-light.border-0.h-100 p {
+    color: #adb5bd !important;
+  }
+  
+  .studio-logo-container {
+    background: linear-gradient(135deg, #343a40 0%, #495057 100%) !important;
+    border-color: #495057 !important;
+  }
+  
+  .row.mt-5 .card-body {
+    background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+  }
+}
+
+/* Modo sin animaciones */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ======================================
+   📄 PRINT STYLES
+   ====================================== */
+@media print {
+  .row.mt-5 .card,
+  .purchase-section,
+  .funciones-admin {
+    break-inside: avoid;
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+  
+  .btn,
+  .admin-info {
+    display: none !important;
+  }
+}
+
+/* ======================================
+   🎨 FINAL POLISH
+   ====================================== */
+
+/* Separadores visuales */
+.mb-4, .mb-3 {
+  position: relative;
+}
+
+/* Sombras sutiles para profundidad */
+.shadow-lg {
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Bordes redondeados consistentes */
+.rounded,
+.rounded-3,
+.rounded-top {
+  border-radius: 1rem !important;
+}
+
+.rounded-3 {
+  border-radius: 1.25rem !important;
+}
+
+/* Transiciones globales suaves */
+* {
+  transition: all 0.3s ease;
+}
+
+/* Prevenir transiciones en elementos que no las necesitan */
+.spinner-border,
+.spinner-border-sm,
+iframe {
+  transition: none !important;
+} 

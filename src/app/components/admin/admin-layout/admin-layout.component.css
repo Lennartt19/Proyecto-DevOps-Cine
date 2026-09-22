@@ -1,0 +1,638 @@
+/* admin-layout.component.css - CORREGIDO COMPLETO */
+
+/* ========== ANIMACIONES GENERALES ========== */
+.admin-layout {
+  animation: fadeInUp 0.6s ease-out;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========== HEADER DEL ADMIN ========== */
+.admin-header {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+  padding: 1rem 0;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+}
+
+.admin-header h3 {
+  font-weight: 700;
+  font-size: 1.8rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  color: white !important;
+}
+
+.admin-header small {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.9) !important;
+}
+
+.admin-header .btn-outline-light {
+  border-color: rgba(255,255,255,0.5);
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.admin-header .btn-outline-light:hover {
+  background-color: rgba(255,255,255,0.2);
+  border-color: white;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+
+/* ========== BREADCRUMBS ========== */
+.breadcrumb-section {
+  background-color: #f8f9fa;
+  padding: 0.75rem 1rem;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.breadcrumb a {
+  color: #dc3545;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.breadcrumb a:hover {
+  color: #c82333;
+  text-decoration: underline;
+}
+
+.breadcrumb-item.active {
+  font-weight: 600;
+  color: #6c757d;
+}
+
+/* ========== SIDEBAR ========== */
+.admin-sidebar {
+  border-radius: 15px;
+  border: 1px solid #e9ecef;
+  background-color: #ffffff;
+  min-height: calc(100vh - 200px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  animation: slideInRight 0.5s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ========== PERFIL DEL ADMIN ========== */
+.admin-profile .card {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+  color: white;
+  border: none;
+}
+
+.admin-profile img {
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
+}
+
+.admin-profile img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+}
+
+/* ========== NAVEGACIÓN LATERAL ========== */
+.nav-section h6 {
+  font-size: 0.75rem;
+  letter-spacing: 1px;
+  margin-bottom: 1rem;
+  padding-left: 0.5rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+/* ========== ENLACES DEL SIDEBAR ========== */
+.list-group-item {
+  border: none !important;
+  transition: all 0.3s ease;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+  color: #495057 !important;
+  background-color: transparent !important;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.list-group-item:hover {
+  background-color: #e9ecef !important;
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  color: #495057 !important;
+}
+
+.list-group-item.active {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+  color: white !important;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+  transform: translateX(0);
+}
+
+.list-group-item.active:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004085 100%) !important;
+  transform: translateX(0);
+  color: white !important;
+}
+
+/* ========== ICONOS EN EL SIDEBAR ========== */
+.list-group-item i {
+  width: 20px;
+  text-align: center;
+  margin-right: 0.75rem;
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.list-group-item.active i {
+  opacity: 1;
+  color: white !important;
+}
+
+/* 🔧 CORRECCIÓN ESPECÍFICA PARA ICONOS */
+.fa-calendar-star:before {
+  content: "\f621"; /* Código correcto para calendar-star */
+}
+
+/* Fallback si calendar-star no existe */
+.list-group-item .fa-calendar-star {
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+}
+
+/* Si el icono no funciona, usar calendar-alt como fallback */
+.fa-calendar-star {
+  content: "";
+}
+
+.fa-calendar-star::before {
+  content: "\f073"; /* calendar-alt como fallback */
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+}
+
+/* ========== BADGES EN EL SIDEBAR ========== */
+.badge {
+  font-size: 0.7rem;
+  border-radius: 10px;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  min-width: 24px;
+  text-align: center;
+}
+
+.badge.bg-success {
+  background-color: #28a745 !important;
+  color: white;
+}
+
+.badge.bg-info {
+  background-color: #17a2b8 !important;
+  color: white;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529;
+}
+
+.badge.bg-secondary {
+  background-color: #6c757d !important;
+  color: white;
+}
+
+.badge.bg-primary {
+  background-color: #007bff !important;
+  color: white;
+}
+
+.badge.bg-dark {
+  background-color: #343a40 !important;
+  color: white;
+}
+
+/* ========== ACCIONES RÁPIDAS ========== */
+.quick-actions .btn {
+  transition: all 0.3s ease;
+  font-weight: 600;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.quick-actions .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.quick-actions .btn i {
+  margin-right: 0.5rem;
+  opacity: 0.8;
+}
+
+/* ========== CONTENIDO PRINCIPAL ========== */
+.admin-content {
+  background-color: white;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  min-height: calc(100vh - 200px);
+  position: relative;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* ========== LOADING OVERLAY ========== */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255,255,255,0.9);
+  z-index: 1000;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+  border-width: 0.3rem;
+}
+
+/* ========== NAVEGACIÓN MÓVIL ========== */
+.mobile-nav {
+  box-shadow: 0 -4px 15px rgba(0,0,0,0.1);
+  z-index: 1030;
+  background-color: white;
+}
+
+.mobile-nav a {
+  color: #6c757d;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  padding: 0.75rem 0.5rem;
+  border-radius: 8px;
+  margin: 0.25rem;
+}
+
+.mobile-nav a:hover,
+.mobile-nav a.active {
+  color: #007bff;
+  background-color: #f8f9fa;
+  transform: translateY(-1px);
+}
+
+.mobile-nav small {
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.mobile-nav i {
+  font-size: 1.2rem;
+  margin-bottom: 0.25rem;
+}
+
+/* ========== BOTONES GENERALES ========== */
+.btn {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-outline-primary:hover {
+  background-color: #007bff;
+  border-color: #007bff;
+  color: white;
+}
+
+.btn-outline-success:hover {
+  background-color: #28a745;
+  border-color: #28a745;
+  color: white;
+}
+
+.btn-outline-warning:hover {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+}
+
+.btn-outline-info:hover {
+  background-color: #17a2b8;
+  border-color: #17a2b8;
+  color: white;
+}
+
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  color: white;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #6c757d;
+  border-color: #6c757d;
+  color: white;
+}
+
+/* ========== RESPONSIVE DESIGN ========== */
+@media (max-width: 768px) {
+  .admin-header h3 {
+    font-size: 1.5rem;
+  }
+  
+  .admin-content {
+    padding: 1rem !important;
+    margin: 0;
+    border-radius: 0;
+  }
+  
+  .quick-actions .btn {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+  
+  .nav-section h6 {
+    font-size: 0.7rem;
+  }
+  
+  .list-group-item {
+    padding: 0.75rem;
+    font-size: 0.9rem;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+  }
+
+  .btn-group .btn {
+    margin: 2px 0;
+  }
+}
+
+@media (max-width: 576px) {
+  .admin-header {
+    padding: 0.5rem 0;
+  }
+  
+  .admin-header h3 {
+    font-size: 1.2rem;
+  }
+  
+  .admin-header small {
+    font-size: 0.7rem;
+  }
+  
+  .breadcrumb {
+    font-size: 0.8rem;
+    padding: 0.5rem 0;
+  }
+  
+  .admin-profile img {
+    width: 40px;
+    height: 40px;
+  }
+
+  .admin-content {
+    padding: 1rem !important;
+  }
+  
+  .list-group-item {
+    font-size: 0.85rem;
+    padding: 0.65rem 0.75rem;
+  }
+  
+  .list-group-item i {
+    font-size: 0.9rem;
+    margin-right: 0.5rem;
+  }
+  
+  .badge {
+    font-size: 0.6rem;
+    padding: 0.25rem 0.5rem;
+  }
+}
+
+/* ========== FIXES ESPECÍFICOS ========== */
+
+/* Estados especiales */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Colores personalizados */
+.bg-purple { 
+  background-color: #6f42c1 !important; 
+}
+
+.bg-orange { 
+  background-color: #fd7e14 !important; 
+}
+
+.bg-indigo { 
+  background-color: #6610f2 !important; 
+}
+
+/* Efectos hover mejorados para cards */
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+/* ========== CORRECCIÓN ADICIONAL PARA ICONOS ========== */
+
+/* Asegurar que todos los iconos se vean */
+.list-group-item i {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 0.8 !important;
+  color: inherit !important;
+}
+
+.list-group-item.active i {
+  opacity: 1 !important;
+  color: white !important;
+}
+
+/* Corrección específica para iconos de FontAwesome */
+.fas, .far, .fab {
+  font-family: "Font Awesome 6 Free" !important;
+  font-weight: 900 !important;
+}
+
+/* Iconos específicos con fallbacks */
+.fa-calendar-star::before {
+  content: "\f073" !important; /* calendar-alt como fallback */
+}
+
+.fa-gift::before {
+  content: "\f06b" !important;
+}
+
+.fa-coins::before {
+  content: "\f51e" !important;
+}
+
+.fa-film::before {
+  content: "\f008" !important;
+}
+
+.fa-utensils::before {
+  content: "\f2e7" !important;
+}
+
+.fa-users::before {
+  content: "\f0c0" !important;
+}
+
+.fa-chart-bar::before {
+  content: "\f080" !important;
+}
+
+.fa-cog::before {
+  content: "\f013" !important;
+}
+
+.fa-list-alt::before {
+  content: "\f022" !important;
+}
+
+.fa-clock::before {
+  content: "\f017" !important;
+}
+
+/* ========== CORRECCIÓN PARA TOTALES EN BADGES ========== */
+
+/* Asegurar que los badges sean visibles */
+.list-group-item .badge {
+  display: inline-block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  font-weight: 700 !important;
+  min-width: 20px !important;
+  text-align: center !important;
+  line-height: 1.2 !important;
+}
+
+/* Colores específicos para cada sección */
+.list-group-item .badge.bg-success {
+  background-color: #28a745 !important;
+  color: white !important;
+}
+
+.list-group-item .badge.bg-info {
+  background-color: #17a2b8 !important;
+  color: white !important;
+}
+
+.list-group-item .badge.bg-warning {
+  background-color: #ffc107 !important;
+  color: #212529 !important;
+}
+
+.list-group-item .badge.bg-primary {
+  background-color: #007bff !important;
+  color: white !important;
+}
+
+.list-group-item .badge.bg-secondary {
+  background-color: #6c757d !important;
+  color: white !important;
+}
+
+.list-group-item .badge.bg-dark {
+  background-color: #343a40 !important;
+  color: white !important;
+}
+
+/* Override Bootstrap si es necesario */
+.badge[class*="bg-"] {
+  color: white !important;
+}
+
+.badge.bg-warning {
+  color: #212529 !important;
+}
+
+/* ========== DEBUGGING CSS ========== */
+
+/* Solo para debug - remover en producción */
+.list-group-item::after {
+  content: attr(class);
+  display: none; /* Cambiar a block para debug */
+  font-size: 0.6rem;
+  color: red;
+  position: absolute;
+  bottom: -15px;
+  left: 0;
+}
+
+/* Resaltar elementos para debug */
+.debug .list-group-item {
+  border: 1px solid red !important;
+}
+
+.debug .badge {
+  border: 1px solid blue !important;
+}
+
+/* ========== FALLBACKS FINALES ========== */
+
+/* Si FontAwesome no carga, usar símbolos unicode */
+.no-fontawesome .fa-film::before { content: "🎬"; }
+.no-fontawesome .fa-calendar-star::before { content: "📅"; }
+.no-fontawesome .fa-clock::before { content: "⏰"; }
+.no-fontawesome .fa-utensils::before { content: "🍿"; }
+.no-fontawesome .fa-gift::before { content: "🎁"; }
+.no-fontawesome .fa-users::before { content: "👥"; }
+.no-fontawesome .fa-coins::before { content: "🪙"; }
+.no-fontawesome .fa-chart-bar::before { content: "📊"; }
+.no-fontawesome .fa-cog::before { content: "⚙️"; }
+.no-fontawesome .fa-list-alt::before { content: "📋"; }

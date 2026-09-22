@@ -1,0 +1,358 @@
+/* admin-users.component.css */
+
+/* Animaciones */
+.admin-users {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tarjetas de estadísticas */
+.stat-card {
+  border-radius: 15px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+.stat-icon {
+  opacity: 0.3;
+}
+
+/* Tabla de usuarios */
+.table {
+  font-size: 0.9rem;
+}
+
+.table th {
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  background-color: #f8f9fa !important;
+}
+
+.table td {
+  vertical-align: middle;
+  padding: 1rem 0.75rem;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f8f9fa;
+  transform: scale(1.005);
+  transition: all 0.2s ease;
+}
+
+.table-warning {
+  background-color: #fff3cd !important;
+  border-left: 4px solid #ffc107;
+}
+
+/* Avatares */
+.rounded-circle {
+  border: 3px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
+}
+
+.rounded-circle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+}
+
+/* Badges */
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: 20px;
+}
+
+.badge.fs-6 {
+  font-size: 0.9rem !important;
+  padding: 0.6rem 1rem;
+}
+
+/* Botones */
+.btn-group .btn {
+  transition: all 0.2s ease;
+}
+
+.btn-group .btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+}
+
+.btn-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+/* Switches */
+.form-check-input {
+  width: 2.5rem;
+  height: 1.25rem;
+  border-radius: 2rem;
+  transition: all 0.3s ease;
+}
+
+.form-check-input:checked {
+  background-color: #28a745;
+  border-color: #28a745;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.form-check-input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Cards y contenedores */
+.card {
+  border-radius: 15px;
+  border: none;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.card-header {
+  border-radius: 15px 15px 0 0 !important;
+  border-bottom: 1px solid rgba(0,0,0,0.125);
+  font-weight: 600;
+}
+
+/* Alertas para selección múltiple */
+.alert-warning {
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  color: #856404;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Formularios */
+.form-control, .form-select {
+  border-radius: 10px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+  font-size: 0.9rem;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.7rem;
+}
+
+/* Modal personalizado */
+.modal-content {
+  border-radius: 20px;
+  border: none;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  border-radius: 20px 20px 0 0;
+  border-bottom: 2px solid rgba(255,255,255,0.2);
+}
+
+.modal-header.bg-info {
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+.modal-body .table-borderless td {
+  padding: 0.75rem 0;
+  border: none;
+}
+
+/* Estados de carga */
+.spinner-border {
+  width: 2rem;
+  height: 2rem;
+}
+
+/* Texto de estado vacío */
+.text-center i.fa-3x {
+  opacity: 0.3;
+}
+
+/* Checkboxes */
+.form-check-input[type="checkbox"] {
+  width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 4px;
+  border: 2px solid #dee2e6;
+  transition: all 0.2s ease;
+}
+
+.form-check-input[type="checkbox"]:checked {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.form-check-input[type="checkbox"]:hover {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.1rem rgba(0, 123, 255, 0.25);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stat-number {
+    font-size: 2rem;
+  }
+  
+  .stat-label {
+    font-size: 0.8rem;
+  }
+  
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+  
+  .btn-group-sm .btn {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.7rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .modal-body {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .stat-card .card-body {
+    padding: 1rem;
+  }
+  
+  .btn-group {
+    flex-direction: column;
+  }
+  
+  .btn-group .btn {
+    margin: 1px 0;
+    border-radius: 6px !important;
+  }
+  
+  .table td {
+    padding: 0.5rem 0.25rem;
+  }
+  
+  .rounded-circle {
+    width: 32px !important;
+    height: 32px !important;
+  }
+}
+
+/* Efectos hover mejorados */
+.btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* Colores personalizados para roles */
+.btn-role-admin {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  border: none;
+  color: white;
+}
+
+.btn-role-cliente {
+  background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  border: none;
+  color: white;
+}
+
+/* Animación para filas seleccionadas */
+.table-warning {
+  animation: highlightRow 0.3s ease-out;
+}
+
+@keyframes highlightRow {
+  from {
+    background-color: transparent;
+  }
+  to {
+    background-color: #fff3cd;
+  }
+}
+
+/* Mejoras visuales adicionales */
+.card-header h6 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.text-muted {
+  color: #6c757d !important;
+}
+
+.fw-semibold {
+  font-weight: 600 !important;
+}
+
+/* Loading states */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.processing {
+  pointer-events: none;
+  opacity: 0.7;
+}

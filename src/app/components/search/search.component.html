@@ -1,0 +1,124 @@
+<!-- search.component.html -->
+<div class="container mt-4">
+  <!-- Header de búsqueda -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="search-header text-center py-4 bg-primary text-white rounded-3 shadow-sm">
+        <h1 class="display-6 fw-bold mb-2">
+          <i class="fas fa-search me-3"></i>Resultados de Búsqueda
+        </h1>
+        <p class="lead mb-0">
+          Término buscado: <span class="fw-bold">"{{ termino }}"</span>
+        </p>
+        <small class="opacity-75">
+          {{ peliculas.length }} resultado(s) encontrado(s)
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje cuando no hay resultados -->
+  <div class="row animated fadeIn fast" *ngIf="peliculas.length == 0">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+          <div class="mb-4">
+            <i class="fas fa-film text-muted" style="font-size: 4rem;"></i>
+          </div>
+          <h4 class="text-muted mb-3">No se encontraron películas</h4>
+          <p class="text-muted mb-4">
+            No existen resultados para el término: <strong>"{{ termino }}"</strong>
+          </p>
+          <div class="d-flex justify-content-center gap-2">
+            <button class="btn btn-primary" (click)="volverABuscar()">
+              <i class="fas fa-search me-2"></i>Nueva Búsqueda
+            </button>
+            <a [routerLink]="['/movies']" class="btn btn-outline-primary">
+              <i class="fas fa-film me-2"></i>Ver Todas las Películas
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resultados de películas -->
+  <div class="row g-4 animated fadeIn" *ngIf="peliculas.length > 0">
+    <div class="col-xl-3 col-lg-4 col-md-6" *ngFor="let pelicula of peliculas">
+      <div class="card h-100 shadow-hover border-0 movie-card">
+        <!-- Imagen de la película -->
+        <div class="position-relative overflow-hidden">
+          <img [src]="pelicula.poster" 
+               class="card-img-top movie-poster" 
+               alt="{{ pelicula.titulo }}"
+               style="height: 400px; object-fit: cover; transition: transform 0.3s ease;">
+          
+          <!-- Rating overlay -->
+          <div class="position-absolute top-0 end-0 m-3">
+            <span class="badge bg-warning text-dark px-2 py-1 fs-6 fw-bold">
+              <i class="fas fa-star me-1"></i>{{ pelicula.rating }}
+            </span>
+          </div>
+          
+          <!-- Año overlay -->
+          <div class="position-absolute bottom-0 start-0 m-3">
+            <span class="badge bg-dark bg-opacity-75 px-2 py-1">
+              {{ pelicula.anio }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Contenido de la tarjeta -->
+        <div class="card-body d-flex flex-column">
+          <div class="mb-auto">
+            <h5 class="card-title fw-bold text-primary mb-2">{{ pelicula.titulo }}</h5>
+            
+            <!-- Información adicional -->
+            <div class="movie-info mb-3">
+              <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-theater-masks text-muted me-2"></i>
+                <small class="text-muted">{{ pelicula.genero }}</small>
+              </div>
+              <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-user-tie text-muted me-2"></i>
+                <small class="text-muted">{{ pelicula.director }}</small>
+              </div>
+              <div class="d-flex align-items-center">
+                <i class="fas fa-clock text-muted me-2"></i>
+                <small class="text-muted">{{ pelicula.duracion }}</small>
+              </div>
+            </div>
+            
+            <!-- Sinopsis truncada -->
+            <p class="card-text text-muted small mb-3" style="display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+              {{ pelicula.sinopsis }}
+            </p>
+          </div>
+          
+          <!-- Botones de acción -->
+          <div class="mt-auto">
+            <div class="d-grid gap-2">
+              <button (click)="verPelicula(pelicula)" 
+                      type="button" 
+                      class="btn btn-primary fw-semibold">
+                <i class="fas fa-eye me-2"></i>Ver Detalles
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botón para regresar arriba si hay muchos resultados -->
+  <div class="row mt-5" *ngIf="peliculas.length > 8">
+    <div class="col-12 text-center">
+      <button class="btn btn-outline-primary btn-lg" (click)="scrollToTop()">
+        <i class="fas fa-arrow-up me-2"></i>Volver Arriba
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+</style>

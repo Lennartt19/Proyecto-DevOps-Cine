@@ -1,0 +1,626 @@
+<!-- admin-coming-soon.component.html -->
+<div class="admin-coming-soon">
+  <!-- Loading overlay -->
+  <div class="loading-overlay" *ngIf="cargando">
+    <div class="d-flex align-items-center justify-content-center h-100">
+      <div class="text-center">
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+        <p class="text-muted">Cargando próximos estrenos...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== VISTA LISTA ========== -->
+  <ng-container *ngIf="vistaActual === 'lista' && !cargando">
+    
+    <!-- Header con estadísticas -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="welcome-card bg-gradient-primary text-white p-4 rounded-3 shadow">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h4 class="mb-1">
+                <i class="fas fa-calendar-star me-2"></i>
+                Gestión de Próximos Estrenos
+              </h4>
+              <p class="mb-0 opacity-75">
+                <i class="fas fa-database me-2"></i>
+                {{ estadisticas.total }} próximos estrenos programados • Próximo: {{ estadisticas.proximoEstreno }}
+              </p>
+            </div>
+            <div class="d-none d-md-block">
+              <i class="fas fa-calendar-week fa-3x opacity-50"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4 g-3">
+      <div class="col-lg-3 col-md-6" *ngFor="let stat of getStatsArray()">
+        <div class="card stat-card h-100 border-0 shadow" [ngClass]="stat.bgClass">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <div class="stat-number">{{ stat.value }}</div>
+                <div class="stat-label">{{ stat.label }}</div>
+              </div>
+              <div class="stat-icon">
+                <i [class]="stat.icon + ' fa-2x'"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Herramientas y filtros -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="mb-0">
+                <i class="fas fa-filter me-2 text-primary"></i>
+                Filtros y Herramientas
+              </h6>
+              <div class="btn-group" role="group">
+                <button class="btn btn-primary btn-sm" (click)="mostrarFormularioAgregar()">
+                  <i class="fas fa-plus me-1"></i>Nuevo Estreno
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" (click)="exportarEstrenos()">
+                  <i class="fas fa-download me-1"></i>Exportar
+                </button>
+                <button class="btn btn-outline-info btn-sm" (click)="cargarEstrenos()">
+                  <i class="fas fa-sync-alt me-1"></i>Recargar
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              
+              <!-- Búsqueda por texto -->
+              <div class="col-lg-4 col-md-6">
+                <label class="form-label small fw-semibold">Buscar estrenos</label>
+                <div class="input-group">
+                  <input type="text" 
+                         class="form-control" 
+                         placeholder="Título, director, sinopsis..."
+                         [(ngModel)]="terminoBusqueda"
+                         (input)="aplicarFiltros()">
+                  <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Filtro por género -->
+              <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-semibold">Género</label>
+                <select class="form-select" 
+                        [(ngModel)]="filtroGenero"
+                        (change)="aplicarFiltros()">
+                  <option value="">Todos los géneros</option>
+                  <option *ngFor="let genero of generosDisponibles" [value]="genero">
+                    {{ genero }}
+                  </option>
+                </select>
+              </div>
+              
+              <!-- Filtro por año -->
+              <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-semibold">Año</label>
+                <select class="form-select" 
+                        [(ngModel)]="filtroAnio"
+                        (change)="aplicarFiltros()">
+                  <option value="">Todos los años</option>
+                  <option *ngFor="let anio of getAniosDisponibles()" [value]="anio">
+                    {{ anio }}
+                  </option>
+                </select>
+              </div>
+              
+              <!-- Botón limpiar filtros -->
+              <div class="col-lg-2 col-md-6">
+                <label class="form-label small fw-semibold">&nbsp;</label>
+                <div class="d-grid">
+                  <button class="btn btn-outline-danger btn-sm" (click)="limpiarFiltros()">
+                    <i class="fas fa-times me-1"></i>Limpiar
+                  </button>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lista de próximos estrenos -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">
+              <i class="fas fa-list me-2 text-success"></i>
+              Próximos Estrenos ({{ getRangoElementos() }})
+            </h6>
+            <div class="d-flex align-items-center gap-2">
+              <small class="text-muted">Mostrar:</small>
+              <select class="form-select form-select-sm" 
+                      style="width: auto;"
+                      [(ngModel)]="estrenosPorPagina"
+                      (change)="calcularPaginacion()">
+                <option *ngFor="let cantidad of [5, 10, 20, 50]" [value]="cantidad">{{ cantidad }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="card-body p-0">
+            
+            <!-- Loading durante filtrado -->
+            <div class="text-center p-4" *ngIf="procesando">
+              <div class="spinner-border text-primary"></div>
+              <p class="mt-2 text-muted">Procesando...</p>
+            </div>
+
+            <!-- Tabla de próximos estrenos -->
+            <div class="table-responsive" *ngIf="!procesando">
+              <table class="table table-hover mb-0">
+                <thead class="bg-light">
+                  <tr>
+                    <th *ngFor="let col of getTableColumns()" [width]="col.width">{{ col.name }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let estreno of getEstrenosPaginaActual(); trackBy: trackEstrenoFn" 
+                      class="align-middle">
+                    
+                    <!-- Poster y título -->
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <img [src]="estreno.poster" 
+                             class="rounded me-3" 
+                             width="50" height="75"
+                             [alt]="estreno.titulo"
+                             style="object-fit: cover;"
+                             (error)="onImageErrorTable($event)">
+                        <div>
+                          <h6 class="mb-1 fw-bold">{{ estreno.titulo }}</h6>
+                          <small class="text-muted">
+                            <i class="fas fa-user-tie me-1"></i>{{ estreno.director }}
+                          </small>
+                          <br>
+                          <small class="text-muted">
+                            <i class="fas fa-building me-1"></i>{{ estreno.estudio || 'Sin estudio' }}
+                          </small>
+                        </div>
+                      </div>
+                    </td>
+                    
+                    <!-- Género -->
+                    <td>
+                      <span class="badge fs-6 px-2 py-1" [ngClass]="'bg-' + getGeneroColor(estreno.genero)">
+                        {{ estreno.genero }}
+                      </span>
+                    </td>
+                    
+                    <!-- Fecha de estreno -->
+                    <td>
+                      <div class="text-center">
+                        <div class="fw-bold">{{ formatearFecha(estreno.fechaEstreno) }}</div>
+                        <small class="text-muted">{{ getAnioFromFecha(estreno.fechaEstreno) }}</small>
+                      </div>
+                    </td>
+                    
+                    <!-- Director -->
+                    <td>
+                      <span class="fw-semibold">{{ estreno.director }}</span>
+                      <br>
+                      <small class="text-muted" *ngIf="estreno.duracion">
+                        <i class="fas fa-clock me-1"></i>{{ estreno.duracion }}
+                      </small>
+                    </td>
+                    
+                    <!-- Estado -->
+                    <td>
+                      <span class="badge bg-success fs-6 px-2 py-1">
+                        <i class="fas fa-calendar-check me-1"></i>Programado
+                      </span>
+                    </td>
+                    
+                    <!-- Acciones -->
+                    <td>
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button *ngFor="let action of getActions(estreno)"
+                                [class]="'btn ' + action.class"
+                                (click)="action.action()"
+                                [title]="action.title">
+                          <i [class]="action.icon"></i>
+                        </button>
+                      </div>
+                    </td>
+                    
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Sin resultados -->
+            <div class="text-center p-4" *ngIf="!procesando && !getEstrenosPaginaActual().length">
+              <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+              <h5 class="text-muted">No se encontraron próximos estrenos</h5>
+              <p class="text-muted">
+                {{ hasActiveFilters() ? 'Intenta cambiar los filtros de búsqueda.' : 'No hay próximos estrenos programados en el sistema.' }}
+              </p>
+              <button class="btn" 
+                      [ngClass]="hasActiveFilters() ? 'btn-outline-primary' : 'btn-primary'"
+                      (click)="hasActiveFilters() ? limpiarFiltros() : mostrarFormularioAgregar()">
+                <i [class]="hasActiveFilters() ? 'fas fa-times me-2' : 'fas fa-plus me-2'"></i>
+                {{ hasActiveFilters() ? 'Limpiar Filtros' : 'Agregar Primer Estreno' }}
+              </button>
+            </div>
+
+          </div>
+          
+          <!-- Paginación -->
+          <div class="card-footer bg-light" *ngIf="!procesando && totalPaginas > 1">
+            <nav aria-label="Paginación de próximos estrenos">
+              <ul class="pagination pagination-sm justify-content-center mb-0">
+                
+                <!-- Anterior -->
+                <li class="page-item" [class.disabled]="paginaActual === 1">
+                  <button class="page-link" (click)="cambiarPagina(paginaActual - 1)">
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                </li>
+                
+                <!-- Primera página -->
+                <li class="page-item" *ngIf="paginaActual > 3">
+                  <button class="page-link" (click)="cambiarPagina(1)">1</button>
+                </li>
+                <li class="page-item disabled" *ngIf="paginaActual > 4">
+                  <span class="page-link">...</span>
+                </li>
+                
+                <!-- Números de página -->
+                <li class="page-item" 
+                    *ngFor="let pagina of getPaginasArray()"
+                    [class.active]="pagina === paginaActual">
+                  <button class="page-link" (click)="cambiarPagina(pagina)">{{ pagina }}</button>
+                </li>
+                
+                <!-- Última página -->
+                <li class="page-item disabled" *ngIf="paginaActual < totalPaginas - 3">
+                  <span class="page-link">...</span>
+                </li>
+                <li class="page-item" *ngIf="paginaActual < totalPaginas - 2">
+                  <button class="page-link" (click)="cambiarPagina(totalPaginas)">{{ totalPaginas }}</button>
+                </li>
+                
+                <!-- Siguiente -->
+                <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                  <button class="page-link" (click)="cambiarPagina(paginaActual + 1)">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </li>
+                
+              </ul>
+            </nav>
+          </div>
+          
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ========== VISTA FORMULARIO (AGREGAR/EDITAR) ========== -->
+  <ng-container *ngIf="vistaActual === 'agregar' || vistaActual === 'editar'">
+    
+    <!-- Header del formulario -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card border-primary">
+          <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fas fa-calendar-star me-2"></i>
+                {{ vistaActual === 'agregar' ? 'Nuevo Próximo Estreno' : 'Editar Próximo Estreno' }}
+              </h5>
+              <button class="btn btn-outline-light btn-sm" (click)="cambiarVista('lista')">
+                <i class="fas fa-arrow-left me-1"></i>Volver a la Lista
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            
+            <!-- Errores de validación -->
+            <div class="alert alert-danger" *ngIf="erroresValidacion.length">
+              <h6 class="alert-heading">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                Errores en el formulario:
+              </h6>
+              <ul class="mb-0">
+                <li *ngFor="let error of erroresValidacion">{{ error }}</li>
+              </ul>
+            </div>
+            
+            <!-- Formulario -->
+            <form (ngSubmit)="guardarEstreno()" #estrenoFormRef="ngForm">
+              <div class="row g-3">
+                
+                <!-- Título -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-heading me-1 text-primary"></i>
+                    Título *
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         [(ngModel)]="estrenoForm.titulo"
+                         name="titulo"
+                         placeholder="Título del próximo estreno"
+                         required>
+                </div>
+                
+                <!-- Director -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-user-tie me-1 text-primary"></i>
+                    Director *
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         [(ngModel)]="estrenoForm.director"
+                         name="director"
+                         placeholder="Nombre del director"
+                         required>
+                </div>
+                
+                <!-- Sinopsis -->
+                <div class="col-12">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-align-left me-1 text-primary"></i>
+                    Sinopsis *
+                  </label>
+                  <textarea class="form-control" 
+                            rows="4"
+                            [(ngModel)]="estrenoForm.sinopsis"
+                            name="sinopsis"
+                            placeholder="Describe la trama del próximo estreno..."
+                            required></textarea>
+                </div>
+                
+                <!-- Género -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-tags me-1 text-primary"></i>
+                    Género *
+                  </label>
+                  <select class="form-select" 
+                          [(ngModel)]="estrenoForm.genero"
+                          name="genero"
+                          required>
+                    <option value="">Seleccionar género</option>
+                    <option *ngFor="let genero of generosDisponibles" [value]="genero">
+                      {{ genero }}
+                    </option>
+                  </select>
+                </div>
+                
+                <!-- Fecha de estreno -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-calendar-day me-1 text-primary"></i>
+                    Fecha de Estreno *
+                  </label>
+                  <input type="date" 
+                         class="form-control" 
+                         [(ngModel)]="estrenoForm.fechaEstreno"
+                         name="fechaEstreno"
+                         required>
+                </div>
+                
+                <!-- Duración -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-clock me-1 text-primary"></i>
+                    Duración
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         [(ngModel)]="estrenoForm.duracion"
+                         name="duracion"
+                         placeholder="2h 30min">
+                </div>
+                
+                <!-- Estudio -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-building me-1 text-primary"></i>
+                    Estudio
+                  </label>
+                  <select class="form-select" 
+                          [(ngModel)]="estrenoForm.estudio"
+                          name="estudio">
+                    <option value="">Seleccionar estudio</option>
+                    <option *ngFor="let estudio of estudiosDisponibles" [value]="estudio">
+                      {{ estudio }}
+                    </option>
+                  </select>
+                </div>
+                
+                <!-- Trailer ID -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fab fa-youtube me-1 text-danger"></i>
+                    ID del Trailer (YouTube)
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         [(ngModel)]="estrenoForm.trailer"
+                         name="trailer"
+                         placeholder="dQw4w9WgXcQ"
+                         pattern="[a-zA-Z0-9_-]{11}">
+                  <small class="form-text text-muted">
+                    Solo el ID del video de YouTube (11 caracteres)
+                  </small>
+                </div>
+                
+                <!-- Actores -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-users me-1 text-primary"></i>
+                    Actores Principales
+                  </label>
+                  <input type="text" 
+                         class="form-control" 
+                         [(ngModel)]="actoresTexto"
+                         name="actores"
+                         placeholder="Actor 1, Actor 2, Actor 3">
+                  <small class="form-text text-muted">
+                    Separar actores con comas
+                  </small>
+                </div>
+                
+                <!-- Poster URL con vista previa -->
+                <div class="col-12">
+                  <label class="form-label fw-semibold">
+                    <i class="fas fa-image me-1 text-primary"></i>
+                    URL del Poster *
+                  </label>
+                  
+                  <div class="row">
+                    <!-- Input del URL -->
+                    <div class="col-md-8">
+                      <input type="text" 
+                             class="form-control" 
+                             [(ngModel)]="estrenoForm.poster"
+                             name="poster"
+                             placeholder="https://ejemplo.com/imagen.jpg o assets/coming-soon/pelicula.png"
+                             required>
+                      <small class="form-text text-muted">
+                        Puedes usar URLs de internet o rutas locales como assets/coming-soon/imagen.png
+                      </small>
+                    </div>
+                    
+                    <!-- Vista previa -->
+                    <div class="col-md-4">
+                      <div class="poster-preview-container text-center">
+                        <div *ngIf="estrenoForm.poster?.trim(); else noPoster" 
+                             class="border rounded p-2 bg-light">
+                          <img [src]="estrenoForm.poster" 
+                               class="img-fluid rounded" 
+                               style="max-height: 120px; max-width: 100%;"
+                               [alt]="estrenoForm.titulo || 'Vista previa'"
+                               (error)="onImageError($event)"
+                               (load)="onImageLoad($event)">
+                          <div class="mt-1">
+                            <small class="text-success" *ngIf="imageLoaded">
+                              <i class="fas fa-check-circle"></i> Imagen válida
+                            </small>
+                            <small class="text-danger" *ngIf="imageError">
+                              <i class="fas fa-exclamation-triangle"></i> Error al cargar
+                            </small>
+                          </div>
+                        </div>
+                        <ng-template #noPoster>
+                          <div class="border rounded p-3 bg-light text-muted">
+                            <i class="fas fa-image fa-2x"></i>
+                            <br>
+                            <small>Vista previa</small>
+                          </div>
+                        </ng-template>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <!-- Ejemplos de URLs -->
+                  <div class="mt-2">
+                    <small class="text-muted"><strong>Ejemplos:</strong></small>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                      <button *ngFor="let ejemplo of getPosterExamples()"
+                              type="button" 
+                              class="btn btn-outline-secondary btn-sm"
+                              (click)="setExamplePoster(ejemplo.url)">
+                        <i [class]="ejemplo.icon + ' me-1'"></i>{{ ejemplo.label }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+              </div>
+              
+              <!-- Botones de acción -->
+              <div class="row mt-4">
+                <div class="col-12">
+                  <div class="d-flex justify-content-end gap-2">
+                    <button type="button" 
+                            class="btn btn-outline-secondary"
+                            (click)="cambiarVista('lista')">
+                      <i class="fas fa-times me-1"></i>Cancelar
+                    </button>
+                    
+                    <button type="submit" 
+                            class="btn btn-primary"
+                            [disabled]="procesando || !estrenoFormRef.form.valid">
+                      <span *ngIf="procesando" class="spinner-border spinner-border-sm me-2"></span>
+                      <i class="fas fa-save me-1" *ngIf="!procesando"></i>
+                      {{ vistaActual === 'agregar' ? 'Crear Próximo Estreno' : 'Actualizar Próximo Estreno' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </ng-container>
+
+</div>
+
+<!-- Modal de confirmación para eliminar -->
+<div class="modal fade" [class.show]="mostrarModalConfirmacion" 
+     [style.display]="mostrarModalConfirmacion ? 'block' : 'none'"
+     *ngIf="mostrarModalConfirmacion">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          Confirmar Eliminación
+        </h5>
+      </div>
+      <div class="modal-body">
+        <p class="mb-3">
+          <strong>¿Estás seguro de que deseas eliminar este próximo estreno?</strong>
+        </p>
+        <p class="text-muted mb-0">
+          Esta acción no se puede deshacer. El próximo estreno será eliminado permanentemente del sistema.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" 
+                class="btn btn-outline-secondary"
+                (click)="cerrarModalConfirmacion()">
+          <i class="fas fa-times me-1"></i>Cancelar
+        </button>
+        <button type="button" 
+                class="btn btn-danger"
+                (click)="eliminarEstreno()"
+                [disabled]="procesando">
+          <span *ngIf="procesando" class="spinner-border spinner-border-sm me-2"></span>
+          <i class="fas fa-trash me-1" *ngIf="!procesando"></i>Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop del modal -->
+<div class="modal-backdrop fade show" *ngIf="mostrarModalConfirmacion"></div>

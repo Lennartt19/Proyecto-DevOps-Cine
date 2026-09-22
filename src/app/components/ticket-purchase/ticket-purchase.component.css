@@ -1,0 +1,519 @@
+/* ======================================
+   🎫 TICKET PURCHASE - TEMA PARKY FILMS
+   ====================================== */
+
+/* ======================================
+   📋 CARDS Y CONTENEDORES
+   ====================================== */
+
+.card {
+  border-radius: 1rem;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(13, 110, 253, 0.15);
+}
+
+.card.bg-light {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+/* ======================================
+   🎬 FUNCTION CARDS - Tarjetas de funciones
+   ====================================== */
+
+.function-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.function-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 20px 40px rgba(13, 110, 253, 0.2);
+}
+
+.function-card.border-primary {
+  border-color: rgba(13, 110, 253, 0.3) !important;
+}
+
+.function-card.border-success {
+  border-color: rgba(25, 135, 84, 0.5) !important;
+  box-shadow: 0 8px 25px rgba(25, 135, 84, 0.2);
+}
+
+.function-card.border-3 {
+  border-width: 3px !important;
+}
+
+/* Headers de función */
+.card-header.bg-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+}
+
+.card-header.bg-success {
+  background: linear-gradient(135deg, #198754 0%, #20c997 100%) !important;
+}
+
+.card-header h6 {
+  font-weight: 700;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* ======================================
+   📅 INFORMACIÓN DE FUNCIONES
+   ====================================== */
+
+.card-body .row.mb-3 {
+  border-bottom: 1px solid rgba(13, 110, 253, 0.1);
+  padding-bottom: 1rem;
+}
+
+.card-body .row.mb-3:last-of-type {
+  border-bottom: none;
+}
+
+.text-muted {
+  color: #6c757d !important;
+  font-weight: 500;
+}
+
+.fw-semibold {
+  font-weight: 600 !important;
+}
+
+.fw-semibold i {
+  color: #0d6efd;
+  margin-right: 0.5rem;
+}
+
+/* Estados de asientos disponibles */
+.text-success {
+  color: #198754 !important;
+}
+
+.text-warning {
+  color: #ffc107 !important;
+}
+
+.text-danger {
+  color: #dc3545 !important;
+}
+
+/* ======================================
+   🏷️ BADGES
+   ====================================== */
+
+.badge {
+  font-weight: 600;
+  padding: 0.5rem 0.75rem;
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+.badge:hover {
+  transform: scale(1.05);
+}
+
+.badge.bg-warning {
+  background: linear-gradient(45deg, #ffc107, #ff8f00) !important;
+  color: #333 !important;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.badge.bg-info {
+  background: linear-gradient(45deg, #0dcaf0, #17a2b8) !important;
+}
+
+.badge.bg-secondary {
+  background: linear-gradient(45deg, #6c757d, #495057) !important;
+}
+
+.badge.bg-light {
+  background: #f8f9fa !important;
+  color: #495057 !important;
+  border: 1px solid rgba(13, 110, 253, 0.2);
+}
+
+/* ======================================
+   🔘 BOTONES
+   ====================================== */
+
+.btn {
+  border-radius: 25px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border: none;
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #6610f2, #0d6efd);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 110, 253, 0.4);
+}
+
+.btn-success {
+  background: linear-gradient(45deg, #198754, #20c997);
+  border: none;
+  box-shadow: 0 4px 15px rgba(25, 135, 84, 0.3);
+}
+
+.btn-success:hover {
+  background: linear-gradient(45deg, #20c997, #198754);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(32, 201, 151, 0.4);
+}
+
+.btn-warning {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  border: none;
+  color: #333;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.btn-warning:hover {
+  background: linear-gradient(45deg, #ff8f00, #ffc107);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+  color: #333;
+}
+
+.btn-outline-secondary,
+.btn-outline-info {
+  border-width: 2px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+  background: linear-gradient(45deg, #6c757d, #495057);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(108, 117, 125, 0.3);
+}
+
+.btn-outline-info:hover {
+  background: linear-gradient(45deg, #0dcaf0, #17a2b8);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 202, 240, 0.3);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+}
+
+/* ======================================
+   📊 SELECTOR DE CANTIDAD
+   ====================================== */
+
+.input-group {
+  max-width: 200px;
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.1);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.input-group .btn {
+  border-radius: 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid #dee2e6;
+}
+
+.input-group .form-control {
+  border: 1px solid #dee2e6;
+  text-align: center;
+  font-weight: 700;
+  color: #0d6efd;
+  font-size: 1.1rem;
+  border-radius: 0;
+}
+
+.input-group .form-control:focus {
+  border-color: #ffc107;
+  box-shadow: none;
+}
+
+/* ======================================
+   💰 PRICING DISPLAY
+   ====================================== */
+
+.text-success.h3,
+.text-success.h4,
+.text-success.h5 {
+  font-weight: 800;
+  text-shadow: 1px 1px 3px rgba(25, 135, 84, 0.3);
+}
+
+/* ======================================
+   📋 RESUMEN DE COMPRA
+   ====================================== */
+
+.card.border-success {
+  border-color: rgba(25, 135, 84, 0.3) !important;
+  box-shadow: 0 8px 25px rgba(25, 135, 84, 0.1);
+}
+
+.card-header.bg-success {
+  background: linear-gradient(135deg, #198754 0%, #20c997 100%) !important;
+}
+
+.card-header.bg-success h5 {
+  font-weight: 700;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* ======================================
+   🗂️ NOTAS EXPLICATIVAS
+   ====================================== */
+
+.bg-light.rounded {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  padding: 1.5rem !important;
+  border-radius: 1rem !important;
+}
+
+.bg-light.rounded h6 {
+  color: #0d6efd;
+  font-weight: 700;
+}
+
+.bg-light.rounded .text-primary,
+.bg-light.rounded .text-warning,
+.bg-light.rounded .text-success {
+  font-weight: 700;
+}
+
+/* ======================================
+   🔗 BREADCRUMBS
+   ====================================== */
+
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-item a {
+  color: #0d6efd;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.breadcrumb-item a:hover {
+  color: #ffc107;
+  transform: translateX(3px);
+}
+
+.breadcrumb-item.active {
+  color: #6c757d;
+  font-weight: 600;
+}
+
+/* ======================================
+   🚫 ESTADOS VACÍOS Y ERRORES
+   ====================================== */
+
+.empty-state {
+  padding: 3rem 1rem;
+}
+
+.empty-state i {
+  opacity: 0.5;
+  transition: all 0.3s ease;
+}
+
+.empty-state:hover i {
+  opacity: 0.8;
+  transform: scale(1.1);
+}
+
+/* ======================================
+   📱 RESPONSIVE DESIGN
+   ====================================== */
+
+@media (max-width: 1200px) {
+  .function-card:hover {
+    transform: translateY(-5px) scale(1.01);
+  }
+}
+
+@media (max-width: 992px) {
+  .card-body {
+    padding: 1.5rem 1rem;
+  }
+  
+  .btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .card {
+    margin: 1rem 0.5rem;
+  }
+  
+  .function-card .row {
+    text-align: center;
+  }
+  
+  .d-flex.justify-content-between {
+    flex-direction: column;
+    text-align: center;
+    gap: 1rem;
+  }
+  
+  .d-flex.gap-2 {
+    flex-direction: column;
+    gap: 0.5rem !important;
+  }
+  
+  .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .input-group {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 0 0.5rem;
+  }
+  
+  .card-header h6 {
+    font-size: 0.9rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .text-success.h4 {
+    font-size: 1.25rem;
+  }
+  
+  .bg-light.rounded {
+    padding: 1rem !important;
+  }
+}
+
+/* ======================================
+   ✨ ANIMACIONES
+   ====================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.function-card:nth-child(1) { animation-delay: 0.1s; }
+.function-card:nth-child(2) { animation-delay: 0.2s; }
+.function-card:nth-child(3) { animation-delay: 0.3s; }
+.function-card:nth-child(4) { animation-delay: 0.4s; }
+
+.card.border-success {
+  animation: slideInLeft 0.6s ease-out;
+  animation-delay: 0.3s;
+}
+
+/* Spinner personalizado */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ======================================
+   🎯 ESTADOS ESPECIALES
+   ====================================== */
+
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.text-primary {
+  color: #0d6efd !important;
+}
+
+/* ======================================
+   🎨 ACCESIBILIDAD
+   ====================================== */
+
+.btn:focus,
+.form-control:focus {
+  outline: 2px solid #ffc107;
+  outline-offset: 2px;
+}
+
+/* Modo de alto contraste */
+@media (prefers-contrast: high) {
+  .card {
+    border: 2px solid #000000;
+  }
+  
+  .btn-primary {
+    background: #0000ff !important;
+  }
+  
+  .text-success {
+    color: #00ff00 !important;
+  }
+}
+
+/* Modo sin animaciones */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,264 @@
+<!-- home.component.html - ESTILO HBO MAX -->
+<div class="container-fluid p-0">
+  
+  <!-- 🎯 CARRUSEL PRINCIPAL ESTILO HBO MAX (Recomendaciones o Hero) -->
+  <section class="hero-carousel-section" [ngClass]="{'recommendations-active': showRecommendations}">
+    
+    <!-- Loading State -->
+    <div *ngIf="isLoadingRecommendations && authService.isAuthenticated" class="loading-hero">
+      <div class="hero-loading-content">
+        <div class="spinner-border text-light mb-4" style="width: 4rem; height: 4rem;"></div>
+        <h3 class="text-light">Preparando tus recomendaciones...</h3>
+        <p class="text-light opacity-75">Analizando tus gustos cinematográficos</p>
+      </div>
+    </div>
+
+    <!-- Carrusel Principal (Recomendaciones o Hero estático) -->
+    <div *ngIf="!isLoadingRecommendations" 
+         id="mainHeroCarousel" 
+         class="carousel slide hero-carousel" 
+         data-bs-ride="carousel" 
+         data-bs-interval="6000"
+         data-bs-pause="hover">
+      
+      <!-- Indicadores elegantes -->
+      <div class="carousel-indicators hero-indicators" 
+           *ngIf="showRecommendations && recommendations.length > 1">
+        <button 
+          *ngFor="let rec of recommendations; let i = index"
+          type="button" 
+          data-bs-target="#mainHeroCarousel" 
+          [attr.data-bs-slide-to]="i"
+          [class.active]="i === 0"
+          [attr.aria-label]="'Slide ' + (i + 1)">
+        </button>
+      </div>
+
+      <!-- Slides del carrusel -->
+      <div class="carousel-inner">
+        
+        <!-- Slides de Recomendaciones (si el usuario está autenticado y tiene recomendaciones) -->
+        <div *ngIf="showRecommendations">
+          <div 
+            *ngFor="let pelicula of recommendations; let i = index"
+            class="carousel-item hero-slide"
+            [class.active]="i === 0">
+            
+            <!-- Imagen de fondo -->
+            <div class="hero-background">
+              <img [src]="pelicula.poster" 
+                   [alt]="pelicula.titulo"
+                   class="hero-bg-image">
+              <div class="hero-overlay"></div>
+            </div>
+            
+            <!-- Contenido superpuesto -->
+            <div class="hero-content">
+              <div class="container">
+                <div class="row">
+                  <div class="col-lg-6 col-md-8">
+                    
+                    <!-- Badge de recomendación -->
+                    <div class="recommendation-label mb-3">
+                      <i class="fas fa-magic me-2"></i>
+                      Recomendado para ti
+                    </div>
+                    
+                    <!-- Título -->
+                    <h1 class="hero-title">{{ pelicula.titulo }}</h1>
+                    
+                    <!-- Metadatos -->
+                    <div class="hero-meta mb-4">
+                      <span class="rating-badge">
+                        <i class="fas fa-star"></i> {{ pelicula.rating }}
+                      </span>
+                      <span class="year-badge">{{ pelicula.anio }}</span>
+                      <span class="duration-badge">
+                        <i class="fas fa-clock me-1"></i> {{ formatDuration(pelicula.duracion) }}
+                      </span>
+                      <span class="genre-badge">{{ pelicula.genero }}</span>
+                    </div>
+                    
+                    <!-- Sinopsis -->
+                    <p class="hero-description">{{ pelicula.sinopsis }}</p>
+                    
+                    <!-- Botones de acción -->
+                    <div class="hero-actions">
+                      <button (click)="verPeliculaRecomendada(pelicula)" 
+                              class="btn btn-light btn-lg me-3">
+                        <i class="fas fa-play me-2"></i>Ver Detalles
+                      </button>
+                      <button (click)="addToWatchlist(pelicula)" 
+                              class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-plus me-2"></i>Mi Lista
+                      </button>
+                    </div>
+                    
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Slide Hero por defecto (si no hay recomendaciones) -->
+        <div *ngIf="!showRecommendations" class="carousel-item hero-slide active">
+          <div class="hero-background">
+            <img src="assets/movies/destinofinal.png" 
+                 alt="Película destacada"
+                 class="hero-bg-image">
+            <div class="hero-overlay"></div>
+          </div>
+          
+          <div class="hero-content">
+            <div class="container">
+              <div class="row">
+                <div class="col-lg-6 col-md-8">
+                  <div class="welcome-label mb-3">
+                    <i class="fas fa-film me-2"></i>
+                    Bienvenido a Parky Films
+                  </div>
+                  
+                  <h1 class="hero-title">Descubre el Mejor Cine</h1>
+                  
+                  <div class="hero-meta mb-4">
+                    <span class="highlight-badge">Últimos Estrenos</span>
+                    <span class="highlight-badge">Clásicos</span>
+                    <span class="highlight-badge">Exclusivos</span>
+                  </div>
+                  
+                  <p class="hero-description">
+                    Sumérgete en un mundo de entretenimiento sin límites. Desde los últimos blockbusters 
+                    hasta los clásicos atemporales, encuentra tu próxima película favorita.
+                  </p>
+                  
+                  <div class="hero-actions">
+                    <button [routerLink]="['/movies']" class="btn btn-warning btn-lg me-3">
+                      <i class="fas fa-play me-2"></i>Explorar Películas
+                    </button>
+                    <button *ngIf="!authService.isAuthenticated" 
+                            [routerLink]="['/login']" 
+                            class="btn btn-outline-light btn-lg">
+                      <i class="fas fa-user me-2"></i>Iniciar Sesión
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Controles del carrusel -->
+      <button *ngIf="showRecommendations && recommendations.length > 1"
+              class="carousel-control-prev hero-control" 
+              type="button" 
+              data-bs-target="#mainHeroCarousel" 
+              data-bs-slide="prev">
+        <div class="hero-control-icon">
+          <i class="fas fa-chevron-left"></i>
+        </div>
+        <span class="visually-hidden">Anterior</span>
+      </button>
+      
+      <button *ngIf="showRecommendations && recommendations.length > 1"
+              class="carousel-control-next hero-control" 
+              type="button" 
+              data-bs-target="#mainHeroCarousel" 
+              data-bs-slide="next">
+        <div class="hero-control-icon">
+          <i class="fas fa-chevron-right"></i>
+        </div>
+        <span class="visually-hidden">Siguiente</span>
+      </button>
+    </div>
+
+    <!-- Botón de actualizar recomendaciones (flotante) -->
+    <button *ngIf="showRecommendations && authService.isAuthenticated" 
+            (click)="refreshRecommendations()"
+            [disabled]="isLoadingRecommendations"
+            class="refresh-recommendations-btn">
+      <i class="fas fa-sync-alt" [class.fa-spin]="isLoadingRecommendations"></i>
+    </button>
+  </section>
+
+  <!-- 🎬 SECCIÓN DE PELÍCULAS DESTACADAS (Carrusel horizontal pequeño) -->
+  <section class="featured-section py-5">
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col-12">
+          <div class="d-flex justify-content-between align-items-center">
+            <h2 class="section-title">
+              <i class="fas fa-star text-warning me-3"></i>
+              Películas Destacadas
+            </h2>
+            <a class="btn btn-outline-primary" [routerLink]="['/movies']">
+              <i class="fas fa-arrow-right me-2"></i>Ver todas
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Carrusel horizontal de películas destacadas -->
+      <div id="featuredCarousel" 
+           class="carousel slide featured-carousel" 
+           data-bs-ride="false">
+        
+        <div class="carousel-inner">
+          <div class="carousel-item active">
+            <div class="row g-3">
+              <div class="col-lg-3 col-md-4 col-sm-6" *ngFor="let movie of featuredMovies">
+                <div class="featured-card" (click)="verPelicula(movie.id)">
+                  <div class="featured-poster">
+                    <img [src]="movie.poster" [alt]="movie.titulo" class="img-fluid">
+                    <div class="featured-overlay">
+                      <i class="fas fa-play-circle fa-2x"></i>
+                    </div>
+                  </div>
+                  <div class="featured-info">
+                    <h6 class="featured-title">{{ movie.titulo }}</h6>
+                    <div class="featured-meta">
+                      <span class="rating">
+                        <i class="fas fa-star text-warning"></i> {{ movie.rating }}
+                      </span>
+                      <span class="year">{{ movie.anio }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 🎭 SECCIÓN DE GÉNEROS -->
+  <section class="genres-section py-5 bg-light">
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col-12 text-center">
+          <h2 class="section-title mb-3">
+            <i class="fas fa-list me-3 text-warning"></i>
+            Explora por Género
+          </h2>
+          <p class="section-subtitle">Encuentra tu película perfecta navegando por categorías</p>
+        </div>
+      </div>
+      
+      <div class="row g-4">
+        <div class="col-lg-2 col-md-4 col-sm-6" 
+             *ngFor="let genre of genres">
+          <div class="genre-card" (click)="exploreGenre(genre.name)">
+            <div class="genre-icon">
+              <i [class]="genre.icon"></i>
+            </div>
+            <h6 class="genre-title">{{ genre.name }}</h6>
+            <p class="genre-description">{{ genre.description }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>

@@ -1,0 +1,1173 @@
+<!-- admin-dashboard.component.html - ACTUALIZADO CON SISTEMA DE AUDITORÍA -->
+<div class="admin-dashboard">
+  
+  <!-- Header de bienvenida CON INDICADOR DE DATOS Y SISTEMA -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="welcome-card bg-gradient-primary text-white p-4 rounded-3 shadow">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h4 class="mb-1">
+              ¡Panel de Control Administrativo con Auditoría!
+              <span class="badge bg-success ms-2" *ngIf="datosRealesDisponibles">
+                <i class="fas fa-database me-1"></i>Datos Activos
+              </span>
+              <span class="badge bg-warning text-dark ms-2" *ngIf="usoFallback && !errorCargaDatos">
+                <i class="fas fa-exclamation-triangle me-1"></i>Modo Local
+              </span>
+              <!-- 🆕 BADGE PARA SISTEMA DE AUDITORÍA -->
+              <span class="badge bg-info ms-2" *ngIf="triggerTestResult?.success">
+                <i class="fas fa-shield-alt me-1"></i>Auditoría OK
+              </span>
+            </h4>
+            <p class="mb-0 opacity-75">
+              <i class="fas fa-calendar me-2"></i>
+              {{ getCurrentDate() }} • Última actualización: {{ getLastUpdateTime() }}
+            </p>
+            <!-- INDICADOR DE ESTADO DE DATOS Y SISTEMA -->
+            <div class="mt-2">
+              <span class="badge bg-success me-2" *ngIf="datosRealesDisponibles && !errorCargaDatos">
+                <i class="fas fa-check-circle me-1"></i>Sistema OK
+              </span>
+              <span class="badge bg-warning text-dark me-2" *ngIf="usoFallback && !errorCargaDatos">
+                <i class="fas fa-info-circle me-1"></i>Datos Locales
+              </span>
+              <span class="badge bg-danger me-2" *ngIf="errorCargaDatos">
+                <i class="fas fa-exclamation-triangle me-1"></i>{{ tipoError }}
+              </span>
+              <!-- 🆕 BADGE PARA ALERTAS PENDIENTES -->
+              <span class="badge bg-warning text-dark me-2" *ngIf="systemMetrics.alertas_pendientes > 0">
+                <i class="fas fa-bell me-1"></i>{{ systemMetrics.alertas_pendientes }} alertas
+              </span>
+              <button class="btn btn-sm btn-light opacity-75" (click)="verificarEstadoDatos()" title="Verificar estado">
+                <i class="fas fa-info-circle me-1"></i>Info
+              </button>
+            </div>
+          </div>
+          <div class="d-none d-md-block">
+            <i class="fas fa-chart-line fa-3x opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALERTA SI HAY ERROR -->
+  <div class="row mb-4" *ngIf="errorCargaDatos">
+    <div class="col-12">
+      <div class="alert alert-danger d-flex align-items-center" role="alert">
+        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+        <div>
+          <h6 class="mb-1">⚠️ {{ mensajeEstado }}</h6>
+          <p class="mb-2">{{ tipoError === 'CONEXION' ? 'El backend no está disponible en localhost:3000' : 'Error al cargar datos del sistema' }}</p>
+          <button class="btn btn-sm btn-outline-danger me-2" (click)="reintentarCarga()">
+            <i class="fas fa-sync-alt me-1"></i>Reintentar
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" (click)="verificarEstadoConexion()">
+            <i class="fas fa-network-wired me-1"></i>Verificar Conexión
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🆕 SECCIÓN DEL SISTEMA DE AUDITORÍA Y ALERTAS -->
+  <div class="row mb-4" *ngIf="systemMetrics.alertas_pendientes > 0 || systemAlerts.length > 0">
+    <div class="col-12">
+      <div class="alert alert-warning d-flex align-items-center" role="alert">
+        <i class="fas fa-bell fa-2x me-3"></i>
+        <div class="flex-grow-1">
+          <h6 class="mb-1">🚨 Sistema de Alertas</h6>
+          <p class="mb-2">
+            Hay <strong>{{ systemMetrics.alertas_pendientes }}</strong> alertas pendientes que requieren tu atención.
+          </p>
+          <button class="btn btn-sm btn-outline-warning me-2" (click)="verTodasLasAlertas()">
+            <i class="fas fa-eye me-1"></i>Ver Todas
+          </button>
+          <button class="btn btn-sm btn-outline-success me-2" (click)="markAllAlertsAsReviewed()" 
+                  [disabled]="systemAlerts.length === 0">
+            <i class="fas fa-check me-1"></i>Marcar como Revisadas
+          </button>
+          <button class="btn btn-sm btn-outline-info" (click)="verLogDeAuditoria()">
+            <i class="fas fa-list-alt me-1"></i>Ver Auditoría
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENSAJE INFORMATIVO PARA DATOS LOCALES -->
+  <div class="row mb-4" *ngIf="usoFallback && !errorCargaDatos">
+    <div class="col-12">
+      <div class="alert alert-info d-flex align-items-center" role="alert">
+        <i class="fas fa-info-circle fa-2x me-3"></i>
+        <div>
+          <h6 class="mb-1">ℹ️ Usando datos locales</h6>
+          <p class="mb-0">El dashboard está funcionando con datos de los servicios locales. Para datos reales, asegúrate de que el backend esté ejecutándose.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+ <!-- 🆕 MÉTRICAS DEL SISTEMA DE AUDITORÍA - VERSION MEJORADA -->
+<div class="row mb-4">
+  <div class="col-12">
+    <h5 class="mb-3">
+      <i class="fas fa-shield-alt me-2 text-info"></i>
+      Métricas del Sistema de Auditoría
+      <span class="badge bg-info" *ngIf="!loadingSystemMetrics">TIEMPO REAL</span>
+      <span class="badge bg-secondary" *ngIf="loadingSystemMetrics">CARGANDO...</span>
+    </h5>
+  </div>
+</div>
+
+<div class="row mb-4 g-3">
+  
+  <!-- Órdenes Hoy -->
+  <div class="col-lg-3 col-md-6">
+    <div class="card stat-card bg-info text-white h-100 border-0 shadow info-state"
+         [class.loading]="loadingSystemMetrics"
+         [class.updating]="loadingSystemMetrics">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="stat-number">{{ systemMetrics.ordenes_hoy }}</div>
+            <div class="stat-label">Órdenes Hoy</div>
+            <small class="stat-change">
+              <i class="fas fa-clock me-1"></i>Tiempo real
+            </small>
+          </div>
+          <div class="stat-icon">
+            <i class="fas fa-shopping-cart fa-2x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ingresos Hoy -->
+  <div class="col-lg-3 col-md-6">
+    <div class="card stat-card bg-success text-white h-100 border-0 shadow success-state"
+         [class.loading]="loadingSystemMetrics"
+         [class.updating]="loadingSystemMetrics">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="stat-number">${{ systemMetrics.ingresos_hoy.toFixed(2) }}</div>
+            <div class="stat-label">Ingresos Hoy</div>
+            <small class="stat-change">
+              <i class="fas fa-dollar-sign me-1"></i>En tiempo real
+            </small>
+          </div>
+          <div class="stat-icon">
+            <i class="fas fa-cash-register fa-2x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alertas Pendientes -->
+  <div class="col-lg-3 col-md-6">
+    <div class="card stat-card h-100 border-0 shadow"
+         [class.bg-danger]="systemMetrics.alertas_pendientes > 5"
+         [class.bg-warning]="systemMetrics.alertas_pendientes > 0 && systemMetrics.alertas_pendientes <= 5"
+         [class.bg-secondary]="systemMetrics.alertas_pendientes === 0"
+         [class.text-white]="systemMetrics.alertas_pendientes > 0"
+         [class.text-dark]="systemMetrics.alertas_pendientes === 0"
+         [class.danger-state]="systemMetrics.alertas_pendientes > 5"
+         [class.warning-state]="systemMetrics.alertas_pendientes > 0 && systemMetrics.alertas_pendientes <= 5"
+         [class.loading]="loadingSystemMetrics"
+         [class.updating]="loadingSystemMetrics">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="stat-number">{{ systemMetrics.alertas_pendientes }}</div>
+            <div class="stat-label">Alertas Pendientes</div>
+            <small class="stat-change">
+              <i class="fas fa-bell me-1"></i>
+              {{ systemMetrics.alertas_pendientes === 0 ? 'Todo OK' : 'Requiere atención' }}
+            </small>
+          </div>
+          <div class="stat-icon">
+            <i class="fas fa-bell fa-2x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estado del Sistema -->
+  <div class="col-lg-3 col-md-6">
+    <div class="card stat-card h-100 border-0 shadow text-white"
+         [class.bg-success]="triggerTestResult?.success"
+         [class.bg-danger]="triggerTestResult && !triggerTestResult.success"
+         [class.bg-secondary]="!triggerTestResult"
+         [class.success-state]="triggerTestResult?.success"
+         [class.danger-state]="triggerTestResult && !triggerTestResult.success"
+         [class.loading]="testingTriggers"
+         [class.updating]="testingTriggers">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <div class="stat-number">
+              {{ triggerTestResult?.success ? 'ACTIVO' : triggerTestResult ? 'ERROR' : 'CARGANDO' }}
+            </div>
+            <div class="stat-label">Sistema de Auditoría</div>
+            <small class="stat-change">
+              <i class="fas fa-shield-alt me-1"></i>
+              {{ triggerTestResult?.data?.triggers_activos || 0 }} triggers, 
+              {{ triggerTestResult?.data?.funciones_activas || 0 }} funciones
+            </small>
+          </div>
+          <div class="stat-icon">
+            <i class="fas fa-shield-alt fa-2x"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- 🆕 ALERTAS RECIENTES DEL SISTEMA -->
+  <div class="row mb-4" *ngIf="systemAlerts.length > 0">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Alertas Recientes del Sistema
+            <span class="badge bg-danger text-white ms-2">{{ systemAlerts.length }} PENDIENTES</span>
+          </h6>
+          <div>
+            <button class="btn btn-sm btn-outline-dark me-2" (click)="cargarMetricasSistema()">
+              <i class="fas fa-sync-alt" [class.fa-spin]="loadingSystemMetrics"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-dark" (click)="verTodasLasAlertas()">
+              <i class="fas fa-external-link-alt me-1"></i>Ver Todas
+            </button>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-sm mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Tipo</th>
+                  <th>Severidad</th>
+                  <th>Mensaje</th>
+                  <th>Fecha</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let alert of systemAlerts">
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <i [class]="getAlertIcon(alert.tipo)" class="me-2"></i>
+                      <span class="small fw-semibold">{{ alert.tipo.replace('_', ' ') | titlecase }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" [class]="'bg-' + getSeverityClass(alert.severidad)">
+                      {{ alert.severidad | titlecase }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="small">{{ alert.mensaje | slice:0:80 }}{{ alert.mensaje.length > 80 ? '...' : '' }}</span>
+                  </td>
+                  <td>
+                    <small class="text-muted">{{ formatAlertDate(alert.fecha_creacion) }}</small>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-success" 
+                            (click)="markAllAlertsAsReviewed()"
+                            title="Marcar como revisada">
+                      <i class="fas fa-check"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estadísticas principales -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h5 class="mb-3">
+        <i class="fas fa-chart-pie me-2 text-primary"></i>
+        Estadísticas Generales 
+        <span class="badge bg-success" *ngIf="datosRealesDisponibles">DATOS ACTIVOS</span>
+        <span class="badge bg-warning text-dark" *ngIf="usoFallback">DATOS LOCALES</span>
+      </h5>
+    </div>
+  </div>
+
+  <div class="row mb-4 g-3">
+    
+    <!-- Total Películas -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-primary text-white h-100 border-0 shadow">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">{{ stats.totalPeliculas }}</div>
+              <div class="stat-label">Películas Totales</div>
+              <small class="stat-change">
+                <i class="fas fa-database me-1"></i>{{ datosRealesDisponibles ? 'BD Real' : 'Datos Locales' }}
+              </small>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-film fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Usuarios -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-success text-white h-100 border-0 shadow">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">{{ stats.totalUsuarios }}</div>
+              <div class="stat-label">Usuarios Registrados</div>
+              <small class="stat-change">
+                <i class="fas fa-check-circle me-1"></i>{{ stats.usuariosActivos }} activos
+              </small>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-users fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Ventas -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-info text-white h-100 border-0 shadow">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">{{ stats.totalVentas }}</div>
+              <div class="stat-label">Ventas Totales</div>
+              <small class="stat-change">
+                <i class="fas fa-shopping-cart me-1"></i>{{ stats.ordenesCompletadas || 0 }} completadas
+              </small>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-shopping-cart fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ingresos del Mes -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-warning text-dark h-100 border-0 shadow">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">${{ stats.ingresosMes.toFixed(2) }}</div>
+              <div class="stat-label">Ingresos del Mes</div>
+              <small class="stat-change">
+                <i class="fas fa-dollar-sign me-1"></i>Ticket: ${{ (stats.ticketPromedio || 0).toFixed(2) }}
+              </small>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-dollar-sign fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== SECCIÓN DEL BAR ========== -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h5 class="mb-3">
+        <i class="fas fa-utensils me-2 text-warning"></i>
+        Estadísticas del Bar 
+        <span class="badge bg-warning text-dark">{{ getBarStats().datosReales ? 'DATOS REALES' : 'DATOS LOCALES' }}</span>
+        <button class="btn btn-sm btn-outline-warning ms-2" (click)="irAGestionBar()">
+          <i class="fas fa-cog me-1"></i>Gestionar Bar
+        </button>
+      </h5>
+    </div>
+  </div>
+
+  <div class="row mb-4 g-3">
+    
+    <!-- Total Productos del Bar -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-warning text-dark h-100 border-0 shadow">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">{{ getBarStats().totalProductos }}</div>
+              <div class="stat-label">Productos del Bar</div>
+              <small class="stat-change">
+                <i class="fas fa-check-circle me-1"></i>{{ getBarStats().productosDisponibles }} disponibles
+              </small>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-utensils fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Combos Especiales -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-danger text-white h-100 border-0 shadow">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">{{ getBarStats().combosEspeciales }}</div>
+              <div class="stat-label">Combos Especiales</div>
+              <small class="stat-change">
+                <i class="fas fa-gift me-1"></i>Con descuentos
+              </small>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-gift fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Precio Promedio -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-success text-white h-100 border-0 shadow">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">${{ getBarStats().precioPromedio.toFixed(2) }}</div>
+              <div class="stat-label">Precio Promedio</div>
+              <small class="stat-change">
+                <i class="fas fa-chart-line me-1"></i>Por producto
+              </small>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-dollar-sign fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ventas del Bar -->
+    <div class="col-lg-3 col-md-6">
+      <div class="card stat-card bg-info text-white h-100 border-0 shadow">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="stat-number">{{ getBarStats().ventasSimuladas }}</div>
+              <div class="stat-label">Ventas del Bar</div>
+              <small class="stat-change" [class.text-white]="getBarStats().datosReales" [class.text-warning]="!getBarStats().datosReales">
+                <i class="fas fa-chart-bar me-1"></i>
+                ${{ getBarStats().ingresoSimulado.toFixed(0) }}
+              </small>
+            </div>
+            <div class="stat-icon">
+              <i class="fas fa-cocktail fa-2x"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========== SECCIÓN COMBINADA ========== -->
+  <div class="row mb-4">
+    
+    <!-- Top Productos del Bar -->
+    <div class="col-lg-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header bg-warning text-dark">
+          <h6 class="mb-0">
+            <i class="fas fa-trophy me-2"></i>
+            Top Productos del Bar
+            <span class="badge bg-success ms-2" *ngIf="getBarStats().datosReales">DATOS REALES</span>
+            <span class="badge bg-secondary ms-2" *ngIf="!getBarStats().datosReales">SIN DATOS</span>
+          </h6>
+        </div>
+        <div class="card-body">
+          <!-- MENSAJE SI NO HAY DATOS -->
+          <div class="alert alert-info" *ngIf="!getBarStats().datosReales || getTopBarProducts()[0]?.datosReales === false">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>{{ getBarStats().mensaje || 'Sin productos del bar' }}</strong><br>
+            {{ getBarStats().totalProductos === 0 ? 'No hay productos registrados en el sistema.' : 'No hay ventas registradas.' }}
+          </div>
+          
+          <div class="table-responsive" *ngIf="getBarStats().datosReales && getTopBarProducts()[0]?.datosReales !== false">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th>Ventas</th>
+                  <th>Ingresos</th>
+                  <th>Tipo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let producto of getTopBarProducts(); let i = index">
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <span class="badge me-2" 
+                            [class.bg-warning]="i === 0"
+                            [class.bg-secondary]="i === 1"
+                            [class.bg-success]="i === 2"
+                            [class.bg-primary]="i > 2">
+                        {{ i + 1 }}
+                      </span>
+                      <span class="fw-semibold">{{ producto.nombre }}</span>
+                      <i class="fas fa-check text-success ms-1" *ngIf="producto.datosReales" title="Datos disponibles"></i>
+                    </div>
+                  </td>
+                  <td>
+                    <small class="text-muted">{{ producto.categoria }}</small>
+                  </td>
+                  <td>
+                    <span class="badge bg-info">{{ producto.ventas }}</span>
+                  </td>
+                  <td>
+                    <span class="fw-bold text-success">${{ producto.ingresos.toFixed(2) }}</span>
+                  </td>
+                  <td>
+                    <span class="badge" 
+                          [class.bg-danger]="producto.esCombo"
+                          [class.bg-secondary]="!producto.esCombo">
+                      {{ producto.esCombo ? 'Combo' : 'Individual' }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Películas por Género -->
+    <div class="col-lg-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="fas fa-chart-donut me-2 text-primary"></i>
+            Distribución por Género
+            <span class="badge bg-primary ms-2" *ngIf="stats.generosMasPopulares.length > 0">{{ stats.generosMasPopulares.length }} GÉNEROS</span>
+          </h6>
+        </div>
+        <div class="card-body">
+          <!-- MENSAJE SI NO HAY GÉNEROS -->
+          <div class="alert alert-info" *ngIf="stats.generosMasPopulares.length === 0">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Sin géneros registrados</strong><br>
+            No hay películas con géneros en el sistema.
+          </div>
+          
+          <div class="genre-chart" *ngIf="stats.generosMasPopulares.length > 0">
+            <div class="row g-2">
+              <div class="col-6" *ngFor="let genero of stats.generosMasPopulares">
+                <div class="progress-item">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <small class="fw-semibold">
+                      {{ genero.genero }}
+                    </small>
+                    <small class="text-muted">{{ genero.cantidad }}</small>
+                  </div>
+                  <div class="progress" style="height: 8px;">
+                    <div class="progress-bar" 
+                         [style.width.%]="genero.porcentaje"
+                         [class]="getGenreColorClass(genero.genero)">
+                    </div>
+                  </div>
+                  <small class="text-muted">{{ genero.porcentaje }}%</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Sección de Películas Populares y Actividad -->
+  <div class="row mb-4">
+    
+    <!-- Películas Más Populares -->
+    <div class="col-lg-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="fas fa-star me-2 text-warning"></i>
+            Películas Más Populares
+            <span class="badge bg-warning text-dark" *ngIf="stats.peliculasPopulares.length > 0">{{ stats.peliculasPopulares.length }} PELÍCULAS</span>
+          </h6>
+        </div>
+        <div class="card-body">
+          <!-- MENSAJE SI NO HAY PELÍCULAS POPULARES -->
+          <div class="alert alert-info" *ngIf="stats.peliculasPopulares.length === 0">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Sin películas populares</strong><br>
+            No hay películas registradas o con suficiente popularidad.
+          </div>
+          
+          <div class="table-responsive" *ngIf="stats.peliculasPopulares.length > 0">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>Película</th>
+                  <th>Vistas</th>
+                  <th>Rating</th>
+                  <th>Género</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let pelicula of stats.peliculasPopulares; let i = index">
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <span class="badge me-2" 
+                            [class.bg-warning]="i === 0"
+                            [class.bg-secondary]="i === 1"
+                            [class.bg-success]="i === 2"
+                            [class.bg-primary]="i > 2">
+                        {{ i + 1 }}
+                      </span>
+                      <span class="fw-semibold">{{ pelicula.titulo }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge bg-primary">{{ pelicula.vistas }}</span>
+                  </td>
+                  <td>
+                    <span class="badge bg-warning text-dark">
+                      <i class="fas fa-star"></i> {{ pelicula.rating.toFixed(1) }}
+                    </span>
+                  </td>
+                  <td>
+                    <small class="text-muted">{{ pelicula.genero }}</small>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actividad Reciente -->
+    <div class="col-lg-6 mb-4">
+      <div class="card h-100 shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h6 class="mb-0">
+            <i class="fas fa-clock me-2 text-info"></i>
+            Actividad Reciente
+            <span class="badge bg-info text-white" *ngIf="getActividadRecienteCombinada().length > 0">{{ getActividadRecienteCombinada().length }} EVENTOS</span>
+          </h6>
+          <button class="btn btn-sm btn-outline-primary" (click)="refreshActivity()">
+            <i class="fas fa-sync-alt" [class.fa-spin]="refreshingActivity"></i>
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <!-- MENSAJE SI NO HAY ACTIVIDAD -->
+          <div class="alert alert-info m-3" *ngIf="getActividadRecienteCombinada().length === 0 || getActividadRecienteCombinada()[0]?.tipo === 'sin_actividad'">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Sin actividad reciente</strong><br>
+            No hay actividad registrada en el sistema.
+          </div>
+          
+          <div class="activity-timeline" *ngIf="getActividadRecienteCombinada().length > 0 && getActividadRecienteCombinada()[0]?.tipo !== 'sin_actividad'">
+            <div class="activity-item" *ngFor="let actividad of getActividadRecienteCombinada()">
+              <div class="d-flex align-items-start p-3 border-bottom">
+                <div class="activity-icon me-3">
+                  <i [class]="actividad.icono" 
+                     [class.text-success]="actividad.color === 'success'"
+                     [class.text-primary]="actividad.color === 'primary'"
+                     [class.text-info]="actividad.color === 'info'"
+                     [class.text-warning]="actividad.color === 'warning'"
+                     [class.text-danger]="actividad.color === 'danger'"></i>
+                </div>
+                <div class="activity-content flex-grow-1">
+                  <p class="mb-1 fw-semibold">
+                    {{ actividad.descripcion }}
+                  </p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-clock me-1"></i>
+                      {{ formatActivityDate(actividad.fecha) }}
+                    </small>
+                    <span *ngIf="actividad.monto" class="badge bg-success">
+                      ${{ actividad.monto.toFixed(2) }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Ventas Recientes -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="fas fa-receipt me-2 text-success"></i>
+            Ventas Recientes del Sistema
+            <span class="badge bg-success" *ngIf="stats.ventasRecientes.length > 0">{{ stats.ventasRecientes.length }} VENTAS</span>
+          </h6>
+        </div>
+        <div class="card-body">
+          <!-- MENSAJE SI NO HAY VENTAS -->
+          <div class="alert alert-info" *ngIf="stats.ventasRecientes.length === 0">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Sin ventas recientes</strong><br>
+            No hay órdenes registradas en el sistema.
+            <button class="btn btn-sm btn-outline-primary ms-2" [routerLink]="['/admin/movies']">
+              <i class="fas fa-plus me-1"></i>Agregar contenido
+            </button>
+          </div>
+          
+          <div class="table-responsive" *ngIf="stats.ventasRecientes.length > 0">
+            <table class="table table-sm">
+              <thead>
+                <tr>
+                  <th>Usuario</th>
+                  <th>Descripción</th>
+                  <th>Items</th>
+                  <th>Total</th>
+                  <th>Estado</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let venta of stats.ventasRecientes">
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <img src="https://ui-avatars.com/api/?name={{ venta.usuario }}&size=24" 
+                           class="rounded-circle me-2" 
+                           width="24" height="24">
+                      <span class="small">{{ venta.usuario }}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <small class="fw-semibold">{{ venta.pelicula | slice:0:35 }}{{ venta.pelicula.length > 35 ? '...' : '' }}</small>
+                  </td>
+                  <td>
+                    <span class="badge bg-info">{{ venta.entradas }}</span>
+                  </td>
+                  <td>
+                    <span class="fw-bold text-success">${{ venta.total.toFixed(2) }}</span>
+                  </td>
+                  <td>
+                    <span class="badge badge-sm" 
+                          [class.bg-success]="venta.estado === 'completada'"
+                          [class.bg-warning]="venta.estado === 'pendiente'"
+                          [class.bg-danger]="venta.estado === 'cancelada'">
+                      {{ venta.estado }}
+                    </span>
+                  </td>
+                  <td>
+                    <small class="text-muted">{{ formatActivityDate(venta.fecha) }}</small>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reportes Rápidos -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <h5 class="mb-3">
+        <i class="fas fa-file-alt me-2 text-warning"></i>
+        Reportes Rápidos
+        <span class="badge bg-warning text-dark">DISPONIBLES</span>
+      </h5>
+    </div>
+  </div>
+
+  <div class="row mb-4 g-3">
+    
+    <!-- Reporte de Ventas -->
+    <div class="col-lg-2 col-md-4 col-6">
+      <div class="card report-card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="report-icon mb-3">
+            <i class="fas fa-chart-line fa-3x text-success"></i>
+          </div>
+          <h6 class="card-title">Reporte de Ventas</h6>
+          <p class="card-text small text-muted">Análisis de ventas</p>
+          <button class="btn btn-outline-success btn-sm" 
+                  (click)="generateSalesReport()"
+                  [disabled]="generatingReport">
+            <span *ngIf="!generatingReport">
+              <i class="fas fa-download me-1"></i>Generar
+            </span>
+            <span *ngIf="generatingReport">
+              <span class="spinner-border spinner-border-sm me-1"></span>Generando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reporte del Bar -->
+    <div class="col-lg-2 col-md-4 col-6">
+      <div class="card report-card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="report-icon mb-3">
+            <i class="fas fa-utensils fa-3x text-warning"></i>
+          </div>
+          <h6 class="card-title">Reporte del Bar</h6>
+          <p class="card-text small text-muted">Productos y ventas</p>
+          <button class="btn btn-outline-warning btn-sm" 
+                  (click)="generateBarReport()"
+                  [disabled]="generatingReport">
+            <span *ngIf="!generatingReport">
+              <i class="fas fa-download me-1"></i>Generar
+            </span>
+            <span *ngIf="generatingReport">
+              <span class="spinner-border spinner-border-sm me-1"></span>Generando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reporte de Usuarios -->
+    <div class="col-lg-2 col-md-4 col-6">
+      <div class="card report-card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="report-icon mb-3">
+            <i class="fas fa-users fa-3x text-info"></i>
+          </div>
+          <h6 class="card-title">Reporte de Usuarios</h6>
+          <p class="card-text small text-muted">Análisis de usuarios</p>
+          <button class="btn btn-outline-info btn-sm" 
+                  (click)="generateUsersReport()"
+                  [disabled]="generatingReport">
+            <span *ngIf="!generatingReport">
+              <i class="fas fa-download me-1"></i>Generar
+            </span>
+            <span *ngIf="generatingReport">
+              <span class="spinner-border spinner-border-sm me-1"></span>Generando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reporte de Películas -->
+    <div class="col-lg-2 col-md-4 col-6">
+      <div class="card report-card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="report-icon mb-3">
+            <i class="fas fa-film fa-3x text-primary"></i>
+          </div>
+          <h6 class="card-title">Reporte de Películas</h6>
+          <p class="card-text small text-muted">Catálogo de películas</p>
+          <button class="btn btn-outline-primary btn-sm" 
+                  (click)="generateMoviesReport()"
+                  [disabled]="generatingReport">
+            <span *ngIf="!generatingReport">
+              <i class="fas fa-download me-1"></i>Generar
+            </span>
+            <span *ngIf="generatingReport">
+              <span class="spinner-border spinner-border-sm me-1"></span>Generando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reporte Combinado -->
+    <div class="col-lg-2 col-md-4 col-6">
+      <div class="card report-card h-100 border-0 shadow-sm">
+        <div class="card-body text-center">
+          <div class="report-icon mb-3">
+            <i class="fas fa-chart-pie fa-3x text-info"></i>
+          </div>
+          <h6 class="card-title">Reporte Combinado</h6>
+          <p class="card-text small text-muted">Cine + Bar</p>
+          <button class="btn btn-outline-info btn-sm" 
+                  (click)="generateCombinedReport()"
+                  [disabled]="generatingReport">
+            <span *ngIf="!generatingReport">
+              <i class="fas fa-download me-1"></i>Generar
+            </span>
+            <span *ngIf="generatingReport">
+              <span class="spinner-border spinner-border-sm me-1"></span>Generando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reporte Ejecutivo -->
+    <div class="col-lg-2 col-md-4 col-6">
+      <div class="card report-card h-100 border-0 shadow-sm bg-gradient-success">
+        <div class="card-body text-center text-white">
+          <div class="report-icon mb-3">
+            <i class="fas fa-file-pdf fa-3x text-white"></i>
+          </div>
+          <h6 class="card-title fw-bold">Ejecutivo</h6>
+          <p class="card-text small">Reporte completo</p>
+          <button class="btn btn-light btn-sm text-success" 
+                  (click)="generateCompleteReport()"
+                  [disabled]="generatingReport">
+            <span *ngIf="!generatingReport">
+              <i class="fas fa-crown me-1"></i>Generar
+            </span>
+            <span *ngIf="generatingReport">
+              <span class="spinner-border spinner-border-sm me-1"></span>Generando...
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Acciones Rápidas -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="fas fa-bolt me-2 text-warning"></i>
+            Acciones Rápidas
+            <span class="badge bg-success" *ngIf="datosRealesDisponibles">SISTEMA ACTIVO</span>
+            <span class="badge bg-warning text-dark" *ngIf="!datosRealesDisponibles">MODO LOCAL</span>
+            <!-- 🆕 BADGE PARA SISTEMA DE AUDITORÍA -->
+            <span class="badge bg-info" *ngIf="triggerTestResult?.success">AUDITORÍA OK</span>
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            
+            <div class="col-lg-2 col-md-4 col-6">
+              <button class="btn btn-outline-primary w-100 py-3" 
+                      [routerLink]="['/admin/movies']"
+                      [queryParams]="{action: 'add'}">
+                <i class="fas fa-plus-circle fa-2x d-block mb-2"></i>
+                <small>Agregar Película</small>
+              </button>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-6">
+              <button class="btn btn-outline-warning w-100 py-3" 
+                      (click)="irAGestionBar()">
+                <i class="fas fa-utensils fa-2x d-block mb-2"></i>
+                <small>Gestionar Bar</small>
+              </button>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-6">
+              <button class="btn btn-outline-success w-100 py-3" 
+                      [routerLink]="['/admin/users']">
+                <i class="fas fa-user-plus fa-2x d-block mb-2"></i>
+                <small>Gestionar Usuarios</small>
+              </button>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-6">
+              <button class="btn btn-outline-info w-100 py-3" 
+                      (click)="viewSystemLogs()">
+                <i class="fas fa-list-alt fa-2x d-block mb-2"></i>
+                <small>Ver Logs</small>
+              </button>
+            </div>
+            
+            <!-- 🆕 NUEVA ACCIÓN: VER ALERTAS -->
+            <div class="col-lg-2 col-md-4 col-6">
+              <button class="btn btn-outline-danger w-100 py-3" 
+                      (click)="verTodasLasAlertas()">
+                <i class="fas fa-bell fa-2x d-block mb-2"></i>
+                <small>Ver Alertas</small>
+                <span class="badge bg-danger position-absolute top-0 start-100 translate-middle rounded-pill" 
+                      *ngIf="systemMetrics.alertas_pendientes > 0">
+                  {{ systemMetrics.alertas_pendientes }}
+                </span>
+              </button>
+            </div>
+            
+            <div class="col-lg-2 col-md-4 col-6">
+              <button class="btn btn-outline-dark w-100 py-3" 
+                      (click)="refreshAllStats()">
+                <i class="fas fa-sync-alt fa-2x d-block mb-2"></i>
+                <small>Actualizar Todo</small>
+              </button>
+            </div>
+            
+          </div>
+          
+          <!-- 🆕 CONTROLES DEL SISTEMA DE AUDITORÍA -->
+          <div class="row g-3 mt-3 pt-3 border-top">
+            <div class="col-12">
+              <h6 class="text-muted mb-3">
+                <i class="fas fa-shield-alt me-2"></i>
+                Sistema de Auditoría y Mantenimiento
+              </h6>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+              <button class="btn btn-outline-info w-100" (click)="verLogDeAuditoria()">
+                <i class="fas fa-search me-2"></i>Ver Auditoría
+              </button>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+              <button class="btn btn-outline-warning w-100" 
+                      (click)="ejecutarLimpiezaSistema()"
+                      [disabled]="runningCleanup">
+                <span *ngIf="!runningCleanup">
+                  <i class="fas fa-broom me-2"></i>Limpiar Sistema
+                </span>
+                <span *ngIf="runningCleanup">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Limpiando...
+                </span>
+              </button>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+              <button class="btn btn-outline-success w-100" 
+                      (click)="testTriggersOnInit()"
+                      [disabled]="testingTriggers">
+                <span *ngIf="!testingTriggers">
+                  <i class="fas fa-cogs me-2"></i>Probar Triggers
+                </span>
+                <span *ngIf="testingTriggers">
+                  <span class="spinner-border spinner-border-sm me-2"></span>Probando...
+                </span>
+              </button>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+              <button class="btn btn-outline-secondary w-100" (click)="systemBackup()">
+                <i class="fas fa-download me-2"></i>Backup Completo
+              </button>
+            </div>
+            
+          </div>
+
+          <!-- Controles de Diagnóstico -->
+          <div class="row g-3 mt-3 pt-3 border-top">
+            <div class="col-12">
+              <h6 class="text-muted mb-3">
+                <i class="fas fa-tools me-2"></i>
+                Herramientas de Diagnóstico
+              </h6>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+              <button class="btn btn-outline-info w-100" (click)="verificarEstadoDatos()">
+                <i class="fas fa-info-circle me-2"></i>Estado del Sistema
+              </button>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+              <button class="btn btn-outline-success w-100" (click)="verificarEstadoConexion()">
+                <i class="fas fa-network-wired me-2"></i>Verificar Conexión
+              </button>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+              <button class="btn btn-outline-primary w-100" (click)="mostrarInfoCompleta()">
+                <i class="fas fa-chart-bar me-2"></i>Info Completa
+              </button>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+              <button class="btn btn-outline-warning w-100" (click)="reintentarCarga()">
+                <i class="fas fa-redo me-2"></i>Recargar Datos
+              </button>
+            </div>
+            
+          </div>
+
+          <!-- Estado del Sistema -->
+          <div class="row mt-4" *ngIf="mensajeEstado">
+            <div class="col-12">
+              <div class="alert" [class.alert-success]="datosRealesDisponibles && !errorCargaDatos"
+                                [class.alert-warning]="usoFallback && !errorCargaDatos"
+                                [class.alert-danger]="errorCargaDatos">
+                <div class="d-flex align-items-center">
+                  <div class="me-3">
+                    <i class="fas fa-info-circle fa-2x" *ngIf="!errorCargaDatos"></i>
+                    <i class="fas fa-exclamation-triangle fa-2x" *ngIf="errorCargaDatos"></i>
+                  </div>
+                  <div class="flex-grow-1">
+                    <h6 class="mb-1">Estado del Sistema: {{ mensajeEstado }}</h6>
+                    <p class="mb-0" *ngIf="datosRealesDisponibles && !errorCargaDatos">
+                      ✅ El sistema está funcionando correctamente con datos disponibles.
+                    </p>
+                    <p class="mb-0" *ngIf="usoFallback && !errorCargaDatos">
+                      ⚠️ Usando datos de servicios locales. Para datos reales, ejecuta el backend.
+                    </p>
+                    <p class="mb-0" *ngIf="errorCargaDatos">
+                      ❌ Error de conexión. Verifica que el backend esté ejecutándose en localhost:3000.
+                    </p>
+                    <!-- 🆕 INFORMACIÓN DEL SISTEMA DE AUDITORÍA -->
+                    <div class="mt-2" *ngIf="triggerTestResult">
+                      <small class="d-block">
+                        <i class="fas fa-shield-alt me-1"></i>
+                        Sistema de Auditoría: 
+                        <span class="fw-bold" [class.text-success]="triggerTestResult.success" [class.text-danger]="!triggerTestResult.success">
+                          {{ triggerTestResult.success ? 'Funcionando' : 'Con problemas' }}
+                        </span>
+                        ({{ triggerTestResult.data.funciones_activas }} funciones, {{ triggerTestResult.data.triggers_activos }} triggers)
+                      </small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+<div class="row mt-4" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+  <div class="col-12">
+    <div class="btn-group-vertical" role="group">
+      <button class="btn btn-warning btn-sm" (click)="crearAlertasDePrueba()" title="Crear alertas de prueba">
+        <i class="fas fa-flask me-1"></i>
+        🧪 Test Alertas
+      </button>
+      <button class="btn btn-info btn-sm" (click)="verTodasLasAlertas()" title="Ver todas las alertas">
+        <i class="fas fa-eye me-1"></i>
+        👁️ Ver Alertas
+      </button>
+      <button class="btn btn-success btn-sm" (click)="cargarMetricasSistema()" title="Recargar métricas">
+        <i class="fas fa-sync me-1"></i>
+        🔄 Recargar
+      </button>
+    </div>
+  </div>
+</div>
+</div>

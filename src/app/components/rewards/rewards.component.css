@@ -1,0 +1,617 @@
+/* ======================================
+   🎁 REWARDS - TEMA PARKY FILMS
+   ====================================== */
+
+/* ======================================
+   📋 HEADER Y CARDS BASE
+   ====================================== */
+
+.card {
+  border-radius: 1rem;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  cursor: pointer;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+.card:hover {
+  transform: translateY(-15px) scale(1.02);
+  box-shadow: 0 25px 50px rgba(25, 135, 84, 0.3) !important;
+}
+
+.card.border-success:hover {
+  box-shadow: 0 25px 50px rgba(25, 135, 84, 0.4) !important;
+  border-color: #198754 !important;
+}
+
+.card.border-warning:hover {
+  box-shadow: 0 25px 50px rgba(255, 193, 7, 0.4) !important;
+}
+
+.card.border-danger:hover {
+  box-shadow: 0 25px 50px rgba(220, 53, 69, 0.4) !important;
+}
+
+.card.bg-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%) !important;
+  color: #333;
+}
+
+.card.bg-light {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+/* ======================================
+   🖼️ REWARD IMAGES
+   ====================================== */
+
+.card-img-top {
+  transition: all 0.4s ease;
+  object-fit: cover;
+}
+
+.card:hover .card-img-top {
+  transform: scale(1.1);
+  filter: brightness(0.9) saturate(1.2);
+}
+
+.card-img-top.opacity-50 {
+  filter: grayscale(100%) brightness(0.7);
+}
+
+/* ======================================
+   🏷️ BADGES - Categorías y puntos
+   ====================================== */
+
+.badge {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 0.85rem !important;
+  transition: all 0.3s ease;
+  animation: fadeInScale 0.6s ease forwards;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+}
+
+.card:hover .badge {
+  transform: scale(1.1);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.badge.bg-primary {
+  background: linear-gradient(45deg, #0d6efd, #6610f2) !important;
+}
+
+.badge.bg-warning {
+  background: linear-gradient(45deg, #ffc107, #ff8f00) !important;
+  color: #333 !important;
+}
+
+.badge.bg-info {
+  background: linear-gradient(45deg, #0dcaf0, #17a2b8) !important;
+}
+
+.badge.bg-secondary {
+  background: linear-gradient(45deg, #6c757d, #495057) !important;
+}
+
+.badge.bg-success {
+  background: linear-gradient(45deg, #198754, #20c997) !important;
+}
+
+.badge.bg-danger {
+  background: linear-gradient(45deg, #dc3545, #c82333) !important;
+}
+
+.badge.bg-light {
+  background: #f8f9fa !important;
+  color: #495057 !important;
+  border: 1px solid rgba(13, 110, 253, 0.2);
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ======================================
+   🔘 BOTONES
+   ====================================== */
+
+.btn {
+  border-radius: 25px;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  position: relative;
+  overflow: hidden;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn-success {
+  background: linear-gradient(45deg, #198754, #20c997);
+  border: none;
+  color: white;
+  box-shadow: 0 4px 15px rgba(25, 135, 84, 0.3);
+}
+
+.btn-success:hover {
+  background: linear-gradient(45deg, #20c997, #198754);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(25, 135, 84, 0.4);
+}
+
+.btn-warning {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  border: none;
+  color: #333;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.btn-warning:hover {
+  background: linear-gradient(45deg, #ff8f00, #ffc107);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(255, 193, 7, 0.4);
+  color: #333;
+}
+
+.btn-primary {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  border: none;
+  box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(45deg, #6610f2, #0d6efd);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(13, 110, 253, 0.4);
+}
+
+.btn-secondary {
+  background: linear-gradient(45deg, #6c757d, #495057);
+  border: none;
+  box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(45deg, #495057, #6c757d);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px rgba(108, 117, 125, 0.4);
+}
+
+/* Botones outline */
+.btn-outline-warning,
+.btn-outline-secondary,
+.btn-outline-primary,
+.btn-outline-info {
+  border-width: 2px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-outline-warning:hover {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  color: #333;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(255, 193, 7, 0.3);
+}
+
+.btn-outline-secondary:hover {
+  background: linear-gradient(45deg, #6c757d, #495057);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(108, 117, 125, 0.3);
+}
+
+.btn-outline-primary:hover {
+  background: linear-gradient(45deg, #0d6efd, #6610f2);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(13, 110, 253, 0.3);
+}
+
+.btn-outline-info:hover {
+  background: linear-gradient(45deg, #0dcaf0, #17a2b8);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(13, 202, 240, 0.3);
+}
+
+.btn:disabled {
+  transform: none !important;
+  box-shadow: none !important;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  border-radius: 1.5rem;
+}
+
+.btn-sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+}
+
+/* ======================================
+   📊 PROGRESS BARS
+   ====================================== */
+
+.progress {
+  border-radius: 1rem;
+  overflow: hidden;
+  background: rgba(25, 135, 84, 0.1);
+  height: 8px;
+}
+
+.progress-bar {
+  background: linear-gradient(45deg, #198754, #20c997);
+  transition: width 1s ease-in-out;
+  animation: progressShine 2s infinite;
+}
+
+@keyframes progressShine {
+  0%, 100% { box-shadow: inset 0 0 10px rgba(255,255,255,0.3); }
+  50% { box-shadow: inset 0 0 20px rgba(255,255,255,0.5); }
+}
+
+/* ======================================
+   📝 FORMULARIOS Y FILTROS
+   ====================================== */
+
+.form-control,
+.form-select {
+  border-radius: 0.75rem;
+  border: 2px solid rgba(13, 110, 253, 0.1);
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #198754;
+  box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+  transform: translateY(-1px);
+}
+
+.input-group-text {
+  background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+  border: none;
+  color: white;
+  font-weight: 600;
+}
+
+.form-check-input:checked {
+  background-color: #198754;
+  border-color: #198754;
+  animation: checkboxBounce 0.3s ease;
+}
+
+@keyframes checkboxBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.form-check-label {
+  font-weight: 600;
+  color: #198754;
+}
+
+/* ======================================
+   🔗 BREADCRUMBS
+   ====================================== */
+
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-item a {
+  color: #0d6efd;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.breadcrumb-item a:hover {
+  color: #ffc107;
+  transform: translateX(3px);
+}
+
+.breadcrumb-item.active {
+  color: #6c757d;
+  font-weight: 600;
+}
+
+/* ======================================
+   🎁 REWARD CARDS ESPECÍFICOS
+   ====================================== */
+
+.card.border-success {
+  border-width: 2px;
+  animation: borderGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes borderGlow {
+  from { border-color: #198754; }
+  to { border-color: #20c997; }
+}
+
+/* Códigos de canje */
+code {
+  background: linear-gradient(45deg, #f8f9fa, #e9ecef) !important;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  font-family: 'Courier New', monospace;
+  transition: all 0.3s ease;
+  font-weight: 600;
+}
+
+code:hover {
+  background: linear-gradient(45deg, #e9ecef, #f8f9fa) !important;
+  transform: scale(1.05);
+}
+
+/* ======================================
+   📋 MODAL
+   ====================================== */
+
+.modal-content {
+  border-radius: 1.5rem;
+  border: none;
+  overflow: hidden;
+  animation: modalSlideIn 0.3s ease;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal-header.bg-success {
+  background: linear-gradient(135deg, #198754, #20c997) !important;
+}
+
+.modal-header.bg-warning {
+  background: linear-gradient(135deg, #ffc107, #ff8f00) !important;
+  color: #333 !important;
+}
+
+.modal-body img {
+  transition: all 0.3s ease;
+  border-radius: 1rem;
+}
+
+.modal-body img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+.modal-body .alert-success {
+  background: rgba(25, 135, 84, 0.1);
+  color: #198754;
+  border: 1px solid rgba(25, 135, 84, 0.2);
+  border-left: 4px solid #198754;
+}
+
+/* ======================================
+   🚫 ESTADOS VACÍOS
+   ====================================== */
+
+.empty-state {
+  padding: 4rem 2rem;
+  animation: fadeInUp 0.8s ease;
+}
+
+.empty-state i {
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+/* ======================================
+   🎯 LOADING ANIMATIONS
+   ====================================== */
+
+.spinner-border {
+  animation: spin 1s linear infinite, colorCycle 2s ease-in-out infinite;
+}
+
+@keyframes colorCycle {
+  0%, 100% { color: #198754; }
+  33% { color: #20c997; }
+  66% { color: #0dcaf0; }
+}
+
+/* ======================================
+   📱 RESPONSIVE DESIGN
+   ====================================== */
+
+@media (max-width: 768px) {
+  .card:hover {
+    transform: translateY(-8px) scale(1.01);
+  }
+  
+  .btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .modal-dialog {
+    margin: 1rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .card-img-top {
+    height: 180px !important;
+  }
+  
+  .card-title {
+    font-size: 1rem;
+  }
+  
+  .badge {
+    font-size: 0.75rem !important;
+  }
+  
+  .btn {
+    padding: 0.5rem 1rem;
+  }
+  
+  .modal-body {
+    padding: 1rem;
+  }
+}
+
+/* ======================================
+   ✨ CARD ENTRY ANIMATIONS
+   ====================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.card:nth-child(2n) {
+  animation-delay: 0.1s;
+}
+
+.card:nth-child(3n) {
+  animation-delay: 0.2s;
+}
+
+.card:nth-child(4n) {
+  animation-delay: 0.3s;
+}
+
+/* ======================================
+   🎨 EFECTOS ESPECIALES
+   ====================================== */
+
+.text-warning {
+  animation: goldShimmer 2s ease-in-out infinite alternate;
+}
+
+@keyframes goldShimmer {
+  from { color: #ffc107; }
+  to { color: #ffed4e; }
+}
+
+.bg-success {
+  background: linear-gradient(135deg, #198754, #20c997) !important;
+}
+
+.bg-primary {
+  background: linear-gradient(135deg, #0d6efd, #6610f2) !important;
+}
+
+.bg-warning {
+  background: linear-gradient(135deg, #ffc107, #fd7e14) !important;
+}
+
+.bg-info {
+  background: linear-gradient(135deg, #0dcaf0, #6f42c1) !important;
+}
+
+/* Hover glow effects */
+.text-success {
+  transition: all 0.3s ease;
+}
+
+.text-success:hover {
+  text-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
+}
+
+.fw-bold {
+  transition: all 0.3s ease;
+}
+
+.fw-bold:hover {
+  transform: scale(1.05);
+}
+
+/* ======================================
+   🎨 ACCESIBILIDAD
+   ====================================== */
+
+.btn:focus,
+.form-control:focus,
+.form-select:focus {
+  outline: 2px solid #ffc107;
+  outline-offset: 2px;
+}
+
+/* Modo de alto contraste */
+@media (prefers-contrast: high) {
+  .card {
+    border: 2px solid #000000;
+  }
+  
+  .btn-success {
+    background: #00ff00 !important;
+    color: #000000 !important;
+  }
+  
+  .badge {
+    border: 2px solid #000000;
+  }
+}
+
+/* Modo sin animaciones */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

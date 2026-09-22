@@ -1,0 +1,635 @@
+/* ======================================
+   💳 CHECKOUT - TEMA PARKY FILMS
+   ====================================== */
+
+/* ======================================
+   📋 CARDS BASE
+   ====================================== */
+
+.card {
+  border-radius: 1rem;
+  border: 1px solid rgba(13, 110, 253, 0.1);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(13, 110, 253, 0.15);
+}
+
+.card-header {
+  border-radius: 1rem 1rem 0 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card-header.bg-primary {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%) !important;
+}
+
+.card-header.bg-success {
+  background: linear-gradient(135deg, #198754 0%, #20c997 100%) !important;
+}
+
+.card-header.bg-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%) !important;
+}
+
+/* ======================================
+   📝 FORMULARIOS - Inputs y validación
+   ====================================== */
+
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.form-control,
+.form-select {
+  border-radius: 0.75rem;
+  border: 2px solid rgba(13, 110, 253, 0.1);
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #ffc107;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.2);
+  background: white;
+  transform: translateY(-2px);
+}
+
+.form-control::placeholder {
+  color: #adb5bd;
+  font-style: italic;
+}
+
+/* Estados de validación */
+.form-control.is-valid,
+.form-select.is-valid {
+  border-color: #198754;
+  box-shadow: 0 4px 15px rgba(25, 135, 84, 0.2);
+}
+
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: #dc3545;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.2);
+}
+
+/* Input groups */
+.input-group .form-control {
+  border-radius: 0.75rem 0 0 0.75rem;
+}
+
+.input-group .btn {
+  border-radius: 0 0.75rem 0.75rem 0;
+  border-left: none;
+}
+
+.input-group-text {
+  background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%);
+  border: 2px solid rgba(13, 110, 253, 0.2);
+  color: white;
+  font-weight: 600;
+  border-radius: 0.75rem 0 0 0.75rem;
+}
+
+/* ======================================
+   💳 VALIDACIÓN DE TARJETA
+   ====================================== */
+
+.fab.fa-cc-visa {
+  color: #1a1f71;
+}
+
+.fab.fa-cc-mastercard {
+  color: #eb001b;
+}
+
+.fab.fa-cc-amex {
+  color: #006fcf;
+}
+
+/* Feedback de validación */
+.text-success small,
+.text-danger small {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.text-success i,
+.text-danger i {
+  margin-right: 0.5rem;
+}
+
+/* ======================================
+   🪙 SECCIÓN DE PUNTOS
+   ====================================== */
+
+.card.shadow-sm.mb-4 {
+  border: 2px solid rgba(255, 193, 7, 0.3);
+}
+
+.card-header.bg-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%) !important;
+  color: #333 !important;
+}
+
+.input-group .form-control[type="number"] {
+  text-align: center;
+  font-weight: 700;
+  color: #0d6efd;
+}
+
+.btn-warning {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  border: none;
+  color: #333;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+}
+
+.btn-warning:hover {
+  background: linear-gradient(45deg, #ff8f00, #ffc107);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.4);
+  color: #333;
+}
+
+.btn-outline-warning {
+  border-color: #ffc107;
+  color: #ffc107;
+  border-width: 2px;
+}
+
+.btn-outline-warning:hover {
+  background: linear-gradient(45deg, #ffc107, #ff8f00);
+  color: #333;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(255, 193, 7, 0.3);
+}
+
+/* ======================================
+   ✅ FORM CHECKS - Radio y checkbox
+   ====================================== */
+
+.form-check {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: rgba(13, 110, 253, 0.03);
+  transition: all 0.3s ease;
+}
+
+.form-check:hover {
+  background: rgba(13, 110, 253, 0.08);
+  transform: translateX(5px);
+}
+
+.form-check-input:checked {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+  transform: scale(1.1);
+}
+
+.form-check-label {
+  font-weight: 500;
+  color: #495057;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.form-check-label i {
+  margin-right: 0.5rem;
+  color: #0d6efd;
+}
+
+.form-check-label a {
+  color: #0d6efd;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.form-check-label a:hover {
+  color: #ffc107;
+  text-decoration: underline;
+}
+
+/* ======================================
+   🔘 BOTONES
+   ====================================== */
+
+.btn {
+  border-radius: 25px;
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+}
+
+.btn-success {
+  background: linear-gradient(45deg, #198754, #20c997);
+  border: none;
+  box-shadow: 0 4px 15px rgba(25, 135, 84, 0.3);
+}
+
+.btn-success:hover {
+  background: linear-gradient(45deg, #20c997, #198754);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(32, 201, 151, 0.4);
+}
+
+.btn-secondary {
+  background: linear-gradient(45deg, #6c757d, #495057);
+  border: none;
+  box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(45deg, #495057, #6c757d);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(108, 117, 125, 0.4);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-lg {
+  padding: 1rem 2rem;
+  font-size: 1rem;
+}
+
+/* ======================================
+   🧾 RESUMEN DEL PEDIDO
+   ====================================== */
+
+.sticky-top {
+  top: 20px;
+}
+
+.card-header.bg-success h5 {
+  font-weight: 700;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Desglose de precios */
+.card-body .d-flex.justify-content-between {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(13, 110, 253, 0.1);
+}
+
+.card-body .d-flex.justify-content-between:last-of-type {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.h5.text-success {
+  font-weight: 800;
+  font-size: 1.5rem;
+  text-shadow: 1px 1px 3px rgba(25, 135, 84, 0.3);
+}
+
+/* ======================================
+   🚨 ALERTS
+   ====================================== */
+
+.alert {
+  border-radius: 1rem;
+  border: none;
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, rgba(25, 135, 84, 0.1), rgba(25, 135, 84, 0.05));
+  color: #198754;
+  border-left-color: #198754;
+}
+
+.alert-info {
+  background: linear-gradient(135deg, rgba(13, 202, 240, 0.1), rgba(13, 202, 240, 0.05));
+  color: #0dcaf0;
+  border-left-color: #0dcaf0;
+}
+
+.alert-warning {
+  background: linear-gradient(135deg, rgba(255, 193, 7, 0.1), rgba(255, 193, 7, 0.05));
+  color: #ffc107;
+  border-left-color: #ffc107;
+}
+
+.alert-heading {
+  font-weight: 700;
+}
+
+.alert i {
+  margin-right: 0.5rem;
+}
+
+/* ======================================
+   🔗 BREADCRUMBS
+   ====================================== */
+
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb-item a {
+  color: #0d6efd;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+.breadcrumb-item a:hover {
+  color: #ffc107;
+  transform: translateX(3px);
+}
+
+.breadcrumb-item.active {
+  color: #6c757d;
+  font-weight: 600;
+}
+
+/* ======================================
+   🪙 MODAL DE PUNTOS
+   ====================================== */
+
+.modal-content {
+  border-radius: 1rem;
+  border: none;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header.bg-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%) !important;
+  color: #333 !important;
+}
+
+.modal-body .fa-4x {
+  color: #ffc107;
+}
+
+.modal-body .alert-info {
+  background: rgba(13, 110, 253, 0.1);
+  color: #0d6efd;
+  border: 1px solid rgba(13, 110, 253, 0.2);
+}
+
+.modal-body .border.rounded {
+  background: rgba(248, 249, 250, 0.8);
+  border: 1px solid rgba(13, 110, 253, 0.1) !important;
+  transition: all 0.3s ease;
+}
+
+.modal-body .border.rounded:hover {
+  background: rgba(13, 110, 253, 0.05);
+  transform: translateY(-2px);
+}
+
+/* ======================================
+   📱 RESPONSIVE DESIGN
+   ====================================== */
+
+@media (max-width: 992px) {
+  .sticky-top {
+    position: static !important;
+    margin-top: 2rem;
+  }
+  
+  .card-body {
+    padding: 1.5rem 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .card {
+    margin: 1rem 0.5rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .btn {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+  
+  .form-control,
+  .form-select {
+    padding: 0.6rem 0.8rem;
+  }
+  
+  .btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .modal-dialog {
+    margin: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .container {
+    padding: 0 0.5rem;
+  }
+  
+  .card-header h5,
+  .card-header h6 {
+    font-size: 1rem;
+  }
+  
+  .form-check {
+    padding: 0.5rem;
+  }
+  
+  .alert {
+    padding: 0.75rem;
+  }
+  
+  .h5.text-success {
+    font-size: 1.25rem;
+  }
+}
+
+/* ======================================
+   ✨ ANIMACIONES
+   ====================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.card:nth-child(2) {
+  animation: slideInRight 0.6s ease-out;
+  animation-delay: 0.2s;
+}
+
+/* Spinner personalizado */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* ======================================
+   🎯 ESTADOS ESPECIALES
+   ====================================== */
+
+.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.text-warning.fw-bold {
+  color: #ffc107 !important;
+  text-shadow: 1px 1px 3px rgba(255, 193, 7, 0.3);
+}
+
+/* ======================================
+   🎨 ACCESIBILIDAD
+   ====================================== */
+
+.form-control:focus,
+.form-select:focus,
+.btn:focus,
+.form-check-input:focus {
+  outline: 2px solid #ffc107;
+  outline-offset: 2px;
+}
+
+/* Modo de alto contraste */
+@media (prefers-contrast: high) {
+  .card {
+    border: 2px solid #000000;
+  }
+  
+  .form-control,
+  .form-select {
+    border: 2px solid #000000;
+  }
+  
+  .btn-success {
+    background: #00ff00 !important;
+    color: #000000 !important;
+  }
+}
+
+/* Modo sin animaciones */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+.custom-checkbox {
+  position: relative;
+  padding-left: 35px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  font-size: 16px;
+  user-select: none;
+  line-height: 1.5;
+}
+
+.custom-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  height: 0;
+  width: 0;
+}
+
+.custom-checkbox .checkmark {
+  position: absolute;
+  top: 2px;
+  left: 0;
+  height: 24px;
+  width: 24px;
+  background-color: #fff;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  transition: all 0.3s ease;
+}
+
+.custom-checkbox:hover input ~ .checkmark {
+  border-color: #0d6efd;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+  transform: scale(1.05);
+}
+
+.custom-checkbox input:checked ~ .checkmark {
+  background-color: #28a745;
+  border-color: #28a745;
+  transform: scale(1.1);
+}
+
+.custom-checkbox input:checked ~ .checkmark:after {
+  display: block;
+}
+
+.custom-checkbox .checkmark:after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 7px;
+  top: 3px;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+
+/* Variante para registro (verde) */
+.card.border-success .custom-checkbox input:checked ~ .checkmark {
+  background-color: #198754;
+  border-color: #198754;
+}
+
+/* Variante para checkout (azul) */
+.card.border-primary .custom-checkbox input:checked ~ .checkmark {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}

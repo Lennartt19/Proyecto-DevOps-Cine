@@ -1,0 +1,362 @@
+<!-- admin-logs.component.html -->
+<div class="admin-logs">
+
+  <!-- Header -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h4 class="mb-1">
+            <i class="fas fa-list-alt me-2 text-primary"></i>
+            Logs del Sistema
+          </h4>
+          <p class="text-muted mb-0">Monitoreo y seguimiento de actividades del sistema</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary" 
+                  (click)="refreshDatos()"
+                  [disabled]="cargando">
+            <i class="fas fa-sync-alt me-1" [class.fa-spin]="cargando"></i>
+            Actualizar
+          </button>
+          <button class="btn btn-outline-primary" 
+                  (click)="exportarLogs()">
+            <i class="fas fa-download me-1"></i>
+            Exportar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Estadísticas del Sistema -->
+  <div class="row mb-4" *ngIf="estadisticasSistema">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="fas fa-chart-line me-2"></i>
+            Estado del Sistema en Tiempo Real
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-2">
+              <div class="text-center">
+                <div class="h4 text-success mb-1">{{ estadisticasSistema.usuarios_activos }}</div>
+                <div class="small text-muted">
+                  <i class="fas fa-users me-1"></i>
+                  Usuarios Activos
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="text-center">
+                <div class="h4 text-primary mb-1">{{ estadisticasSistema.ordenes_hoy }}</div>
+                <div class="small text-muted">
+                  <i class="fas fa-shopping-cart me-1"></i>
+                  Órdenes Hoy
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="text-center">
+                <div class="h4 text-warning mb-1">{{ estadisticasSistema.ordenes_pendientes }}</div>
+                <div class="small text-muted">
+                  <i class="fas fa-clock me-1"></i>
+                  Pendientes
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="text-center">
+                <div class="h4 text-success mb-1">{{ formatearMoneda(estadisticasSistema.ingresos_hoy) }}</div>
+                <div class="small text-muted">
+                  <i class="fas fa-dollar-sign me-1"></i>
+                  Ingresos Hoy
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="text-center">
+                <div class="h4 text-info mb-1">{{ estadisticasSistema.peliculas_activas }}</div>
+                <div class="small text-muted">
+                  <i class="fas fa-film me-1"></i>
+                  Películas Activas
+                </div>
+              </div>
+            </div>
+            <div class="col-md-2">
+              <div class="text-center">
+                <div class="h4 text-secondary mb-1">{{ estadisticasSistema.funciones_activas }}</div>
+                <div class="small text-muted">
+                  <i class="fas fa-calendar me-1"></i>
+                  Funciones Activas
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegación por pestañas -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+          <nav class="nav nav-tabs nav-fill">
+            <button class="nav-link" 
+                    [class.active]="seccionActiva === 'actividad'"
+                    (click)="cambiarSeccion('actividad')">
+              <i class="fas fa-stream me-2"></i>
+              Actividad Reciente
+            </button>
+            <button class="nav-link" 
+                    [class.active]="seccionActiva === 'ordenes'"
+                    (click)="cambiarSeccion('ordenes')">
+              <i class="fas fa-shopping-cart me-2"></i>
+              Logs de Órdenes
+            </button>
+            <button class="nav-link" 
+                    [class.active]="seccionActiva === 'usuarios'"
+                    (click)="cambiarSeccion('usuarios')">
+              <i class="fas fa-users me-2"></i>
+              Logs de Usuarios
+            </button>
+            <button class="nav-link" 
+                    [class.active]="seccionActiva === 'errores'"
+                    (click)="cambiarSeccion('errores')">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              Logs de Errores
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div class="text-center py-5" *ngIf="cargando">
+    <div class="spinner-border text-primary mb-3"></div>
+    <p class="text-muted">Cargando logs del sistema...</p>
+  </div>
+
+  <!-- Contenido de las pestañas -->
+  <div class="row" *ngIf="!cargando">
+    <div class="col-12">
+      
+      <!-- Actividad Reciente -->
+      <div class="card border-0 shadow-sm" *ngIf="seccionActiva === 'actividad'">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="fas fa-stream me-2"></i>
+            Actividad Reciente del Sistema ({{ actividadReciente.length }})
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" *ngIf="actividadReciente.length > 0">
+            <div class="list-group-item" *ngFor="let actividad of actividadReciente; trackBy: trackActividad">
+              <div class="d-flex align-items-center">
+                <div class="me-3">
+                  <i [class]="actividad.icono" [class]="'text-' + actividad.color"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">{{ actividad.descripcion }}</div>
+                  <small class="text-muted">
+                    <i class="fas fa-clock me-1"></i>
+                    {{ formatearFechaRelativa(actividad.fecha) }} - {{ formatearFecha(actividad.fecha) }}
+                  </small>
+                </div>
+                <div>
+                  <span class="badge" [class]="'bg-' + actividad.color">
+                    {{ actividad.tipo }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="text-center py-4" *ngIf="actividadReciente.length === 0">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No hay actividad reciente</h5>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logs de Órdenes -->
+      <div class="card border-0 shadow-sm" *ngIf="seccionActiva === 'ordenes'">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="fas fa-shopping-cart me-2"></i>
+            Logs de Órdenes ({{ logsOrdenes.length }})
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive" *ngIf="logsOrdenes.length > 0">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID Orden</th>
+                  <th>Cliente</th>
+                  <th>Total</th>
+                  <th>Estado</th>
+                  <th>Método Pago</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let orden of logsOrdenes; trackBy: trackOrden">
+                  <td>
+                    <code>{{ orden.id.substring(0, 8) }}...</code>
+                  </td>
+                  <td>
+                    <div class="fw-semibold">{{ orden.nombre_cliente }}</div>
+                    <small class="text-muted">{{ orden.email_cliente }}</small>
+                  </td>
+                  <td>
+                    <span class="fw-bold">{{ formatearMoneda(orden.total) }}</span>
+                  </td>
+                  <td>
+                    <span class="badge" [class]="'bg-' + orden.color_estado">
+                      {{ orden.estado }}
+                    </span>
+                  </td>
+                  <td>{{ orden.metodo_pago }}</td>
+                  <td>
+                    <small>{{ formatearFecha(orden.fecha_creacion) }}</small>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="text-center py-4" *ngIf="logsOrdenes.length === 0">
+            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No hay logs de órdenes</h5>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logs de Usuarios -->
+      <div class="card border-0 shadow-sm" *ngIf="seccionActiva === 'usuarios'">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="fas fa-users me-2"></i>
+            Logs de Usuarios ({{ logsUsuarios.length }})
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive" *ngIf="logsUsuarios.length > 0">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>ID</th>
+                  <th>Usuario</th>
+                  <th>Email</th>
+                  <th>Rol</th>
+                  <th>Estado</th>
+                  <th>Fecha Registro</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let usuario of logsUsuarios; trackBy: trackUsuario">
+                  <td>{{ usuario.id }}</td>
+                  <td>
+                    <div class="fw-semibold">{{ usuario.nombre }}</div>
+                  </td>
+                  <td>{{ usuario.email }}</td>
+                  <td>
+                    <span class="badge" [class]="usuario.role === 'admin' ? 'bg-danger' : 'bg-primary'">
+                      {{ usuario.role }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" [class]="'bg-' + usuario.color_estado">
+                      {{ usuario.is_active ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                  <td>
+                    <small>{{ formatearFecha(usuario.fecha_registro) }}</small>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="text-center py-4" *ngIf="logsUsuarios.length === 0">
+            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No hay logs de usuarios</h5>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logs de Errores -->
+      <div class="card border-0 shadow-sm" *ngIf="seccionActiva === 'errores'">
+        <div class="card-header bg-light">
+          <h6 class="mb-0">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Logs de Errores y Alertas ({{ logsErrores.length }})
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush" *ngIf="logsErrores.length > 0">
+            <div class="list-group-item" *ngFor="let error of logsErrores; trackBy: trackError">
+              <div class="d-flex align-items-start">
+                <div class="me-3 mt-1">
+                  <i class="fas fa-exclamation-circle" 
+                     [class]="error.nivel === 'error' ? 'text-danger' : 
+                              error.nivel === 'warning' ? 'text-warning' : 'text-info'"></i>
+                </div>
+                <div class="flex-grow-1">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <div class="fw-semibold">{{ error.mensaje }}</div>
+                      <small class="text-muted">
+                        <i class="fas fa-cube me-1"></i>Módulo: {{ error.modulo }}
+                        <i class="fas fa-clock ms-3 me-1"></i>{{ formatearFecha(error.timestamp) }}
+                      </small>
+                    </div>
+                    <div class="text-end">
+                      <span class="badge" 
+                            [class]="error.nivel === 'error' ? 'bg-danger' : 
+                                     error.nivel === 'warning' ? 'bg-warning text-dark' : 'bg-info'">
+                        {{ error.nivel.toUpperCase() }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="text-center py-4" *ngIf="logsErrores.length === 0">
+            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+            <h5 class="text-success">No hay errores registrados</h5>
+            <p class="text-muted">El sistema está funcionando correctamente</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Información adicional -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="alert alert-info">
+        <h6 class="alert-heading">
+          <i class="fas fa-info-circle me-2"></i>
+          Información sobre los Logs
+        </h6>
+        <p class="mb-2">
+          <strong>Actividad Reciente:</strong> Muestra las últimas acciones del sistema basadas en la vista de base de datos.
+        </p>
+        <p class="mb-2">
+          <strong>Logs de Órdenes:</strong> Registra todas las transacciones y cambios de estado de las órdenes.
+        </p>
+        <p class="mb-0">
+          <strong>Logs de Usuarios:</strong> Muestra los registros de usuarios recientes y su actividad.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
