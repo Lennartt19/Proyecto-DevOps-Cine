@@ -47,6 +47,13 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Validar secret ACR_NAME
+        run: |
+          if [ -z "${{ secrets.ACR_NAME }}" ]; then
+            echo "::error::Falta el secret ACR_NAME (ej. acrcinedev01). Créalo en Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
       - name: Resolver ACR login server
         id: acr
         run: |
