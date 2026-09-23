@@ -60,10 +60,12 @@ spec:
               mountPath: /docker-entrypoint-initdb.d
           readinessProbe:
             exec:
+              # Usa el usuario/BD reales del secret (igual que el healthcheck del compose).
+              # Antes iba '-U postgres' fijo y fallaba si POSTGRES_USER era otro.
               command:
-                - pg_isready
-                - -U
-                - postgres
+                - sh
+                - -c
+                - pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"
             initialDelaySeconds: 15
             periodSeconds: 10
       volumes:
