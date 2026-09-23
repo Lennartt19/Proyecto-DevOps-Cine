@@ -1,0 +1,97 @@
+# Backend en AKS (dev): equivale al servicio `backend` del compose local.
+# Imagen: el workflow CD la fija con `kubectl set image` (ACR + tag elegido).
+# URLs públicas (FRONTEND_URL, BACKEND_URL, CORS_ORIGIN): las fija el CD con
+# `kubectl set env` desde sus inputs. Aquí van placeholders para el primer deploy.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: cine-dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: cine-backend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: DB_HOST
+              value: postgres
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: cine-secrets
+                  key: POSTGRES_DB
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: cine-secrets
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cine-secrets
+                  key: POSTGRES_PASSWORD
+            - name: DB_SSL
+              value: "false"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cine-secrets
+                  key: JWT_SECRET
+            - name: JWT_EXPIRES_IN
+              value: 2h
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: cine-secrets
+                  key: SESSION_SECRET
+            - name: FRONTEND_URL
+              value: http://localhost:8080
+            - name: BACKEND_URL
+              value: http://localhost:3000
+            - name: CORS_ORIGIN
+              value: http://localhost:8080
+            - name: COOKIE_SECURE
+              value: "false"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: cine-dev
+spec:
+  # LoadBalancer en v1 básica: el navegador llama a la API directo (igual que en local).
+  # Más adelante se consolida con Ingress (1 sola IP para front + back).
+  type: LoadBalancer
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: backend

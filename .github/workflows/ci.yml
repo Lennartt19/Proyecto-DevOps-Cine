@@ -1,0 +1,76 @@
+# CI: empaqueta backend + frontend y los sube al ACR de dev.
+# - Push a main: build + push (tags: <sha> y latest).
+# - PR: solo build (no push, valida el Dockerfile).
+# Requiere secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, ACR_NAME.
+name: CI - build y push a ACR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'angular.json'
+      - 'Dockerfile.frontend'
+      - 'backend/Dockerfile'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'angular.json'
+      - 'Dockerfile.frontend'
+      - 'backend/Dockerfile'
+  workflow_dispatch:
+
+permissions:
+  id-token: write # obligatorio para OIDC
+  contents: read
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login a Azure (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolver ACR login server
+        id: acr
+        run: |
+          LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+          echo "ACR: $LOGIN_SERVER"
+
+      - name: Login Docker al ACR
+        run: az acr login -n ${{ secrets.ACR_NAME }}
+
+      - name: Build backend
+        run: |
+          docker build -f backend/Dockerfile -t ${{ steps.acr.outputs.login_server }}/cine-backend:${{ github.sha }} .
+          docker tag ${{ steps.acr.outputs.login_server }}/cine-backend:${{ github.sha }} ${{ steps.acr.outputs.login_server }}/cine-backend:latest
+
+      - name: Build frontend
+        run: |
+          docker build -f Dockerfile.frontend -t ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ github.sha }} .
+          docker tag ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ github.sha }} ${{ steps.acr.outputs.login_server }}/cine-frontend:latest
+
+      - name: Push imágenes (solo push a main o dispatch, no en PR)
+        if: github.event_name != 'pull_request'
+        run: |
+          docker push ${{ steps.acr.outputs.login_server }}/cine-backend:${{ github.sha }}
+          docker push ${{ steps.acr.outputs.login_server }}/cine-backend:latest
+          docker push ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ github.sha }}
+          docker push ${{ steps.acr.outputs.login_server }}/cine-frontend:latest

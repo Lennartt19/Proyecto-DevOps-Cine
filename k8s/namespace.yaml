@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cine-dev
+  labels:
+    project: cine
+    env: dev

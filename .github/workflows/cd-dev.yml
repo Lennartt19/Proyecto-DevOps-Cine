@@ -1,0 +1,108 @@
+# CD dev: despliega backend + frontend + postgres al AKS de dev.
+# Manual a propósito (CI auto, CD con botón): Actions > CD dev > Run workflow.
+# 1er deploy: usa los placeholders, anota las EXTERNAL-IP de backend/frontend,
+# y re-ejecuta pasando las URLs reales en los inputs.
+# Requiere secrets: AZURE_* (3), ACR_NAME, POSTGRES_DB, POSTGRES_USER,
+# POSTGRES_PASSWORD, JWT_SECRET, SESSION_SECRET.
+name: CD dev - deploy a AKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Tag de imagen (sha del CI o latest)'
+        required: true
+        default: 'latest'
+      api_url:
+        description: 'API_URL del frontend (navegador -> API)'
+        required: true
+        default: 'http://localhost:3000/api'
+      app_url:
+        description: 'APP_URL del frontend'
+        required: true
+        default: 'http://localhost:8080'
+      frontend_url:
+        description: 'FRONTEND_URL del backend (CORS)'
+        required: true
+        default: 'http://localhost:8080'
+      backend_url:
+        description: 'BACKEND_URL del backend (CORS)'
+        required: true
+        default: 'http://localhost:3000'
+      cors_origin:
+        description: 'CORS_ORIGIN del backend'
+        required: true
+        default: 'http://localhost:8080'
+
+permissions:
+  id-token: write # obligatorio para OIDC
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login a Azure (OIDC)
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Kubectl + contexto AKS dev
+        uses: azure/aks-set-context@v4
+        with:
+          resource-group: rg-cine-dev
+          cluster-name: aks-cine-dev
+
+      - name: Resolver ACR login server
+        id: acr
+        run: |
+          LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+
+      - name: Namespace
+        run: kubectl apply -f k8s/namespace.yaml
+
+      - name: Secrets de la app (desde GitHub Secrets, nunca en git)
+        run: |
+          kubectl create secret generic cine-secrets -n cine-dev \
+            --from-literal=POSTGRES_DB='${{ secrets.POSTGRES_DB }}' \
+            --from-literal=POSTGRES_USER='${{ secrets.POSTGRES_USER }}' \
+            --from-literal=POSTGRES_PASSWORD='${{ secrets.POSTGRES_PASSWORD }}' \
+            --from-literal=JWT_SECRET='${{ secrets.JWT_SECRET }}' \
+            --from-literal=SESSION_SECRET='${{ secrets.SESSION_SECRET }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: 'Init SQL de postgres (única fuente: db/init/)'
+        run: |
+          kubectl create configmap postgres-init -n cine-dev \
+            --from-file=db/init/ \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Aplicar manifiestos
+        run: kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
+
+      - name: Fijar imágenes del tag elegido
+        run: |
+          kubectl set image deployment/backend -n cine-dev backend=${{ steps.acr.outputs.login_server }}/cine-backend:${{ inputs.image_tag }}
+          kubectl set image deployment/frontend -n cine-dev frontend=${{ steps.acr.outputs.login_server }}/cine-frontend:${{ inputs.image_tag }}
+
+      - name: Fijar URLs públicas
+        run: |
+          kubectl set env deployment/frontend -n cine-dev API_URL='${{ inputs.api_url }}' APP_URL='${{ inputs.app_url }}'
+          kubectl set env deployment/backend -n cine-dev FRONTEND_URL='${{ inputs.frontend_url }}' BACKEND_URL='${{ inputs.backend_url }}' CORS_ORIGIN='${{ inputs.cors_origin }}'
+
+      - name: Esperar rollout
+        run: |
+          kubectl rollout status deployment/postgres -n cine-dev --timeout=180s
+          kubectl rollout status deployment/backend -n cine-dev --timeout=300s
+          kubectl rollout status deployment/frontend -n cine-dev --timeout=300s
+
+      - name: Estado final (anota las EXTERNAL-IP)
+        run: |
+          kubectl get pods -n cine-dev
+          kubectl get svc -n cine-dev
