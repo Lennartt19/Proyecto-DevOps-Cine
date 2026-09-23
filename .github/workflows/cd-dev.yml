@@ -1,11 +1,18 @@
-# CD dev: despliega backend + frontend + postgres al AKS de dev.
-# Manual a propósito (CI auto, CD con botón): Actions > CD dev > Run workflow.
-# 1er deploy: usa los placeholders, anota las EXTERNAL-IP de backend/frontend,
-# y re-ejecuta pasando las URLs reales en los inputs.
-# Requiere secrets: AZURE_* (3), ACR_NAME, POSTGRES_DB, POSTGRES_USER,
+# CD dev: instala backend + frontend + postgres en el AKS de dev.
+#
+# Idea: es MANUAL (botón Run workflow) para decidir cuándo entra código al
+# clúster. Pasos: entrar a Azure -> preparar (namespace, secretos, SQL) ->
+# aplicar manifiestos -> apuntar imágenes y URLs -> esperar que todo encienda.
+#
+# La primera vez se corre 2 veces: la 1ra crea las IPs públicas y la 2da les
+# pone las URLs reales (ver docs/obsidian/19-cicd-aks).
+#
+# Requiere estos secrets en el repo: AZURE_CLIENT_ID, AZURE_TENANT_ID,
+# AZURE_SUBSCRIPTION_ID, ACR_NAME, POSTGRES_DB, POSTGRES_USER,
 # POSTGRES_PASSWORD, JWT_SECRET, SESSION_SECRET.
 name: CD dev - deploy a AKS
 
+# Se dispara solo con el botón (pide los datos de abajo).
 on:
   workflow_dispatch:
     inputs:
@@ -34,62 +41,82 @@ on:
         required: true
         default: 'http://localhost:8080'
 
+# Permiso para pedir el token temporal de Azure (OIDC, sin contraseñas).
 permissions:
-  id-token: write # obligatorio para OIDC
+  id-token: write
   contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      # Etapa 1: descargar el código (aquí viven k8s/ y db/init/).
+      - name: 1 - Descargar código
         uses: actions/checkout@v4
 
-      - name: Login a Azure (OIDC)
+      # Etapa 2: entrar a Azure con token temporal.
+      - name: 2 - Entrar a Azure
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Kubectl + contexto AKS dev
-        uses: azure/aks-set-context@v4
-        with:
-          resource-group: rg-cine-dev
-          cluster-name: aks-cine-dev
+      # Etapa 3: apuntar kubectl al clúster de dev.
+      # Guarda la conexión en un archivo temporal que se borra al terminar.
+      - name: 3 - Conectar kubectl al AKS dev
+        run: az aks get-credentials -g rg-cine-dev -n aks-cine-dev --overwrite-existing
 
-      - name: Validar secret ACR_NAME
+      # Etapa 4: si falta el nombre del registry, avisar en claro y parar.
+      - name: 4 - Revisar secret ACR_NAME
         run: |
           if [ -z "${{ secrets.ACR_NAME }}" ]; then
-            echo "::error::Falta el secret ACR_NAME (ej. acrcinedev01). Créalo en Settings > Secrets and variables > Actions."
+            echo "Falta el secret ACR_NAME (ej. acrcinedev01). Créalo en Settings > Secrets and variables > Actions."
             exit 1
           fi
 
-      - name: Resolver ACR login server
+      # Etapa 5: revisar uno por uno que los 5 secretos tengan valor.
+      # Un secret vacío llega como texto vacío y rompería los pods después.
+      - name: 5 - Revisar secrets de la app
+        run: |
+          if [ -z "${{ secrets.POSTGRES_DB }}" ]; then
+            echo "Falta el secret POSTGRES_DB."
+            exit 1
+          fi
+          if [ -z "${{ secrets.POSTGRES_USER }}" ]; then
+            echo "Falta el secret POSTGRES_USER."
+            exit 1
+          fi
+          if [ -z "${{ secrets.POSTGRES_PASSWORD }}" ]; then
+            echo "Falta el secret POSTGRES_PASSWORD."
+            exit 1
+          fi
+          if [ -z "${{ secrets.JWT_SECRET }}" ]; then
+            echo "Falta el secret JWT_SECRET."
+            exit 1
+          fi
+          if [ -z "${{ secrets.SESSION_SECRET }}" ]; then
+            echo "Falta el secret SESSION_SECRET."
+            exit 1
+          fi
+
+      # Etapa 6: averiguar la dirección del registry para usarla abajo.
+      - name: 6 - Averiguar dirección del ACR
         id: acr
         run: |
           LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+          echo "ACR: $LOGIN_SERVER"
 
-      - name: Namespace
+      # Etapa 7: crear el namespace (carpeta lógica "cine-dev" en el clúster).
+      - name: 7 - Crear namespace
         run: kubectl apply -f k8s/namespace.yaml
 
-      - name: Validar secrets de la app (no vacíos)
-        run: |
-          missing=0
-          for s in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD JWT_SECRET SESSION_SECRET; do
-            case "$s" in
-              POSTGRES_DB) v='${{ secrets.POSTGRES_DB }}' ;;
-              POSTGRES_USER) v='${{ secrets.POSTGRES_USER }}' ;;
-              POSTGRES_PASSWORD) v='${{ secrets.POSTGRES_PASSWORD }}' ;;
-              JWT_SECRET) v='${{ secrets.JWT_SECRET }}' ;;
-              SESSION_SECRET) v='${{ secrets.SESSION_SECRET }}' ;;
-            esac
-            if [ -z "$v" ]; then echo "::error::Secret $s vacío o inexistente. Defínelo en Settings > Secrets and variables > Actions."; missing=1; fi
-          done
-          exit $missing
-
-      - name: Secrets de la app (desde GitHub Secrets, nunca en git)
+      # Etapa 8: meter los 5 secretos al clúster como "cine-secrets".
+      # El truco "--dry-run=client -o yaml | kubectl apply -f -" significa:
+      # "arma el objeto sin crearlo y aplícalo": así sirve la 1ra vez y las
+      # siguientes (crea o actualiza, nunca duplica).
+      - name: 8 - Pasar secrets al clúster
         run: |
           kubectl create secret generic cine-secrets -n cine-dev \
             --from-literal=POSTGRES_DB='${{ secrets.POSTGRES_DB }}' \
@@ -99,32 +126,42 @@ jobs:
             --from-literal=SESSION_SECRET='${{ secrets.SESSION_SECRET }}' \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: 'Init SQL de postgres (única fuente: db/init/)'
+      # Etapa 9: subir los SQL de db/init/ como ConfigMap "postgres-init".
+      # Es la única fuente de verdad: no se copian SQL a mano a ningún YAML.
+      - name: 9 - Subir SQL de init
         run: |
           kubectl create configmap postgres-init -n cine-dev \
             --from-file=db/init/ \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Aplicar manifiestos
+      # Etapa 10: crear/actualizar postgres, backend y frontend en el clúster.
+      - name: 10 - Aplicar manifiestos
         run: kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
 
-      - name: Fijar imágenes del tag elegido
+      # Etapa 11: apuntar los deployments a la imagen elegida en el botón.
+      - name: 11 - Fijar imágenes del tag elegido
         run: |
           kubectl set image deployment/backend -n cine-dev backend=${{ steps.acr.outputs.login_server }}/cine-backend:${{ inputs.image_tag }}
           kubectl set image deployment/frontend -n cine-dev frontend=${{ steps.acr.outputs.login_server }}/cine-frontend:${{ inputs.image_tag }}
 
-      - name: Fijar URLs públicas
+      # Etapa 12: decirle al frontend dónde está la API y al backend
+      # qué orígenes acepta (CORS). La misma imagen sirve para todo
+      # porque estos valores entran al arrancar, no al compilar.
+      - name: 12 - Fijar URLs públicas
         run: |
           kubectl set env deployment/frontend -n cine-dev API_URL='${{ inputs.api_url }}' APP_URL='${{ inputs.app_url }}'
           kubectl set env deployment/backend -n cine-dev FRONTEND_URL='${{ inputs.frontend_url }}' BACKEND_URL='${{ inputs.backend_url }}' CORS_ORIGIN='${{ inputs.cors_origin }}'
 
-      - name: Esperar rollout (tiempos cortos para iterar rápido)
+      # Etapa 13: esperar a que los 3 deployments queden encendidos.
+      # Tiempos cortos para iterar rápido (postgres 2 min, app 3 min).
+      - name: 13 - Esperar que todo encienda
         run: |
           kubectl rollout status deployment/postgres -n cine-dev --timeout=120s
           kubectl rollout status deployment/backend -n cine-dev --timeout=180s
           kubectl rollout status deployment/frontend -n cine-dev --timeout=180s
 
-      - name: Estado final (anota las EXTERNAL-IP)
+      # Etapa 14: mostrar pods y servicios (aquí se ven las EXTERNAL-IP).
+      - name: 14 - Mostrar estado final
         run: |
           kubectl get pods -n cine-dev
           kubectl get svc -n cine-dev

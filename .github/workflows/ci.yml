@@ -1,12 +1,19 @@
-# CI: empaqueta backend + frontend y los sube al ACR de dev.
-# - Push a main: build + push (tags: <sha> y latest).
-# - PR: solo build (no push, valida el Dockerfile).
-# Requiere secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID, ACR_NAME.
+# CI: revisa la calidad y empaquetado al ACR de dev, backend y frontend
+# EN PARALELO (2 jobs que corren al mismo tiempo).
+#
+# Idea: cada job es autocontenido (trae sus propios pasos de Azure) para no
+# necesitar conceptos avanzados. Si un job falla, el otro igual termina y el
+# workflow se marca en rojo. En PR se hace todo menos el push final.
+#
+# Requiere estos secrets en el repo: AZURE_CLIENT_ID, AZURE_TENANT_ID,
+# AZURE_SUBSCRIPTION_ID, ACR_NAME.
 name: CI - build y push a ACR
 
+# Cuándo se ejecuta.
 on:
   push:
     branches: [main]
+    # Solo si cambió código o Dockerfiles (editar docs no lo dispara).
     paths:
       - 'backend/**'
       - 'src/**'
@@ -29,55 +36,147 @@ on:
       - 'backend/Dockerfile'
   workflow_dispatch:
 
+# Permiso para pedir el token temporal de Azure (OIDC, sin contraseñas).
 permissions:
-  id-token: write # obligatorio para OIDC
+  id-token: write
   contents: read
 
 jobs:
-  build-push:
+  # ---------------- JOB 1: BACKEND ----------------
+  backend:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
-      - name: Checkout
+      # Etapa 1: descargar el código y poner Node 20.
+      - name: 1 - Descargar código
         uses: actions/checkout@v4
 
-      - name: Login a Azure (OIDC)
+      - name: 1 - Instalar Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Etapa 2: dependencias (working-directory = entra a esa carpeta).
+      - name: 2 - Instalar dependencias
+        working-directory: backend
+        run: npm ci
+
+      # Etapa 4: tests con jest (usan mocks, no necesitan BD).
+      # El "--" pasa lo que sigue al comando de npm (aquí: jest en modo CI).
+      - name: 4 - Tests
+        working-directory: backend
+        run: npm test -- --ci
+
+      # Etapa 6: vulnerabilidades conocidas. Solo high/critical tumban.
+      - name: 6 - Audit de seguridad
+        working-directory: backend
+        run: npm audit --audit-level=high
+
+      # Puerta a Azure con token temporal (dura minutos, no se guarda).
+      - name: Entrar a Azure
         uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Validar secret ACR_NAME
+      # Si falta el nombre del registry, avisar en claro y parar.
+      - name: Revisar secret ACR_NAME
         run: |
           if [ -z "${{ secrets.ACR_NAME }}" ]; then
-            echo "::error::Falta el secret ACR_NAME (ej. acrcinedev01). Créalo en Settings > Secrets and variables > Actions."
+            echo "Falta el secret ACR_NAME (ej. acrcinedev01). Créalo en Settings > Secrets and variables > Actions."
             exit 1
           fi
 
-      - name: Resolver ACR login server
+      # Pregunta a Azure la dirección del registry (no se escribe a mano).
+      - name: Averiguar dirección del ACR
         id: acr
         run: |
           LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
           echo "ACR: $LOGIN_SERVER"
 
-      - name: Login Docker al ACR
+      # Permiso para subir imágenes.
+      - name: Entrar al ACR con Docker
         run: az acr login -n ${{ secrets.ACR_NAME }}
 
-      - name: Build backend
+      # Etapa 7: construir con 2 etiquetas: SHA (trazable) y latest (cómoda).
+      - name: 7 - Docker build
         run: |
           docker build -f backend/Dockerfile -t ${{ steps.acr.outputs.login_server }}/cine-backend:${{ github.sha }} .
           docker tag ${{ steps.acr.outputs.login_server }}/cine-backend:${{ github.sha }} ${{ steps.acr.outputs.login_server }}/cine-backend:latest
 
-      - name: Build frontend
-        run: |
-          docker build -f Dockerfile.frontend -t ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ github.sha }} .
-          docker tag ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ github.sha }} ${{ steps.acr.outputs.login_server }}/cine-frontend:latest
-
-      - name: Push imágenes (solo push a main o dispatch, no en PR)
+      # Subir ambas. En PR se salta (condición if).
+      - name: Subir imágenes al ACR
         if: github.event_name != 'pull_request'
         run: |
           docker push ${{ steps.acr.outputs.login_server }}/cine-backend:${{ github.sha }}
           docker push ${{ steps.acr.outputs.login_server }}/cine-backend:latest
+
+  # ---------------- JOB 2: FRONTEND ----------------
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      # Etapa 1: descargar el código y poner Node 20.
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+
+      - name: 1 - Instalar Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Etapa 2: dependencias del frontend.
+      - name: 2 - Instalar dependencias
+        run: npm ci
+
+      # Etapa 5: compila Angular en producción. Si TypeScript está roto,
+      # falla aquí (rápido) en vez de fallar dentro del Docker (lento).
+      - name: 5 - Build producción
+        run: npm run build
+
+      # Etapa 6: vulnerabilidades conocidas.
+      - name: 6 - Audit de seguridad
+        run: npm audit --audit-level=high
+
+      # Puerta a Azure con token temporal.
+      - name: Entrar a Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Si falta el nombre del registry, avisar en claro y parar.
+      - name: Revisar secret ACR_NAME
+        run: |
+          if [ -z "${{ secrets.ACR_NAME }}" ]; then
+            echo "Falta el secret ACR_NAME (ej. acrcinedev01). Créalo en Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      # Pregunta a Azure la dirección del registry (no se escribe a mano).
+      - name: Averiguar dirección del ACR
+        id: acr
+        run: |
+          LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+          echo "ACR: $LOGIN_SERVER"
+
+      # Permiso para subir imágenes.
+      - name: Entrar al ACR con Docker
+        run: az acr login -n ${{ secrets.ACR_NAME }}
+
+      # Etapa 7: construir con 2 etiquetas.
+      - name: 7 - Docker build
+        run: |
+          docker build -f Dockerfile.frontend -t ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ github.sha }} .
+          docker tag ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ github.sha }} ${{ steps.acr.outputs.login_server }}/cine-frontend:latest
+
+      # Subir ambas. En PR se salta.
+      - name: Subir imágenes al ACR
+        if: github.event_name != 'pull_request'
+        run: |
           docker push ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ github.sha }}
           docker push ${{ steps.acr.outputs.login_server }}/cine-frontend:latest
