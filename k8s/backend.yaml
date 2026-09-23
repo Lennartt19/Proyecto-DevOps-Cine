@@ -17,6 +17,13 @@ spec:
       labels:
         app: backend
     spec:
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: cine-secrets-provider
       containers:
         - name: backend
           image: cine-backend:latest
@@ -68,6 +75,12 @@ spec:
               value: http://localhost:8080
             - name: COOKIE_SECURE
               value: "false"
+          # Montaje del driver CSI: al arrancar, copia el Vault al Secret
+          # cine-secrets (los env de arriba no cambian).
+          volumeMounts:
+            - name: secrets-store
+              mountPath: /mnt/secrets-store
+              readOnly: true
           livenessProbe:
             httpGet:
               path: /health

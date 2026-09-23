@@ -62,6 +62,11 @@ spec:
               mountPath: /var/lib/postgresql/data
             - name: init
               mountPath: /docker-entrypoint-initdb.d
+            # Montaje del driver CSI: al arrancar, copia el Vault al Secret
+            # cine-secrets (los env de arriba no cambian).
+            - name: secrets-store
+              mountPath: /mnt/secrets-store
+              readOnly: true
           readinessProbe:
             exec:
               # Usa el usuario/BD reales del secret (igual que el healthcheck del compose).
@@ -79,6 +84,12 @@ spec:
         - name: init
           configMap:
             name: postgres-init
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: cine-secrets-provider
 ---
 apiVersion: v1
 kind: Service
