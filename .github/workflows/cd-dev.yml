@@ -74,6 +74,21 @@ jobs:
       - name: Namespace
         run: kubectl apply -f k8s/namespace.yaml
 
+      - name: Validar secrets de la app (no vacíos)
+        run: |
+          missing=0
+          for s in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD JWT_SECRET SESSION_SECRET; do
+            case "$s" in
+              POSTGRES_DB) v='${{ secrets.POSTGRES_DB }}' ;;
+              POSTGRES_USER) v='${{ secrets.POSTGRES_USER }}' ;;
+              POSTGRES_PASSWORD) v='${{ secrets.POSTGRES_PASSWORD }}' ;;
+              JWT_SECRET) v='${{ secrets.JWT_SECRET }}' ;;
+              SESSION_SECRET) v='${{ secrets.SESSION_SECRET }}' ;;
+            esac
+            if [ -z "$v" ]; then echo "::error::Secret $s vacío o inexistente. Defínelo en Settings > Secrets and variables > Actions."; missing=1; fi
+          done
+          exit $missing
+
       - name: Secrets de la app (desde GitHub Secrets, nunca en git)
         run: |
           kubectl create secret generic cine-secrets -n cine-dev \
@@ -103,11 +118,11 @@ jobs:
           kubectl set env deployment/frontend -n cine-dev API_URL='${{ inputs.api_url }}' APP_URL='${{ inputs.app_url }}'
           kubectl set env deployment/backend -n cine-dev FRONTEND_URL='${{ inputs.frontend_url }}' BACKEND_URL='${{ inputs.backend_url }}' CORS_ORIGIN='${{ inputs.cors_origin }}'
 
-      - name: Esperar rollout
+      - name: Esperar rollout (tiempos cortos para iterar rápido)
         run: |
-          kubectl rollout status deployment/postgres -n cine-dev --timeout=180s
-          kubectl rollout status deployment/backend -n cine-dev --timeout=300s
-          kubectl rollout status deployment/frontend -n cine-dev --timeout=300s
+          kubectl rollout status deployment/postgres -n cine-dev --timeout=120s
+          kubectl rollout status deployment/backend -n cine-dev --timeout=180s
+          kubectl rollout status deployment/frontend -n cine-dev --timeout=180s
 
       - name: Estado final (anota las EXTERNAL-IP)
         run: |

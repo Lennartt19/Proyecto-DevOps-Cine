@@ -53,6 +53,10 @@ spec:
                   key: POSTGRES_PASSWORD
             - name: TZ
               value: America/Lima
+            # PGDATA en subdirectorio: el disco Azure trae lost+found en la raíz
+            # del mount e initdb falla si PGDATA es el punto de montaje directo.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
