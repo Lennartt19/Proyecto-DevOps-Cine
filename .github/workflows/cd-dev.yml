@@ -115,13 +115,15 @@ jobs:
 
       # Etapa 7: copiar los 5 secretos de GitHub al Key Vault.
       # Así nadie escribe valores a mano en el Portal: GitHub manda.
+      # OJO: Key Vault NO acepta '_' en nombres (solo A-Z, 0-9 y '-'),
+      # por eso se guardan con '-' y el SecretProviderClass los mapea a '_' en K8s.
       - name: 7 - Subir secrets al Key Vault
         run: |
-          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES_DB --value '${{ secrets.POSTGRES_DB }}' -o none
-          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES_USER --value '${{ secrets.POSTGRES_USER }}' -o none
-          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES_PASSWORD --value '${{ secrets.POSTGRES_PASSWORD }}' -o none
-          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name JWT_SECRET --value '${{ secrets.JWT_SECRET }}' -o none
-          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name SESSION_SECRET --value '${{ secrets.SESSION_SECRET }}' -o none
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES-DB --value '${{ secrets.POSTGRES_DB }}' -o none
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES-USER --value '${{ secrets.POSTGRES_USER }}' -o none
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES-PASSWORD --value '${{ secrets.POSTGRES_PASSWORD }}' -o none
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name JWT-SECRET --value '${{ secrets.JWT_SECRET }}' -o none
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name SESSION-SECRET --value '${{ secrets.SESSION_SECRET }}' -o none
           echo "5 secretos sincronizados al Vault."
 
       # Etapa 8: crear el namespace (carpeta lógica "cine-dev" en el clúster).
