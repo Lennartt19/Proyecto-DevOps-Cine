@@ -21,6 +21,20 @@ loki:
     # filesystem = guarda en su disco de 5Gi (ver abajo).
     # La alternativa es `s3` (un Storage de Azure): para prod, no para dev.
     type: filesystem
+  # OBLIGATORIO: el "índice del archivo". Loki exige declarar cómo organiza
+  # los logs (esquema v13 + índice tsdb en filesystem). Sin este bloque el
+  # chart se niega a instalar: "You must provide a schema_config".
+  # (La alternativa rápida `loki.useTestSchema=true` es solo para pruebas
+  # sin persistencia; aquí queremos el disco de 5Gi de verdad.)
+  schemaConfig:
+    configs:
+      - from: 2024-04-01 # fecha desde la que vale este esquema (pasada = siempre)
+        store: tsdb # índice moderno (el viejo boltdb-shipper está deprecado)
+        object_store: filesystem # a juego con storage.type de arriba
+        schema: v13
+        index:
+          prefix: index_ # prefijo de los archivos de índice en el disco
+          period: 24h # 1 índice por día (estándar)
 
 singleBinary:
   replicas: 1
