@@ -1,0 +1,12 @@
+# Namespace del monitoreo (dev): la "habitación separada".
+#
+# Idea: Prometheus, Grafana, Loki y Promtail viven AQUÍ, no en `cine-dev`.
+# Así un `kubectl delete` o un rollout de la app jamás toca la observabilidad,
+# y en `kubectl get pods -n monitoring` ves solo lo de monitoreo (orden mental).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    project: cine # misma etiqueta que cine-dev (para filtrar por proyecto)
+    env: dev

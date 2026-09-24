@@ -1,0 +1,56 @@
+# 4 alertas básicas de dev: GUARDAN, no avisan (todavía).
+#
+# Idea en 30 segundos: una alerta = "si esta cuenta da feo durante X tiempo,
+# grita". Cada regla tiene: expr (la cuenta en PromQL), for (cuánto aguanta
+# feo antes de gritar, para no gritar por un parpadeo) y severity.
+#
+# Alertmanager está APAGADO en values (no hay a dónde avisar aún), así que hoy
+# sirven para 2 cosas: practicar PromQL y verlas en Grafana > Alerting o en
+# Prometheus > Alerts. Cuando definas email/Slack, se enciende y estas 4 ya funcionan.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cine-dev-basicas
+  namespace: monitoring
+spec:
+  groups:
+    - name: cine-dev
+      interval: 1m # cada cuánto recalcula las cuentas (1 min basta en dev)
+      rules:
+        # 1. Una puerta pública devuelve != 200 por 2 min seguidos.
+        # probe_success vale 1 (OK) o 0 (falló): el == 0 filtra solo lo caído.
+        - alert: PuertaPublicaCaida
+          expr: probe_success == 0
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.instance }} no responde 200"
+        # 2. El 95% de las visitas tarda más de 2 s durante 5 min.
+        # p95 = "el 95% va más rápido que esto". Si el p95 sube, el usuario lo siente.
+        - alert: LatenciaAlta
+          expr: histogram_quantile(0.95, sum(rate(probe_duration_seconds_bucket[5m])) by (instance, le)) > 2
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.instance }} con p95 > 2s"
+        # 3. La app tiene menos de 3 pods Running por 5 min.
+        # 3 = postgres + backend + frontend. Si baja, algo se cayó de verdad.
+        - alert: PodAppCaido
+          expr: sum(kube_pod_status_phase{namespace="cine-dev", phase="Running"}) < 3
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "cine-dev tiene menos de 3 pods Running"
+        # 4. El disco de logs al 85% por 10 min. Si se llena, Loki deja de
+        # guardar logs nuevos (y no te avisa de nada más). El nombre del PVC
+        # es `loki` (lo crea el chart con persistence.enabled=true).
+        - alert: DiscoLokiLleno
+          expr: (kubelet_volume_stats_used_bytes{persistentvolumeclaim="loki"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim="loki"}) > 0.85
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "PVC de Loki sobre 85%"

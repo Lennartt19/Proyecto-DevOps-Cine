@@ -1,0 +1,49 @@
+# Values DEV de Loki (chart `grafana-community/loki`, release `loki`).
+#
+# Idea en 30 segundos: Loki = el ARCHIVO donde se guardan todos los logs
+# (los `console.log` del backend, los de nginx, los de postgres). Prometheus
+# guarda NÚMEROS ("CPU al 80%"), Loki guarda TEXTOS ("Error: password vacío").
+# Se complementan: el número te avisa, el texto te dice por qué.
+#
+# Modo SingleBinary = TODO en 1 solo pod (1 StatefulSet). En producción real
+# Loki se parte en 3 piezas (lectura/escritura/fondo), pero en dev con 1 nodo
+# eso es desperdicio. 1 réplica + factor de réplica 1 = sin copias (dev).
+deploymentMode: SingleBinary
+
+loki:
+  # Sin login interno: solo se llega a Loki desde DENTRO del clúster
+  # (Grafana hace de portero). Poner auth aquí complicaría Promtail y Grafana.
+  auth_enabled: false
+  commonConfig:
+    # Cuántas copias de cada log guarda. 1 = barato, 0 respaldo (aceptado en dev).
+    replication_factor: 1
+  storage:
+    # filesystem = guarda en su disco de 5Gi (ver abajo).
+    # La alternativa es `s3` (un Storage de Azure): para prod, no para dev.
+    type: filesystem
+
+singleBinary:
+  replicas: 1
+  persistence:
+    enabled: true
+    size: 5Gi # 5Gi de logs ≈ semanas en dev (los logs de una app chica pesan poco)
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# Apagamos las piezas del modo "grande" para que no nazcan pods de más:
+# backend/read/write = las 3 piezas de prod; gateway = la puerta de prod.
+# En SingleBinary el único Service que importa es `loki:3100`,
+# que usan Grafana (datasource) y Promtail (clients).
+backend:
+  replicas: 0
+read:
+  replicas: 0
+write:
+  replicas: 0
+gateway:
+  enabled: false

@@ -1,0 +1,59 @@
+# Dashboard propio "Cine DEV": nuestra pizarra de 5 gráficos.
+#
+# Idea en 30 segundos: el chart ya trae ~20 dashboards (nodos, Kubernetes,
+# Prometheus). Este ConfigMap suma EL NUESTRO: 1 vista con la app + el clúster.
+# El sidecar de Grafana lo carga SOLO por la etiqueta grafana_dashboard=1
+# (así funciona el chart: "todo ConfigMap con esa etiqueta = un dashboard").
+#
+# Cada panel = 1 pregunta en PromQL (el idioma de Prometheus):
+# 1. ¿Responden las 4 puertas? (probe_success: 1 = sí, 0 = no)
+# 2. ¿Qué tan rápido? (p95 de la latencia por puerta)
+# 3. ¿Cuánto tráfico lleva cada ruta? (/ = front, /api = back)
+# 4. ¿Hay pods caídos? (0 = todo sano)
+# 5. ¿Cuántas conexiones tiene la BD? (si se dispara, algo no cierra conexiones)
+#
+# Dashboards de comunidad para importar a mano (Grafana > Dashboards > New > Import):
+# - 1860 = Node Exporter Full (el nodo B2s_v2 al detalle)
+# - 9628 = Postgres (vía nuestro exporter)
+# - 9614 = NGINX Ingress controller
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-cine-dev
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1" # LA etiqueta mágica: sin ella Grafana ignora este ConfigMap
+data:
+  cine-dev.json: |
+    {
+      "title": "Cine DEV - App y cluster",
+      "tags": ["cine", "dev"],
+      "timezone": "America/Lima",
+      "panels": [
+        {
+          "title": "1. App externa: probe_success (1=OK, 0=caído)",
+          "type": "timeseries",
+          "targets": [{ "expr": "probe_success", "legendFormat": "{{instance}}" }]
+        },
+        {
+          "title": "2. Latencia p95 por puerta (segundos)",
+          "type": "timeseries",
+          "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(probe_duration_seconds_bucket[5m])) by (instance, le))", "legendFormat": "{{instance}}" }]
+        },
+        {
+          "title": "3. Tráfico por ruta del Ingress (requests/seg)",
+          "type": "timeseries",
+          "targets": [{ "expr": "sum(rate(nginx_ingress_controller_requests[5m])) by (path)", "legendFormat": "{{path}}" }]
+        },
+        {
+          "title": "4. Pods NO Running (0 = todo sano)",
+          "type": "stat",
+          "targets": [{ "expr": "sum(kube_pod_status_phase{namespace=~\"cine-dev|monitoring\", phase!=\"Running\"})" }]
+        },
+        {
+          "title": "5. Conexiones abiertas a Postgres por BD",
+          "type": "timeseries",
+          "targets": [{ "expr": "pg_stat_database_numbackends", "legendFormat": "{{datname}}" }]
+        }
+      ]
+    }

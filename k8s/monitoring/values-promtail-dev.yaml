@@ -1,0 +1,24 @@
+# Values DEV de Promtail (chart `grafana/promtail`, release `promtail`).
+#
+# Idea en 30 segundos: Promtail = el CARTERO. Corre 1 copia en cada nodo
+# (DaemonSet = "siempre 1 por nodo, en automático") y recoge los logs que
+# cada pod escribe en /var/log/pods. Los etiqueta (namespace, pod, container)
+# y los lleva al ARCHIVO (Loki).
+#
+# Lo importante: NO toca tu código. Los `console.log` del backend, los logs
+# de nginx y los de postgres YA salen por pantalla del pod; el cartero solo
+# los recoge. Cero cambios en frontend/backend/postgres.
+config:
+  clients:
+    # Dirección del ARCHIVO con su puerta de entrada (/loki/api/v1/push).
+    # Formato: http://<service>.<namespace>.svc.cluster.local:<puerto>/...
+    - url: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+
+# El cartero es liviano: pide poco y tiene techo bajo.
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

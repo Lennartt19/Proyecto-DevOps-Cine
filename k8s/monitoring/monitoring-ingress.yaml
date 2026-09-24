@@ -1,0 +1,33 @@
+# Ingress del monitoreo: Grafana bajo /grafana del MISMO host nip.io.
+#
+# Idea en 30 segundos: ya tienes 1 puerta pública (el controller NGINX con su
+# IP nip.io). En vez de pagar otra IP para Grafana, le pedimos un cuarto más
+# en la misma casa: todo lo que llegue a http://<host>/grafana va a Grafana,
+# el resto sigue yendo a la app (reglas de cine-ingress, sin cambios).
+#
+# Detalle clave para principiantes: un Ingress solo puede apuntar a Services
+# de SU namespace. Por eso este vive en `monitoring` (donde está Grafana) y
+# `cine-ingress` vive en `cine-dev` (donde está la app). El controller los
+# FUSIONA solo porque comparten el mismo `host`. Magia documentada, no truco.
+#
+# Sin `rewrite`: Grafana sirve el subpath nativo (ver root_url +
+# serve_from_sub_path en values). __INGRESS_HOST__ lo reemplaza el CD con sed,
+# exactamente igual que hace el CD dev con k8s/ingress.yaml.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monitoring-ingress
+  namespace: monitoring
+spec:
+  ingressClassName: nginx # el mismo portero que la app
+  rules:
+    - host: __INGRESS_HOST__
+      http:
+        paths:
+          - path: /grafana # Prefix = /grafana, /grafana/, /grafana/login... todo entra
+            pathType: Prefix
+            backend:
+              service:
+                name: mon-grafana # nombre que le pone el chart: <release>-grafana (release `mon`)
+                port:
+                  number: 80

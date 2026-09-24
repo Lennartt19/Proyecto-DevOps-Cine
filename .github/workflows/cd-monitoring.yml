@@ -1,0 +1,190 @@
+# CD monitoring: instala Grafana + Prometheus + Loki en el AKS de dev.
+#
+# Idea en 30 segundos: es MANUAL (botón Run workflow) como el CD de la app.
+# Flujo de la clave: GitHub Secret -> Key Vault (az) -> Secret nativo
+# (kubectl). Flujo de la config: values + manifiestos de k8s/monitoring/ ->
+# Helm/charts + kubectl. Nada se escribe a mano en Azure ni en el clúster.
+#
+# Analogía: si el CD dev fue "la mudanza" (meter los muebles al clúster),
+# este es "poner las cámaras y el tablero" (ver qué pasa dentro sin mudarse).
+# NO toca frontend/backend/postgres: crea el namespace `monitoring` aparte.
+#
+# Orden de las 15 etapas: entrar a Azure -> Helm -> validar clave ->
+# namespace+secret -> 4 charts -> exporter/monitores -> probes/dashboards ->
+# Ingress /grafana -> esperar -> mostrar URLs.
+#
+# Requiere estos secrets en el repo: AZURE_CLIENT_ID, AZURE_TENANT_ID,
+# AZURE_SUBSCRIPTION_ID, GRAFANA_ADMIN_PASSWORD (nuevo: créalo en
+# Settings > Secrets and variables > Actions, mínimo 12 chars, sin comilla simple).
+# Pre-requisito: el CD dev ya corrió al menos 1 vez (debe existir el
+# controller ingress-nginx, que nos da el host nip.io y las métricas por ruta).
+name: CD monitoring - observabilidad dev
+
+on:
+  workflow_dispatch:
+
+# Permiso para pedir el token temporal de Azure (OIDC, sin contraseñas).
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Etapa 1: descargar el código (aquí viven k8s/monitoring/ y sus values).
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+
+      # Etapa 2: entrar a Azure con token temporal.
+      - name: 2 - Entrar a Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Etapa 3: instalar Helm en el runner (script oficial, con sudo).
+      - name: 3 - Instalar Helm
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 -o /tmp/gethelm.sh
+          bash /tmp/gethelm.sh
+          helm version
+
+      # Etapa 4: apuntar kubectl al clúster de dev.
+      - name: 4 - Conectar kubectl al AKS dev
+        run: az aks get-credentials -g rg-cine-dev -n aks-cine-dev --overwrite-existing
+
+      # Etapa 5: validar que la clave de Grafana existe y no está vacía.
+      # Vacía = login imposible después; se falla en claro aquí, no al final.
+      - name: 5 - Revisar secret GRAFANA_ADMIN_PASSWORD
+        run: |
+          if [ -z "${{ secrets.GRAFANA_ADMIN_PASSWORD }}" ]; then
+            echo "Falta el secret GRAFANA_ADMIN_PASSWORD (mínimo 12 chars). Créalo en Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      # Etapa 6: verificar que el CD dev ya instaló el Ingress NGINX.
+      # Sin controller no hay host nip.io ni métricas por ruta.
+      - name: 6 - Verificar Ingress NGINX del CD dev
+        run: |
+          kubectl get svc -n ingress-nginx ingress-nginx-controller
+          echo "Controller presente, se puede continuar."
+
+      # Etapa 7: crear namespace + guardar la clave en Key Vault y en Secret.
+      # El Vault es la fuente de verdad (GitHub manda); el Secret nativo es
+      # lo que lee el chart (admin.existingSecret=grafana-admin).
+      - name: 7 - Namespace y secret de Grafana
+        run: |
+          kubectl apply -f k8s/monitoring/namespace.yaml
+          KV_NAME=$(az keyvault list -g rg-cine-dev --query "[0].name" -o tsv)
+          echo "Key Vault: $KV_NAME"
+          az keyvault secret set --vault-name "$KV_NAME" --name GRAFANA-ADMIN-PASSWORD --value '${{ secrets.GRAFANA_ADMIN_PASSWORD }}' -o none
+          kubectl create secret generic grafana-admin -n monitoring \
+            --from-literal=admin-user=admin \
+            --from-literal=admin-password='${{ secrets.GRAFANA_ADMIN_PASSWORD }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+          echo "Secret grafana-admin listo."
+
+      # Etapa 8: registrar los 3 repos de charts (las "tiendas" de Helm).
+      # - prometheus-community: kube-prometheus-stack + blackbox-exporter.
+      # - grafana-community: Loki vigente (el de `grafana` está deprecado, verificado 2026-09-24).
+      # - grafana: Promtail (el cartero de logs).
+      - name: 8 - Repos Helm
+        run: |
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo add grafana-community https://grafana-community.github.io/helm-charts
+          helm repo update
+
+      # Etapa 9: stack principal (Prometheus + Grafana + exporters de K8s).
+      # El values trae __INGRESS_HOST__ y aquí se reemplaza con sed, igual
+      # que el CD dev hace con k8s/ingress.yaml. upgrade --install = idempotente.
+      - name: 9 - Instalar kube-prometheus-stack
+        run: |
+          IP=""
+          for i in $(seq 1 30); do
+            IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ -n "$IP" ]; then
+              break
+            fi
+            sleep 10
+          done
+          if [ -z "$IP" ]; then
+            echo "El Ingress aún no tiene IP pública. Revisa: kubectl get svc -n ingress-nginx"
+            exit 1
+          fi
+          echo "INGRESS_HOST=$IP.nip.io" >> "$GITHUB_ENV"
+          echo "Host: http://$IP.nip.io"
+          sed "s/__INGRESS_HOST__/$IP.nip.io/" k8s/monitoring/values-kube-prometheus-dev.yaml > /tmp/kps-values.yaml
+          helm upgrade --install mon prometheus-community/kube-prometheus-stack \
+            -n monitoring --create-namespace \
+            -f /tmp/kps-values.yaml --wait --timeout 10m
+
+      # Etapa 10: Loki SingleBinary (los logs) + Promtail (los recolecta).
+      - name: 10 - Instalar Loki y Promtail
+        run: |
+          helm upgrade --install loki grafana-community/loki \
+            -n monitoring --create-namespace \
+            -f k8s/monitoring/values-loki-dev.yaml --wait --timeout 10m
+          helm upgrade --install promtail grafana/promtail \
+            -n monitoring --create-namespace \
+            -f k8s/monitoring/values-promtail-dev.yaml --wait --timeout 5m
+
+      # Etapa 11: blackbox-exporter (el navegador robot de las probes).
+      # El nombre del Service lo DESCUBRIMOS por etiqueta en vez de escribirlo
+      # a mano: así no depende de la versión del chart (si mañana cambia el
+      # nombre, este paso lo encuentra igual y probes.yaml se rellena solo).
+      - name: 11 - Instalar blackbox-exporter
+        run: |
+          helm upgrade --install blackbox prometheus-community/prometheus-blackbox-exporter \
+            -n monitoring --create-namespace --wait --timeout 5m
+          BLACKBOX_SVC=$(kubectl get svc -n monitoring -l app.kubernetes.io/name=prometheus-blackbox-exporter -o jsonpath='{.items[0].metadata.name}')
+          if [ -z "$BLACKBOX_SVC" ]; then
+            echo "No se encontró el Service del blackbox. Revisa: kubectl get svc -n monitoring"
+            exit 1
+          fi
+          echo "BLACKBOX_SVC=$BLACKBOX_SVC" >> "$GITHUB_ENV"
+          echo "Blackbox: $BLACKBOX_SVC"
+
+      # Etapa 12: exporter de Postgres + métricas del Ingress.
+      # OJO: no modifican la app; son recursos NUEVOS que la observan desde fuera.
+      # El chequeo de endpoints es el semáforo: si sale vacío, el Service no
+      # encontró sus pods (típico: etiqueta del selector desactualizada).
+      - name: 12 - Aplicar exporter y métricas Ingress
+        run: |
+          kubectl apply -f k8s/monitoring/postgres-exporter.yaml
+          kubectl apply -f k8s/monitoring/ingress-metrics.yaml
+          echo "--- Verificar que el Service de métricas tiene endpoints ---"
+          kubectl get endpoints -n ingress-nginx ingress-nginx-metrics
+          echo "--- Verificar exporter de Postgres ---"
+          kubectl get endpoints -n cine-dev postgres-exporter
+
+      # Etapa 13: probes, dashboards, reglas y el Ingress /grafana con el host real.
+      - name: 13 - Aplicar probes, dashboards e Ingress
+        run: |
+          sed -e "s/__INGRESS_HOST__/${{ env.INGRESS_HOST }}/" -e "s/__BLACKBOX_SVC__/${{ env.BLACKBOX_SVC }}/" \
+            k8s/monitoring/probes.yaml | kubectl apply -f -
+          kubectl apply -f k8s/monitoring/dashboards.yaml
+          kubectl apply -f k8s/monitoring/prometheus-rules.yaml
+          sed "s/__INGRESS_HOST__/${{ env.INGRESS_HOST }}/" k8s/monitoring/monitoring-ingress.yaml | kubectl apply -f -
+          kubectl get ingress -n monitoring
+
+      # Etapa 14: esperar a que todo quede encendido.
+      - name: 14 - Esperar que todo encienda
+        run: |
+          kubectl rollout status statefulset/mon-kube-prometheus-stack-prometheus -n monitoring --timeout=300s
+          kubectl rollout status deployment/mon-grafana -n monitoring --timeout=300s
+          kubectl rollout status statefulset/loki -n monitoring --timeout=300s
+          kubectl rollout status daemonset/promtail -n monitoring --timeout=300s
+          kubectl rollout status deployment/postgres-exporter -n cine-dev --timeout=180s
+
+      # Etapa 15: mostrar el estado final y las URLs.
+      - name: 15 - Mostrar estado final
+        run: |
+          kubectl get pods -n monitoring
+          kubectl get svc -n monitoring
+          kubectl get ingress -n monitoring
+          kubectl get pvc -n monitoring
+          echo "Grafana: http://${{ env.INGRESS_HOST }}/grafana (admin + GRAFANA_ADMIN_PASSWORD)"
+          echo "App: http://${{ env.INGRESS_HOST }}/ (verifica que el monitoreo no la rompió)"

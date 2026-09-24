@@ -1,0 +1,76 @@
+# Probes blackbox: "¿responde la app vista desde fuera?" (como tu navegador).
+#
+# Idea en 30 segundos: el blackbox-exporter es un navegador robot. Cada 30s
+# visita 4 direcciones y anota: probe_success (1 = respondió 200, 0 = falló)
+# y probe_duration_seconds (cuánto tardó). Es la vista del USUARIO, no la del
+# pod: detecta "el pod corre pero el Ingress no lo muestra".
+#
+# Rutas elegidas: / y /healthz (frontend), /health y /api/movies (backend).
+# Placeholders que rellena el workflow CD (igual que k8s/ingress.yaml):
+# - __INGRESS_HOST__ → <IP-del-ingress>.nip.io (descubierto en el run).
+# - __BLACKBOX_SVC__ → nombre real del Service del chart (descubierto en el run).
+#   Se descubre en vez de escribirlo a mano para no depender de la versión del chart.
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: frontend-root # la web principal
+  namespace: monitoring
+spec:
+  prober:
+    # "Robot, tus órdenes las recibes aquí": service del blackbox + /probe.
+    url: http://__BLACKBOX_SVC__.monitoring.svc.cluster.local:9115
+    path: /probe
+  module: http_2xx # módulo = "receta": espera un 200, nada más
+  interval: 30s # cada cuánto visita (30s = 4 visitas/min, barato)
+  targets:
+    staticConfig:
+      static:
+        - http://__INGRESS_HOST__/
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: frontend-healthz # el chequeo médico del frontend
+  namespace: monitoring
+spec:
+  prober:
+    url: http://__BLACKBOX_SVC__.monitoring.svc.cluster.local:9115
+    path: /probe
+  module: http_2xx
+  interval: 30s
+  targets:
+    staticConfig:
+      static:
+        - http://__INGRESS_HOST__/healthz
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: backend-health # el chequeo médico del backend
+  namespace: monitoring
+spec:
+  prober:
+    url: http://__BLACKBOX_SVC__.monitoring.svc.cluster.local:9115
+    path: /probe
+  module: http_2xx
+  interval: 30s
+  targets:
+    staticConfig:
+      static:
+        - http://__INGRESS_HOST__/health
+---
+apiVersion: monitoring.coreos.com/v1
+kind: Probe
+metadata:
+  name: backend-movies # una ruta REAL de la API (no solo "estoy vivo")
+  namespace: monitoring
+spec:
+  prober:
+    url: http://__BLACKBOX_SVC__.monitoring.svc.cluster.local:9115
+    path: /probe
+  module: http_2xx
+  interval: 30s
+  targets:
+    staticConfig:
+      static:
+        - http://__INGRESS_HOST__/api/movies

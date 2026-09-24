@@ -1,0 +1,92 @@
+# Values DEV de kube-prometheus-stack (release `mon`, namespace `monitoring`).
+#
+# Idea en 30 segundos: este archivo es la "lista de compras" que le pasas al
+# chart. Cada línea dice "quiero esto así". Helm lo convierte en ~50 recursos
+# (Deployments, Services, ConfigMaps...) que no escribimos a mano.
+#
+# Analogía de las 3 piezas grandes:
+# - Prometheus = el cuaderno: cada 30s anota números (CPU, requests, probes).
+# - Grafana     = la pizarra: dibuja esos números en gráficos bonitos.
+# - Exporters   = los informantes: node-exporter (el nodo), kube-state-metrics
+#   (los objetos de K8s). Vienen incluidos en el chart, no se instalan aparte.
+#
+# Perfil LIGERO a propósito: dev corre en 1 solo nodo B2s_v2 (2 vCPU / 8 GB)
+# que ya carga postgres + backend + frontend + ingress. Si le pides mucho,
+# los pods quedan en Pending o mueren por falta de memoria (OOMKilled).
+
+# --- El cartero de las alertas, APAGADO en dev ---
+# Alertmanager = el que te mandaría el WhatsApp/email cuando algo falla.
+# Apagado porque aún no definimos a dónde avisar. Las 4 reglas de
+# prometheus-rules.yaml igual se guardan (para practicar PromQL).
+alertmanager:
+  enabled: false
+
+prometheus:
+  prometheusSpec:
+    # Cuánto historial guarda el cuaderno. 2 días bastan en dev;
+    # más días = más disco = más costo en la cuenta Students.
+    retention: 2d
+    # Tope en GB aunque no pasen los 2 días (doble seguro contra el disco lleno).
+    retentionSize: 3GB
+    # "Acepta monitores de TODOS lados sin pedir etiqueta especial".
+    # Sin esto, cada ServiceMonitor/Probe necesitaría la etiqueta exacta del
+    # release y un typo = Prometheus no lo ve (error clásico de principiante).
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    # Disco de 4Gi en el StorageClass que trae AKS por defecto (managed-csi).
+    # Como el postgres (5Gi): sobrevive reinicios del pod, muere con el destroy.
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 4Gi
+    # Cotas de CPU/RAM: "reserva esto (requests), nunca pases de esto (limits)".
+    # 250m = un cuarto de CPU. Sin limits, Prometheus se come el nodo y tumba la app.
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+
+grafana:
+  # El usuario/clave NO van aquí (sería subir un secreto a git).
+  # Los crea el workflow CD en el Secret `grafana-admin` desde el
+  # GitHub Secret GRAFANA_ADMIN_PASSWORD. Aquí solo decimos su nombre.
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  # Disco de 1Gi para dashboards y la config (si no, se pierden al reiniciar).
+  persistence:
+    enabled: true
+    size: 1Gi
+  # Grafana vive en http://<host>/grafana (MISMO host que la app, ver
+  # monitoring-ingress.yaml). Estas 2 líneas le avisan "no eres la raíz /,
+  # eres el inquilino /grafana". Sin esto se ve la página en blanco.
+  grafana.ini:
+    server:
+      root_url: http://__INGRESS_HOST__/grafana # el CD reemplaza __INGRESS_HOST__ (igual que la app)
+      serve_from_sub_path: "true"
+  # Prometheus ya lo registra el propio chart; aquí solo agregamos a Loki
+  # como 2da fuente (para ver LOGS dentro de Grafana, pestaña Explore).
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki.monitoring.svc.cluster.local:3100 # nombre-del-service.namespace.svc.cluster.local:puerto
+      jsonData:
+        maxLines: 1000
+
+# Los 2 informantes, con valores de fábrica (son livianos, no se tocan):
+# - kube-state-metrics: "¿cuántos pods hay? ¿en qué fase están?"
+# - node-exporter: "¿cuánta CPU/RAM/disco le queda al nodo?"
+kubeStateMetrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true

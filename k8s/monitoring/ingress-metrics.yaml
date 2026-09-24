@@ -1,0 +1,46 @@
+# Métricas del Ingress NGINX: el tráfico REAL de frontend/backend, sin tocar código.
+#
+# Idea en 30 segundos: el portero (controller NGINX) ya cuenta todo lo que
+# pasa por él: requests por ruta, códigos 200/500, latencias. Solo que lo
+# publica en un puerto interno (:10254) que nadie visita. Este Service le pone
+# "dirección fija" y el ServiceMonitor le da el "permiso de raspado".
+#
+# Por qué sirve sin modificar la app: la métrica `nginx_ingress_controller_requests`
+# trae la etiqueta `path`, así `/` = frontend y `/api` = backend. Ves el tráfico
+# de AMBOS sin haber agregado /metrics a ningún código.
+#
+# Si el workflow avisa "sin endpoints": las etiquetas de abajo no calzaron con
+# las del pod. Ver las reales con `kubectl get pods -n ingress-nginx --show-labels`
+# y ajustar `selector`.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ingress-nginx-metrics
+  namespace: ingress-nginx # vive donde vive el controller (no en monitoring)
+  labels:
+    app: ingress-nginx-metrics
+spec:
+  type: ClusterIP # solo Prometheus, sin IP pública
+  ports:
+    - name: metrics # el ServiceMonitor lo busca por este nombre
+      port: 10254 # puerto donde el controller publica sus números
+      targetPort: 10254
+  selector: # "los pods del controller", instalados por el CD dev
+    app.kubernetes.io/name: ingress-nginx
+    app.kubernetes.io/instance: ingress-nginx
+    app.kubernetes.io/component: controller
+---
+# Permiso de raspado del controller (vive en su mismo namespace, ver regla en postgres-exporter.yaml).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ingress-nginx
+  namespace: ingress-nginx
+spec:
+  selector:
+    matchLabels:
+      app: ingress-nginx-metrics
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
