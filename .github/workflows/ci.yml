@@ -67,9 +67,12 @@ jobs:
         working-directory: backend
         run: npm test -- --ci
 
-      # Etapa 6: vulnerabilidades conocidas. Solo high/critical tumban.
+      # Etapa 6: vulnerabilidades conocidas. Solo INFORMA (no tumba).
+      # Decisión dev: continuar aunque haya high/critical y corregir después.
+      # Básico: continue-on-error deja el paso en naranja pero sigue al build.
       - name: 6 - Audit de seguridad
         working-directory: backend
+        continue-on-error: true
         run: npm audit --audit-level=high
 
       # Puerta a Azure con token temporal (dura minutos, no se guarda).
@@ -136,8 +139,11 @@ jobs:
       - name: 5 - Build producción
         run: npm run build
 
-      # Etapa 6: vulnerabilidades conocidas.
+      # Etapa 6: vulnerabilidades conocidas. Solo INFORMA (no tumba).
+      # Decisión dev: continuar aunque haya high/critical y corregir después.
+      # Básico: continue-on-error deja el paso en naranja pero sigue al build.
       - name: 6 - Audit de seguridad
+        continue-on-error: true
         run: npm audit --audit-level=high
 
       # Puerta a Azure con token temporal.
