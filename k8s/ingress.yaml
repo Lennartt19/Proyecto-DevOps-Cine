@@ -1,0 +1,49 @@
+# Ingress de DEV: la única puerta pública del namespace cine-dev.
+#
+# Idea: 1 sola IP (la del controller NGINX) reparte por ruta:
+#   /       -> frontend:80 (web + /healthz)
+#   /api... -> backend:3000 (API, ya sirve /api sin rewrite)
+#   /health -> backend:3000 (verificación externa de la API)
+#
+# El host NO se escribe a mano: lleva __INGRESS_HOST__ y el CD lo
+# reemplaza por <IP-del-ingress>.nip.io (DNS gratis, sin IP fija).
+# Sin TLS en dev (HTTP). Postgres no entra aquí (ClusterIP interno).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cine-ingress
+  namespace: cine-dev
+  annotations:
+    # El backend acepta bodies de 10mb (express.json), el default de
+    # NGINX (1m) los tumbaría con 413.
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: __INGRESS_HOST__
+      http:
+        paths:
+          # API primero (más específica que /).
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 3000
+          # Salud del backend para verificar desde fuera.
+          - path: /health
+            pathType: Exact
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 3000
+          # Todo lo demás es la web.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

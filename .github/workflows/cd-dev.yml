@@ -1,19 +1,24 @@
-# CD dev: instala backend + frontend + postgres en el AKS de dev.
+# CD dev: instala backend + frontend + postgres en el AKS de dev
+# detrás de 1 Ingress NGINX (1 sola IP pública, sin IPs fijas).
 #
 # Idea: es MANUAL (botón Run workflow) para decidir cuándo entra código al
 # clúster. Flujo de secretos: GitHub Secrets -> Key Vault (az) -> pods
 # (driver CSI copia al Secret cine-secrets). Nada se escribe a mano en Azure.
+# Flujo de tráfico: navegador -> Ingress (<IP>.nip.io) -> frontend (/),
+# backend (/api, /health). Los Services son ClusterIP (sin IP propia).
 #
 # Pasos: entrar a Azure -> validar -> subir secrets al Vault -> preparar
-# (namespace, SQL, SecretProviderClass) -> aplicar manifiestos -> apuntar
-# imágenes y URLs -> esperar que todo encienda.
+# (namespace, SQL, SecretProviderClass) -> aplicar manifiestos -> instalar
+# NGINX -> averiguar su IP -> aplicar Ingress con host nip.io -> apuntar
+# imagen y URLs al host único -> esperar que todo encienda.
 #
 # Requiere estos secrets en el repo: AZURE_CLIENT_ID, AZURE_TENANT_ID,
 # AZURE_SUBSCRIPTION_ID, ACR_NAME, POSTGRES_DB, POSTGRES_USER,
 # POSTGRES_PASSWORD, JWT_SECRET, SESSION_SECRET.
+# NO pide URLs: el host se calcula solo desde la IP del Ingress.
 name: CD dev - deploy a AKS
 
-# Se dispara solo con el botón (pide los datos de abajo).
+# Se dispara solo con el botón (pide solo el tag).
 on:
   workflow_dispatch:
     inputs:
@@ -21,26 +26,6 @@ on:
         description: 'Tag de imagen (sha del CI o latest)'
         required: true
         default: 'latest'
-      api_url:
-        description: 'API_URL del frontend (navegador -> API)'
-        required: true
-        default: 'http://localhost:3000/api'
-      app_url:
-        description: 'APP_URL del frontend'
-        required: true
-        default: 'http://localhost:8080'
-      frontend_url:
-        description: 'FRONTEND_URL del backend (CORS)'
-        required: true
-        default: 'http://localhost:8080'
-      backend_url:
-        description: 'BACKEND_URL del backend (CORS)'
-        required: true
-        default: 'http://localhost:3000'
-      cors_origin:
-        description: 'CORS_ORIGIN del backend'
-        required: true
-        default: 'http://localhost:8080'
 
 # Permiso para pedir el token temporal de Azure (OIDC, sin contraseñas).
 permissions:
@@ -154,24 +139,66 @@ jobs:
           kubectl set image deployment/backend -n cine-dev backend=${{ steps.azure.outputs.login_server }}/cine-backend:${{ inputs.image_tag }}
           kubectl set image deployment/frontend -n cine-dev frontend=${{ steps.azure.outputs.login_server }}/cine-frontend:${{ inputs.image_tag }}
 
-      # Etapa 13: decirle al frontend dónde está la API y al backend
-      # qué orígenes acepta (CORS). La misma imagen sirve para todo
-      # porque estos valores entran al arrancar, no al compilar.
-      - name: 13 - Fijar URLs públicas
+      # Etapa 13: instalar el portero NGINX (1 sola puerta pública).
+      # Es idempotente: si ya existe, apply no lo rompe.
+      - name: 13 - Instalar NGINX Ingress
         run: |
-          kubectl set env deployment/frontend -n cine-dev API_URL='${{ inputs.api_url }}' APP_URL='${{ inputs.app_url }}'
-          kubectl set env deployment/backend -n cine-dev FRONTEND_URL='${{ inputs.frontend_url }}' BACKEND_URL='${{ inputs.backend_url }}' CORS_ORIGIN='${{ inputs.cors_origin }}'
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/cloud/deploy.yaml
+          kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=300s
 
-      # Etapa 14: esperar a que los 3 deployments queden encendidos.
+      # Etapa 14: averiguar la IP pública del portero y armar el host.
+      # nip.io resuelve <IP>.nip.io siempre a <IP>: DNS gratis sin registrar nada.
+      # Se espera hasta 5 min porque Azure tarda en asignar la IP la primera vez.
+      - name: 14 - Averiguar IP y host del Ingress
+        id: ingress
+        run: |
+          IP=""
+          for i in $(seq 1 30); do
+            IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ -n "$IP" ]; then
+              break
+            fi
+            sleep 10
+          done
+          if [ -z "$IP" ]; then
+            echo "El Ingress aún no tiene IP pública. Revisa: kubectl get svc -n ingress-nginx"
+            exit 1
+          fi
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          echo "host=$IP.nip.io" >> "$GITHUB_OUTPUT"
+          echo "Host: http://$IP.nip.io"
+
+      # Etapa 15: aplicar las reglas con el host real.
+      # El YAML trae __INGRESS_HOST__ y aquí se reemplaza (sed de 1 línea,
+      # más básico que helm o envsubst). backend.yaml ya sirve /api, sin rewrite.
+      - name: 15 - Aplicar Ingress con host
+        run: |
+          sed "s/__INGRESS_HOST__/${{ steps.ingress.outputs.host }}/" k8s/ingress.yaml | kubectl apply -f -
+          kubectl get ingress -n cine-dev
+
+      # Etapa 16: decirle al frontend dónde está la API y al backend
+      # qué origen acepta (CORS). Todo es el mismo host porque front y back
+      # comparten la puerta del Ingress. La misma imagen sirve para todo
+      # porque estos valores entran al arrancar, no al compilar.
+      - name: 16 - Fijar URLs al host único
+        run: |
+          kubectl set env deployment/frontend -n cine-dev API_URL='http://${{ steps.ingress.outputs.host }}/api' APP_URL='http://${{ steps.ingress.outputs.host }}'
+          kubectl set env deployment/backend -n cine-dev FRONTEND_URL='http://${{ steps.ingress.outputs.host }}' BACKEND_URL='http://${{ steps.ingress.outputs.host }}' CORS_ORIGIN='http://${{ steps.ingress.outputs.host }}'
+
+      # Etapa 17: esperar a que los 3 deployments queden encendidos.
       # Tiempos cortos para iterar rápido (postgres 2 min, app 3 min).
-      - name: 14 - Esperar que todo encienda
+      - name: 17 - Esperar que todo encienda
         run: |
           kubectl rollout status deployment/postgres -n cine-dev --timeout=120s
           kubectl rollout status deployment/backend -n cine-dev --timeout=180s
           kubectl rollout status deployment/frontend -n cine-dev --timeout=180s
 
-      # Etapa 15: mostrar pods y servicios (aquí se ven las EXTERNAL-IP).
-      - name: 15 - Mostrar estado final
+      # Etapa 18: mostrar pods, servicios e ingress (aquí se ve el host final).
+      - name: 18 - Mostrar estado final
         run: |
           kubectl get pods -n cine-dev
           kubectl get svc -n cine-dev
+          kubectl get ingress -n cine-dev
+          echo "Web: http://${{ steps.ingress.outputs.host }}/"
+          echo "API: http://${{ steps.ingress.outputs.host }}/api/movies"
+          echo "Salud back: http://${{ steps.ingress.outputs.host }}/health"

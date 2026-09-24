@@ -100,9 +100,11 @@ metadata:
   name: backend
   namespace: cine-dev
 spec:
-  # LoadBalancer en v1 básica: el navegador llama a la API directo (igual que en local).
-  # Más adelante se consolida con Ingress (1 sola IP para front + back).
-  type: LoadBalancer
+  # ClusterIP a propósito: sin IP pública propia. La única puerta
+  # a la calle es el Ingress (1 IP). Ver k8s/ingress.yaml.
+  # El backend ya sirve /api (server.js), así que el Ingress
+  # NO reescribe rutas, solo reparte: /api -> aquí.
+  type: ClusterIP
   ports:
     - port: 3000
       targetPort: 3000

@@ -39,7 +39,9 @@ metadata:
   name: frontend
   namespace: cine-dev
 spec:
-  type: LoadBalancer
+  # ClusterIP a propósito: sin IP pública propia. La única puerta
+  # a la calle es el Ingress (1 IP). Ver k8s/ingress.yaml.
+  type: ClusterIP
   ports:
     - port: 80
       targetPort: 80
