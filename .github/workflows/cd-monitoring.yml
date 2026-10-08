@@ -80,6 +80,7 @@ jobs:
           KV_NAME=$(az keyvault list -g rg-cine-dev --query "[0].name" -o tsv)
           echo "Key Vault: $KV_NAME"
           az keyvault secret set --vault-name "$KV_NAME" --name GRAFANA-ADMIN-PASSWORD --value '${{ secrets.GRAFANA_ADMIN_PASSWORD }}' -o none
+          az keyvault secret show --vault-name "$KV_NAME" --name GRAFANA-ADMIN-PASSWORD -o none || (echo "No se pudo guardar en el Vault. Revisa el rol 'Key Vault Secrets Officer'."; exit 1)
           kubectl create secret generic grafana-admin -n monitoring \
             --from-literal=admin-user=admin \
             --from-literal=admin-password='${{ secrets.GRAFANA_ADMIN_PASSWORD }}' \

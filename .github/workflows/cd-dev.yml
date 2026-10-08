@@ -102,6 +102,9 @@ jobs:
       # Así nadie escribe valores a mano en el Portal: GitHub manda.
       # OJO: Key Vault NO acepta '_' en nombres (solo A-Z, 0-9 y '-'),
       # por eso se guardan con '-' y el SecretProviderClass los mapea a '_' en K8s.
+      # La verificación final es el semáforo: si el `set` falló por falta del rol
+      # "Key Vault Secrets Officer", se para AQUÍ en claro en vez de llegar al
+      # `rollout timeout` sin pistas (ver bitácora B3).
       - name: 7 - Subir secrets al Key Vault
         run: |
           az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES-DB --value '${{ secrets.POSTGRES_DB }}' -o none
@@ -110,6 +113,13 @@ jobs:
           az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name JWT-SECRET --value '${{ secrets.JWT_SECRET }}' -o none
           az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name SESSION-SECRET --value '${{ secrets.SESSION_SECRET }}' -o none
           echo "5 secretos sincronizados al Vault."
+          echo "--- Verificar que el Vault tiene los 5 ---"
+          COUNT=$(az keyvault secret list --vault-name ${{ steps.azure.outputs.kv_name }} --query "length(@)" -o tsv)
+          echo "Secretos en el Vault: $COUNT"
+          if [ "$COUNT" != "5" ]; then
+            echo "El Vault no tiene los 5 secretos. Revisa el rol 'Key Vault Secrets Officer' para mi-github-terraform."
+            exit 1
+          fi
 
       # Etapa 8: crear el namespace (carpeta lógica "cine-dev" en el clúster).
       - name: 8 - Crear namespace
@@ -125,8 +135,16 @@ jobs:
 
       # Etapa 10: decirle al clúster qué traer del Vault (SecretProviderClass).
       # Debe existir ANTES que los pods que la usan.
+      # El userAssignedIdentityID cambia en cada AKS nuevo (destroy+apply), así
+      # que NO se confía en el valor commiteado: se inyecta el vigente aquí.
+      # Sin esto los pods quedan en ContainerCreating con "Identity not found".
       - name: 10 - Aplicar SecretProviderClass
-        run: kubectl apply -f k8s/secret-provider.yaml
+        run: |
+          KUBELET_ID=$(az aks show -g rg-cine-dev -n aks-cine-dev --query identityProfile.kubeletidentity.clientId -o tsv)
+          echo "Kubelet vigente: $KUBELET_ID"
+          sed -i "s/userAssignedIdentityID: \".*\"/userAssignedIdentityID: \"$KUBELET_ID\"/" k8s/secret-provider.yaml
+          grep "userAssignedIdentityID" k8s/secret-provider.yaml
+          kubectl apply -f k8s/secret-provider.yaml
 
       # Etapa 11: crear/actualizar postgres, backend y frontend.
       # Al arrancar, el driver CSI copia el Vault al Secret cine-secrets.
@@ -134,8 +152,11 @@ jobs:
         run: kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
 
       # Etapa 12: apuntar los deployments a la imagen elegida en el botón.
+      # Antes se verifica que el tag existe en el ACR: si el CI no hizo push,
+      # el rollout daría ImagePullBackOff y el timeout no diría por qué.
       - name: 12 - Fijar imágenes del tag elegido
         run: |
+          az acr repository show-tags -n ${{ secrets.ACR_NAME }} --repository cine-backend --query "contains(@, '${{ inputs.image_tag }}')" -o tsv | grep -q true || (echo "El tag '${{ inputs.image_tag }}' no existe en cine-backend. Lanza el CI primero."; exit 1)
           kubectl set image deployment/backend -n cine-dev backend=${{ steps.azure.outputs.login_server }}/cine-backend:${{ inputs.image_tag }}
           kubectl set image deployment/frontend -n cine-dev frontend=${{ steps.azure.outputs.login_server }}/cine-frontend:${{ inputs.image_tag }}
 
@@ -187,11 +208,22 @@ jobs:
 
       # Etapa 17: esperar a que los 3 deployments queden encendidos.
       # Tiempos cortos para iterar rápido (postgres 2 min, app 3 min).
+      # Si alguno falla, se muestra el diagnóstico (pods, describe, eventos,
+      # Secret y logs) para no quedarse solo con el "timed out".
       - name: 17 - Esperar que todo encienda
         run: |
-          kubectl rollout status deployment/postgres -n cine-dev --timeout=120s
-          kubectl rollout status deployment/backend -n cine-dev --timeout=180s
-          kubectl rollout status deployment/frontend -n cine-dev --timeout=180s
+          fail_diag() {
+            echo "=== DIAGNÓSTICO ($1) ==="
+            kubectl get pods -n cine-dev
+            kubectl describe deployment/$1 -n cine-dev | tail -n 30
+            kubectl get events -n cine-dev --sort-by=.lastTimestamp | tail -n 20
+            kubectl get secret cine-secrets -n cine-dev || echo "Secret cine-secrets NO existe -> el CSI no sincronizó (revisa Vault e identidad)."
+            kubectl logs -n cine-dev -l app=$1 --tail=50 || true
+            exit 1
+          }
+          kubectl rollout status deployment/postgres -n cine-dev --timeout=120s || fail_diag postgres
+          kubectl rollout status deployment/backend -n cine-dev --timeout=180s || fail_diag backend
+          kubectl rollout status deployment/frontend -n cine-dev --timeout=180s || fail_diag frontend
 
       # Etapa 18: mostrar pods, servicios e ingress (aquí se ve el host final).
       - name: 18 - Mostrar estado final
