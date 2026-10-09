@@ -5,17 +5,14 @@
 # (kubectl). Flujo de la config: values de k8s/monitoring/ -> Helm/charts +
 # 1 Ingress. Nada se escribe a mano en Azure ni en el clúster.
 #
-# Qué incluye (y qué NO):
-# - SÍ: kube-prometheus-stack (Prometheus + Grafana + node-exporter +
-#   kube-state-metrics, todo del chart), Loki (logs) + Promtail (los recoge),
-#   Grafana bajo /grafana del mismo host de la app.
-# - NO: probes externas, exporter de Postgres, métricas del Ingress,
-#   dashboards propios ni reglas (se quitaron para mantenerlo básico;
-#   están en el historial de git si se quieren recuperar).
-# NO toca frontend/backend/postgres: crea el namespace `monitoring` aparte.
+# Qué instala (3 releases livianos, pensados para 1 nodo B2s_v2):
+# - prometheus (chart prometheus-community/prometheus): los NÚMEROS.
+# - loki (chart grafana/loki-stack, solo Loki + Promtail): los LOGS.
+# - grafana (chart grafana/grafana): la PIZARRA, en /grafana del mismo host.
+# NO toca frontend/backend/postgres: todo vive en el namespace `monitoring`.
 #
 # Orden de las etapas: entrar a Azure -> Helm -> validar clave ->
-# namespace+secret -> 2 charts -> Ingress /grafana -> esperar -> mostrar URLs.
+# namespace+secret -> 3 charts -> Ingress /grafana -> esperar -> mostrar URLs.
 #
 # Requiere estos secrets en el repo: AZURE_CLIENT_ID, AZURE_TENANT_ID,
 # AZURE_SUBSCRIPTION_ID, GRAFANA_ADMIN_PASSWORD (créalo en
@@ -92,20 +89,17 @@ jobs:
           echo "Secret grafana-admin listo."
 
       # Etapa 8: registrar los repos de charts (las "tiendas" de Helm).
-      # - prometheus-community: kube-prometheus-stack.
-      # - grafana-community: Loki vigente (el de `grafana` está deprecado, verificado 2026-09-24).
-      # - grafana: Promtail (el cartero de logs).
+      # - prometheus-community: Prometheus.
+      # - grafana: Loki-stack + Grafana + Promtail.
       - name: 8 - Repos Helm
         run: |
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
           helm repo add grafana https://grafana.github.io/helm-charts
-          helm repo add grafana-community https://grafana-community.github.io/helm-charts
           helm repo update
 
-      # Etapa 9: stack principal (Prometheus + Grafana + exporters de K8s).
-      # El values trae __INGRESS_HOST__ y aquí se reemplaza con sed, igual
-      # que el CD dev hace con k8s/ingress.yaml. upgrade --install = idempotente.
-      - name: 9 - Instalar kube-prometheus-stack
+      # Etapa 9: Prometheus (los números) + descubrir el host nip.io.
+      # El host se guarda en INGRESS_HOST para el Ingress y Grafana.
+      - name: 9 - Instalar Prometheus y descubrir host
         run: |
           IP=""
           for i in $(seq 1 30); do
@@ -121,37 +115,41 @@ jobs:
           fi
           echo "INGRESS_HOST=$IP.nip.io" >> "$GITHUB_ENV"
           echo "Host: http://$IP.nip.io"
-          sed "s/__INGRESS_HOST__/$IP.nip.io/" k8s/monitoring/values-kube-prometheus-dev.yaml > /tmp/kps-values.yaml
-          helm upgrade --install mon prometheus-community/kube-prometheus-stack \
+          helm upgrade --install prometheus prometheus-community/prometheus \
             -n monitoring --create-namespace \
-            -f /tmp/kps-values.yaml --wait --timeout 10m
+            -f k8s/monitoring/values-prometheus-dev.yaml --wait --timeout 10m
 
-      # Etapa 10: Loki SingleBinary (los logs) + Promtail (los recolecta).
+      # Etapa 10: Loki + Promtail (los logs). Viene todo en 1 chart.
       - name: 10 - Instalar Loki y Promtail
         run: |
-          helm upgrade --install loki grafana-community/loki \
+          helm upgrade --install loki grafana/loki-stack \
             -n monitoring --create-namespace \
-            -f k8s/monitoring/values-loki-dev.yaml --wait --timeout 10m
-          helm upgrade --install promtail grafana/promtail \
-            -n monitoring --create-namespace \
-            -f k8s/monitoring/values-promtail-dev.yaml --wait --timeout 5m
+            -f k8s/monitoring/values-loki-stack-dev.yaml --wait --timeout 10m
 
-      # Etapa 11: el Ingress /grafana con el host real.
-      - name: 11 - Aplicar Ingress de Grafana
+      # Etapa 11: Grafana (la pizarra) con el host real.
+      - name: 11 - Instalar Grafana
+        run: |
+          sed "s/__INGRESS_HOST__/${{ env.INGRESS_HOST }}/" k8s/monitoring/values-grafana-dev.yaml > /tmp/grafana-values.yaml
+          helm upgrade --install grafana grafana/grafana \
+            -n monitoring --create-namespace \
+            -f /tmp/grafana-values.yaml --wait --timeout 10m
+
+      # Etapa 12: el Ingress /grafana con el host real.
+      - name: 12 - Aplicar Ingress de Grafana
         run: |
           sed "s/__INGRESS_HOST__/${{ env.INGRESS_HOST }}/" k8s/monitoring/monitoring-ingress.yaml | kubectl apply -f -
           kubectl get ingress -n monitoring
 
-      # Etapa 12: esperar a que todo quede encendido.
-      - name: 12 - Esperar que todo encienda
+      # Etapa 13: esperar a que todo quede encendido.
+      - name: 13 - Esperar que todo encienda
         run: |
-          kubectl rollout status statefulset/mon-kube-prometheus-stack-prometheus -n monitoring --timeout=300s
-          kubectl rollout status deployment/mon-grafana -n monitoring --timeout=300s
+          kubectl rollout status deployment/prometheus-server -n monitoring --timeout=300s
           kubectl rollout status statefulset/loki -n monitoring --timeout=300s
-          kubectl rollout status daemonset/promtail -n monitoring --timeout=300s
+          kubectl rollout status daemonset/loki-promtail -n monitoring --timeout=300s
+          kubectl rollout status deployment/grafana -n monitoring --timeout=300s
 
-      # Etapa 13: mostrar el estado final y las URLs.
-      - name: 13 - Mostrar estado final
+      # Etapa 14: mostrar el estado final y las URLs.
+      - name: 14 - Mostrar estado final
         run: |
           kubectl get pods -n monitoring
           kubectl get svc -n monitoring

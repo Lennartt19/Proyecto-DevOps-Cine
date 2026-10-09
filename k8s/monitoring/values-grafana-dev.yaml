@@ -1,0 +1,44 @@
+# Values DEV de Grafana (chart `grafana/grafana`, release `grafana`).
+#
+# Idea: Grafana = la pizarra que dibuja los números de Prometheus y los
+# textos de Loki. Vive en http://<host>/grafana (MISMO host que la app).
+# El usuario/clave NO van aquí (sería subir un secreto a git).
+# Los crea el workflow CD en el Secret `grafana-admin` desde el
+# GitHub Secret GRAFANA_ADMIN_PASSWORD. Aquí solo decimos su nombre.
+admin:
+  existingSecret: grafana-admin
+  userKey: admin-user
+  passwordKey: admin-password
+
+# Disco de 1Gi para dashboards y la config (si no, se pierden al reiniciar).
+persistence:
+  enabled: true
+  size: 1Gi
+
+# ClusterIP a propósito: la puerta pública es el Ingress existente
+# (monitoring-ingress.yaml). LoadBalancer crearía otra IP pública = costo.
+service:
+  type: ClusterIP
+
+# Grafana es el inquilino /grafana, no la raíz /. Sin esto, página en blanco.
+grafana.ini:
+  server:
+    root_url: http://__INGRESS_HOST__/grafana # el CD reemplaza __INGRESS_HOST__ (igual que la app)
+    serve_from_sub_path: "true"
+
+# Las 2 fuentes pre-conectadas: Prometheus (números) y Loki (logs).
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        access: proxy
+        url: http://prometheus-server.monitoring.svc.cluster.local:80
+        isDefault: true
+      - name: Loki
+        type: loki
+        access: proxy
+        url: http://loki.monitoring.svc.cluster.local:3100
+        jsonData:
+          maxLines: 1000

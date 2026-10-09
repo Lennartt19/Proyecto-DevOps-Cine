@@ -1,0 +1,41 @@
+# Values DEV de Loki + Promtail (chart `grafana/loki-stack`, release `loki`).
+#
+# Idea: Loki = el ARCHIVO de logs (los `console.log` del backend, nginx,
+# postgres). Prometheus guarda NÚMEROS, Loki guarda TEXTOS.
+# Promtail = el CARTERO: 1 copia por nodo que recoge /var/log/pods y los
+# lleva a Loki. Cero cambios en el código de la app.
+#
+# OJO: el chart loki-stack está deprecado por Grafana pero sigue funcionando
+# para dev. Si un día deja de instalar, el reemplazo es `grafana/loki` +
+# `grafana/promtail` por separado (están en el historial de git).
+loki:
+  enabled: true
+  image:
+    tag: 2.9.8
+  persistence:
+    enabled: true
+    size: 5Gi # semanas de logs en dev (los logs de una app chica pesan poco)
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# El cartero, liviano.
+promtail:
+  enabled: true
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+# Apagados: Grafana y Prometheus van por separado (releases propios abajo).
+grafana:
+  enabled: false
+prometheus:
+  enabled: false

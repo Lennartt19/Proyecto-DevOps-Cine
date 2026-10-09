@@ -28,6 +28,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: mon-grafana # nombre que le pone el chart: <release>-grafana (release `mon`)
+                name: grafana # nombre que le pone el chart: = nombre del release (release `grafana`)
                 port:
                   number: 80

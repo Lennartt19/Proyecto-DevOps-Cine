@@ -1,0 +1,35 @@
+# Values DEV de Prometheus (chart `prometheus-community/prometheus`, release `prometheus`).
+#
+# Idea: Prometheus = el cuaderno que cada 30s anota números (CPU, pods, requests).
+# Este chart es el Prometheus "solo" (sin operator ni extras): más liviano que
+# el stack completo y suficiente para dev en 1 nodo B2s_v2 compartido con la app.
+server:
+  # Cuánto historial guarda. 2 días bastan en dev; más = más disco = más costo.
+  retention: 2d
+  persistentVolume:
+    enabled: true
+    size: 4Gi
+  # Cotas: sin limits, Prometheus se come el nodo y tumba la app.
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+# Apagados en dev para no gastar CPU/RAM del nodo chico:
+# - alertmanager = el que mandaría avisos (aún no definimos a dónde).
+# - pushgateway = puerta para trabajos cortos (no lo usamos).
+alertmanager:
+  enabled: false
+pushgateway:
+  enabled: false
+
+# Los 2 informantes, livianos, se dejan (sin ellos Prometheus ve muy poco):
+# - nodeExporter: "¿cuánta CPU/RAM/disco le queda al nodo?"
+# - kube-state-metrics: "¿cuántos pods hay? ¿en qué fase están?"
+nodeExporter:
+  enabled: true
+kube-state-metrics:
+  enabled: true
