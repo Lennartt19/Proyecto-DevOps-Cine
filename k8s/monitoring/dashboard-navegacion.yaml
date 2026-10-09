@@ -1,0 +1,59 @@
+# Dashboard "Cine DEV - Navegación": los logs de la app visibles sin ir a Explore.
+#
+# Idea: Grafana solo muestra dashboards con paneles; los logs viven en Loki y
+# hay que pedirlos con LogQL en paneles tipo "logs". Este ConfigMap se monta
+# en Grafana vía values-grafana-dev.yaml (extraConfigmapMounts) y el workflow
+# lo aplica ANTES de instalar Grafana (si no existe, el pod no arranca).
+#
+# Paneles (3 preguntas):
+# 1. ¿Qué URLs se visitan? -> logs del Ingress (el único que ve todo el tráfico).
+# 2. ¿Qué dice el backend? -> logs de cine-dev/app backend.
+# 3. ¿Cuánto tráfico hay? -> conteo de líneas del Ingress por minuto.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-cine
+  namespace: monitoring
+data:
+  cine-navegacion.json: |
+    {
+      "title": "Cine DEV - Navegación",
+      "tags": ["cine", "dev"],
+      "timezone": "America/Lima",
+      "schemaVersion": 39,
+      "version": 1,
+      "panels": [
+        {
+          "id": 1,
+          "title": "1. Tráfico web: qué URLs se visitan (ingress)",
+          "type": "logs",
+          "gridPos": {"h": 12, "w": 24, "x": 0, "y": 0},
+          "datasource": {"type": "loki", "uid": "Loki"},
+          "targets": [
+            {"refId": "A", "expr": "{namespace=\"ingress-nginx\"}"}
+          ],
+          "options": {"showTime": true, "sortOrder": "Descending", "wrapLogMessage": true}
+        },
+        {
+          "id": 2,
+          "title": "2. Backend: qué dice la API (cine-dev)",
+          "type": "logs",
+          "gridPos": {"h": 12, "w": 24, "x": 0, "y": 12},
+          "datasource": {"type": "loki", "uid": "Loki"},
+          "targets": [
+            {"refId": "A", "expr": "{namespace=\"cine-dev\",app=\"backend\"}"}
+          ],
+          "options": {"showTime": true, "sortOrder": "Descending", "wrapLogMessage": true}
+        },
+        {
+          "id": 3,
+          "title": "3. Requests por minuto (ingress)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+          "datasource": {"type": "loki", "uid": "Loki"},
+          "targets": [
+            {"refId": "A", "expr": "sum(count_over_time({namespace=\"ingress-nginx\"}[1m]))", "legendFormat": "req/min"}
+          ]
+        }
+      ]
+    }

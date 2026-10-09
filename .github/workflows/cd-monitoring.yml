@@ -127,8 +127,10 @@ jobs:
             -f k8s/monitoring/values-loki-stack-dev.yaml --wait --timeout 10m
 
       # Etapa 11: Grafana (la pizarra) con el host real.
+      # El ConfigMap del dashboard debe existir ANTES (Grafana lo monta al arrancar).
       - name: 11 - Instalar Grafana
         run: |
+          kubectl apply -f k8s/monitoring/dashboard-navegacion.yaml
           sed "s/__INGRESS_HOST__/${{ env.INGRESS_HOST }}/" k8s/monitoring/values-grafana-dev.yaml > /tmp/grafana-values.yaml
           helm upgrade --install grafana grafana/grafana \
             -n monitoring --create-namespace \

@@ -27,18 +27,42 @@ grafana.ini:
     serve_from_sub_path: "true"
 
 # Las 2 fuentes pre-conectadas: Prometheus (números) y Loki (logs).
+# Los uid fijos los usa el dashboard aprovisionado de abajo.
 datasources:
   datasources.yaml:
     apiVersion: 1
     datasources:
       - name: Prometheus
         type: prometheus
+        uid: prometheus
         access: proxy
         url: http://prometheus-server.monitoring.svc.cluster.local:80
         isDefault: true
       - name: Loki
         type: loki
+        uid: Loki
         access: proxy
         url: http://loki.monitoring.svc.cluster.local:3100
         jsonData:
           maxLines: 1000
+
+# Dashboard aprovisionado "Cine DEV - Navegación" (ver dashboard-navegacion.yaml).
+# Grafana lee solo los JSON que estén bajo /var/lib/grafana/dashboards/cine,
+# que es donde se monta el ConfigMap. Sin esto no hay ningún panel de logs.
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: cine
+        orgId: 1
+        folder: Cine
+        type: file
+        disableDeletion: false
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards/cine
+extraConfigmapMounts:
+  - name: cine-dashboard
+    mountPath: /var/lib/grafana/dashboards/cine
+    configMap: grafana-dashboard-cine
+    readOnly: true
