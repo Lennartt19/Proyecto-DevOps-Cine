@@ -1,23 +1,27 @@
-# CD monitoring: instala Grafana + Prometheus + Loki en el AKS de dev.
+# CD monitoring básico: Grafana + Prometheus + Loki en el AKS de dev.
 #
 # Idea en 30 segundos: es MANUAL (botón Run workflow) como el CD de la app.
 # Flujo de la clave: GitHub Secret -> Key Vault (az) -> Secret nativo
-# (kubectl). Flujo de la config: values + manifiestos de k8s/monitoring/ ->
-# Helm/charts + kubectl. Nada se escribe a mano en Azure ni en el clúster.
+# (kubectl). Flujo de la config: values de k8s/monitoring/ -> Helm/charts +
+# 1 Ingress. Nada se escribe a mano en Azure ni en el clúster.
 #
-# Analogía: si el CD dev fue "la mudanza" (meter los muebles al clúster),
-# este es "poner las cámaras y el tablero" (ver qué pasa dentro sin mudarse).
+# Qué incluye (y qué NO):
+# - SÍ: kube-prometheus-stack (Prometheus + Grafana + node-exporter +
+#   kube-state-metrics, todo del chart), Loki (logs) + Promtail (los recoge),
+#   Grafana bajo /grafana del mismo host de la app.
+# - NO: probes externas, exporter de Postgres, métricas del Ingress,
+#   dashboards propios ni reglas (se quitaron para mantenerlo básico;
+#   están en el historial de git si se quieren recuperar).
 # NO toca frontend/backend/postgres: crea el namespace `monitoring` aparte.
 #
-# Orden de las 15 etapas: entrar a Azure -> Helm -> validar clave ->
-# namespace+secret -> 4 charts -> exporter/monitores -> probes/dashboards ->
-# Ingress /grafana -> esperar -> mostrar URLs.
+# Orden de las etapas: entrar a Azure -> Helm -> validar clave ->
+# namespace+secret -> 2 charts -> Ingress /grafana -> esperar -> mostrar URLs.
 #
 # Requiere estos secrets en el repo: AZURE_CLIENT_ID, AZURE_TENANT_ID,
-# AZURE_SUBSCRIPTION_ID, GRAFANA_ADMIN_PASSWORD (nuevo: créalo en
+# AZURE_SUBSCRIPTION_ID, GRAFANA_ADMIN_PASSWORD (créalo en
 # Settings > Secrets and variables > Actions, mínimo 12 chars, sin comilla simple).
 # Pre-requisito: el CD dev ya corrió al menos 1 vez (debe existir el
-# controller ingress-nginx, que nos da el host nip.io y las métricas por ruta).
+# controller ingress-nginx, que nos da el host nip.io).
 name: CD monitoring - observabilidad dev
 
 on:
@@ -65,7 +69,7 @@ jobs:
           fi
 
       # Etapa 6: verificar que el CD dev ya instaló el Ingress NGINX.
-      # Sin controller no hay host nip.io ni métricas por ruta.
+      # Sin controller no hay host nip.io para Grafana.
       - name: 6 - Verificar Ingress NGINX del CD dev
         run: |
           kubectl get svc -n ingress-nginx ingress-nginx-controller
@@ -87,8 +91,8 @@ jobs:
             --dry-run=client -o yaml | kubectl apply -f -
           echo "Secret grafana-admin listo."
 
-      # Etapa 8: registrar los 3 repos de charts (las "tiendas" de Helm).
-      # - prometheus-community: kube-prometheus-stack + blackbox-exporter.
+      # Etapa 8: registrar los repos de charts (las "tiendas" de Helm).
+      # - prometheus-community: kube-prometheus-stack.
       # - grafana-community: Loki vigente (el de `grafana` está deprecado, verificado 2026-09-24).
       # - grafana: Promtail (el cartero de logs).
       - name: 8 - Repos Helm
@@ -132,56 +136,22 @@ jobs:
             -n monitoring --create-namespace \
             -f k8s/monitoring/values-promtail-dev.yaml --wait --timeout 5m
 
-      # Etapa 11: blackbox-exporter (el navegador robot de las probes).
-      # El nombre del Service lo DESCUBRIMOS por etiqueta en vez de escribirlo
-      # a mano: así no depende de la versión del chart (si mañana cambia el
-      # nombre, este paso lo encuentra igual y probes.yaml se rellena solo).
-      - name: 11 - Instalar blackbox-exporter
+      # Etapa 11: el Ingress /grafana con el host real.
+      - name: 11 - Aplicar Ingress de Grafana
         run: |
-          helm upgrade --install blackbox prometheus-community/prometheus-blackbox-exporter \
-            -n monitoring --create-namespace --wait --timeout 5m
-          BLACKBOX_SVC=$(kubectl get svc -n monitoring -l app.kubernetes.io/name=prometheus-blackbox-exporter -o jsonpath='{.items[0].metadata.name}')
-          if [ -z "$BLACKBOX_SVC" ]; then
-            echo "No se encontró el Service del blackbox. Revisa: kubectl get svc -n monitoring"
-            exit 1
-          fi
-          echo "BLACKBOX_SVC=$BLACKBOX_SVC" >> "$GITHUB_ENV"
-          echo "Blackbox: $BLACKBOX_SVC"
-
-      # Etapa 12: exporter de Postgres + métricas del Ingress.
-      # OJO: no modifican la app; son recursos NUEVOS que la observan desde fuera.
-      # El chequeo de endpoints es el semáforo: si sale vacío, el Service no
-      # encontró sus pods (típico: etiqueta del selector desactualizada).
-      - name: 12 - Aplicar exporter y métricas Ingress
-        run: |
-          kubectl apply -f k8s/monitoring/postgres-exporter.yaml
-          kubectl apply -f k8s/monitoring/ingress-metrics.yaml
-          echo "--- Verificar que el Service de métricas tiene endpoints ---"
-          kubectl get endpoints -n ingress-nginx ingress-nginx-metrics
-          echo "--- Verificar exporter de Postgres ---"
-          kubectl get endpoints -n cine-dev postgres-exporter
-
-      # Etapa 13: probes, dashboards, reglas y el Ingress /grafana con el host real.
-      - name: 13 - Aplicar probes, dashboards e Ingress
-        run: |
-          sed -e "s/__INGRESS_HOST__/${{ env.INGRESS_HOST }}/" -e "s/__BLACKBOX_SVC__/${{ env.BLACKBOX_SVC }}/" \
-            k8s/monitoring/probes.yaml | kubectl apply -f -
-          kubectl apply -f k8s/monitoring/dashboards.yaml
-          kubectl apply -f k8s/monitoring/prometheus-rules.yaml
           sed "s/__INGRESS_HOST__/${{ env.INGRESS_HOST }}/" k8s/monitoring/monitoring-ingress.yaml | kubectl apply -f -
           kubectl get ingress -n monitoring
 
-      # Etapa 14: esperar a que todo quede encendido.
-      - name: 14 - Esperar que todo encienda
+      # Etapa 12: esperar a que todo quede encendido.
+      - name: 12 - Esperar que todo encienda
         run: |
           kubectl rollout status statefulset/mon-kube-prometheus-stack-prometheus -n monitoring --timeout=300s
           kubectl rollout status deployment/mon-grafana -n monitoring --timeout=300s
           kubectl rollout status statefulset/loki -n monitoring --timeout=300s
           kubectl rollout status daemonset/promtail -n monitoring --timeout=300s
-          kubectl rollout status deployment/postgres-exporter -n cine-dev --timeout=180s
 
-      # Etapa 15: mostrar el estado final y las URLs.
-      - name: 15 - Mostrar estado final
+      # Etapa 13: mostrar el estado final y las URLs.
+      - name: 13 - Mostrar estado final
         run: |
           kubectl get pods -n monitoring
           kubectl get svc -n monitoring

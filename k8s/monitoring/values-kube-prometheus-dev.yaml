@@ -16,8 +16,7 @@
 
 # --- El cartero de las alertas, APAGADO en dev ---
 # Alertmanager = el que te mandaría el WhatsApp/email cuando algo falla.
-# Apagado porque aún no definimos a dónde avisar. Las 4 reglas de
-# prometheus-rules.yaml igual se guardan (para practicar PromQL).
+# Apagado porque aún no definimos a dónde avisar.
 alertmanager:
   enabled: false
 
