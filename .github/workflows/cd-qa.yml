@@ -59,29 +59,23 @@ jobs:
             exit 1
           fi
 
-      # Etapa 5: revisar uno por uno que los 5 secretos tengan valor.
+      # Etapa 5: avisar qué secretos del environment faltan (no frena).
+      # Los que falten se heredan del vault de dev en la etapa 7: cero comandos
+      # manuales. Para independizar QA, define el secret en el environment.
       - name: 5 - Revisar secrets de la app
+        env:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
         run: |
-          if [ -z "${{ secrets.POSTGRES_DB }}" ]; then
-            echo "Falta el secret POSTGRES_DB del environment qa."
-            exit 1
-          fi
-          if [ -z "${{ secrets.POSTGRES_USER }}" ]; then
-            echo "Falta el secret POSTGRES_USER del environment qa."
-            exit 1
-          fi
-          if [ -z "${{ secrets.POSTGRES_PASSWORD }}" ]; then
-            echo "Falta el secret POSTGRES_PASSWORD del environment qa."
-            exit 1
-          fi
-          if [ -z "${{ secrets.JWT_SECRET }}" ]; then
-            echo "Falta el secret JWT_SECRET del environment qa."
-            exit 1
-          fi
-          if [ -z "${{ secrets.SESSION_SECRET }}" ]; then
-            echo "Falta el secret SESSION_SECRET del environment qa."
-            exit 1
-          fi
+          for S in POSTGRES_DB POSTGRES_USER POSTGRES_PASSWORD JWT_SECRET SESSION_SECRET; do
+            if [ -z "${!S}" ]; then
+              echo "Aviso: falta $S en el environment qa, se heredará de dev."
+            fi
+          done
+          echo "Revisión lista."
 
       # Etapa 6: averiguar las direcciones del ACR y del Key Vault de QA.
       - name: 6 - Averiguar ACR y Key Vault
@@ -94,22 +88,41 @@ jobs:
           echo "kv_name=$KV_NAME" >> "$GITHUB_OUTPUT"
           echo "Key Vault: $KV_NAME"
 
-      # Etapa 7: copiar los 5 secretos del environment al Key Vault.
+      # Etapa 7: llenar el vault PROPIO de QA (kvcineqa01).
+      # Regla por secreto: si existe en el environment qa se usa ese valor;
+      # si no, se hereda del vault de dev (cero comandos manuales).
       # OJO: Key Vault NO acepta '_' (solo A-Z, 0-9 y '-'), por eso se
       # guardan con '-' y el SecretProviderClass los mapea a '_' en K8s.
       - name: 7 - Subir secrets al Key Vault
+        env:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
         run: |
-          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES-DB --value '${{ secrets.POSTGRES_DB }}' -o none
-          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES-USER --value '${{ secrets.POSTGRES_USER }}' -o none
-          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES-PASSWORD --value '${{ secrets.POSTGRES_PASSWORD }}' -o none
-          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name JWT-SECRET --value '${{ secrets.JWT_SECRET }}' -o none
-          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name SESSION-SECRET --value '${{ secrets.SESSION_SECRET }}' -o none
-          echo "5 secretos sincronizados al Vault."
+          KV=${{ steps.azure.outputs.kv_name }}
+          DEV_VAULT=kvcinedev01
+          sync_secret() {
+            if [ -n "$2" ]; then
+              az keyvault secret set --vault-name "$KV" --name "$1" --value "$2" -o none
+              echo "$1: valor propio del environment qa."
+            else
+              V=$(az keyvault secret show --vault-name "$DEV_VAULT" --name "$1" --query value -o tsv)
+              az keyvault secret set --vault-name "$KV" --name "$1" --value "$V" -o none
+              echo "$1: heredado del vault de dev."
+            fi
+          }
+          sync_secret POSTGRES-DB "$POSTGRES_DB"
+          sync_secret POSTGRES-USER "$POSTGRES_USER"
+          sync_secret POSTGRES-PASSWORD "$POSTGRES_PASSWORD"
+          sync_secret JWT-SECRET "$JWT_SECRET"
+          sync_secret SESSION-SECRET "$SESSION_SECRET"
           echo "--- Verificar que el Vault tiene los 5 ---"
-          COUNT=$(az keyvault secret list --vault-name ${{ steps.azure.outputs.kv_name }} --query "length(@)" -o tsv)
+          COUNT=$(az keyvault secret list --vault-name "$KV" --query "length(@)" -o tsv)
           echo "Secretos en el Vault: $COUNT"
           if [ "$COUNT" != "5" ]; then
-            echo "El Vault no tiene los 5 secretos. Revisa el rol 'Key Vault Secrets Officer' para mi-github-terraform."
+            echo "El Vault no tiene los 5 secretos. Revisa los roles del vault de dev y de QA."
             exit 1
           fi
 
