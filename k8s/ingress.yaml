@@ -1,4 +1,5 @@
-# Ingress de DEV: la única puerta pública del namespace cine-dev.
+# Ingress del entorno: la única puerta pública del namespace (__NAMESPACE__
+# lo reemplaza el CD: cine-dev|qa|prod).
 #
 # Idea: 1 sola IP (la del controller NGINX) reparte por ruta:
 #   /       -> frontend:80 (web + /healthz)
@@ -12,7 +13,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: cine-ingress
-  namespace: cine-dev
+  namespace: __NAMESPACE__
   annotations:
     # El backend acepta bodies de 10mb (express.json), el default de
     # NGINX (1m) los tumbaría con 413.

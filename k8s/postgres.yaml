@@ -5,7 +5,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-data
-  namespace: cine-dev
+  namespace: __NAMESPACE__
 spec:
   accessModes:
     - ReadWriteOnce
@@ -17,7 +17,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: cine-dev
+  namespace: __NAMESPACE__
 spec:
   replicas: 1
   selector:
@@ -95,7 +95,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres
-  namespace: cine-dev
+  namespace: __NAMESPACE__
 spec:
   type: ClusterIP # solo accesible dentro del clúster (backend la usa como DB_HOST=postgres)
   ports:

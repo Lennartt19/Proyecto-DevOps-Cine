@@ -1,7 +1,8 @@
+# Namespace del entorno (__NAMESPACE__ lo reemplaza el CD: cine-dev|qa|prod).
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: cine-dev
+  name: __NAMESPACE__
   labels:
     project: cine
     env: dev

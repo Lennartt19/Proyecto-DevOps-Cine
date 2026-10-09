@@ -1,0 +1,112 @@
+# CD SonarQube: instala el revisor de código en el AKS de dev.
+#
+# Idea en 30 segundos: es MANUAL (botón Run workflow). Instala SonarQube
+# + su Postgres en el namespace `sonarqube` y lo expone en /sonarqube del
+# mismo host de la app. El CI (job `sonar` en ci.yml) le envía el backend
+# en cada push. Se instala UNA vez; re-correrlo solo actualiza.
+#
+# Requiere estos secrets en el repo: AZURE_CLIENT_ID, AZURE_TENANT_ID,
+# AZURE_SUBSCRIPTION_ID, SONAR_ADMIN_PASSWORD (clave inicial del admin,
+# mínimo 8 chars, sin comilla simple).
+# Pre-requisito: el CD dev ya corrió al menos 1 vez (controller ingress-nginx).
+name: CD SonarQube - revisor de código en dev
+
+on:
+  workflow_dispatch:
+
+# Permiso para pedir el token temporal de Azure (OIDC, sin contraseñas).
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Etapa 1: descargar el código (aquí vive k8s/sonarqube/).
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+
+      # Etapa 2: entrar a Azure con token temporal.
+      - name: 2 - Entrar a Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Etapa 3: apuntar kubectl al clúster de dev.
+      - name: 3 - Conectar kubectl al AKS dev
+        run: az aks get-credentials -g rg-cine-dev -n aks-cine-dev --overwrite-existing
+
+      # Etapa 4: validar la clave inicial del admin.
+      - name: 4 - Revisar secret SONAR_ADMIN_PASSWORD
+        run: |
+          if [ -z "${{ secrets.SONAR_ADMIN_PASSWORD }}" ]; then
+            echo "Falta el secret SONAR_ADMIN_PASSWORD (mínimo 8 chars, sin comilla simple). Créalo en Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      # Etapa 5: guardar la clave en el Key Vault (fuente de verdad, como Grafana).
+      - name: 5 - Guardar clave en Key Vault
+        run: |
+          KV_NAME=$(az keyvault list -g rg-cine-dev --query "[0].name" -o tsv)
+          echo "Key Vault: $KV_NAME"
+          az keyvault secret set --vault-name "$KV_NAME" --name SONAR-ADMIN-PASSWORD --value '${{ secrets.SONAR_ADMIN_PASSWORD }}' -o none
+          az keyvault secret show --vault-name "$KV_NAME" --name SONAR-ADMIN-PASSWORD -o none || (echo "No se pudo guardar en el Vault. Revisa el rol 'Key Vault Secrets Officer'."; exit 1)
+
+      # Etapa 6: crear el namespace.
+      - name: 6 - Crear namespace
+        run: kubectl apply -f k8s/sonarqube/namespace.yaml
+
+      # Etapa 7: registrar el repo del chart y descubrir el host nip.io.
+      - name: 7 - Repo Helm y host del Ingress
+        id: ingress
+        run: |
+          helm repo add sonarqube https://SonarSource.github.io/helm-chart-sonarqube
+          helm repo update
+          IP=""
+          for i in $(seq 1 30); do
+            IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ -n "$IP" ]; then
+              break
+            fi
+            sleep 10
+          done
+          if [ -z "$IP" ]; then
+            echo "El Ingress aún no tiene IP pública. Revisa: kubectl get svc -n ingress-nginx"
+            exit 1
+          fi
+          echo "host=$IP.nip.io" >> "$GITHUB_OUTPUT"
+          echo "Host: http://$IP.nip.io"
+
+      # Etapa 8: instalar SonarQube (el primer arranque tarda: Elasticsearch).
+      - name: 8 - Instalar SonarQube
+        run: |
+          sed "s/__SONAR_ADMIN_PASSWORD__/${{ secrets.SONAR_ADMIN_PASSWORD }}/" k8s/sonarqube/values-sonarqube-dev.yaml > /tmp/sonar-values.yaml
+          helm upgrade --install sonarqube sonarqube/sonarqube \
+            -n sonarqube --create-namespace \
+            -f /tmp/sonar-values.yaml --wait --timeout 15m
+
+      # Etapa 9: exponerlo en /sonarqube (el Service se descubre, no se escribe).
+      - name: 9 - Aplicar Ingress de SonarQube
+        run: |
+          kubectl get svc -n sonarqube
+          SONAR_SVC=$(kubectl get svc -n sonarqube -o jsonpath='{.items[0].metadata.name}')
+          echo "Service: $SONAR_SVC"
+          sed -e "s/__INGRESS_HOST__/${{ steps.ingress.outputs.host }}/" -e "s/__SONAR_SVC__/$SONAR_SVC/" \
+            k8s/sonarqube/sonarqube-ingress.yaml | kubectl apply -f -
+          kubectl get ingress -n sonarqube
+
+      # Etapa 10: esperar a que encienda (Elasticsearch es lento la 1ra vez).
+      - name: 10 - Esperar que encienda
+        run: kubectl rollout status deployment/sonarqube-sonarqube -n sonarqube --timeout=600s
+
+      # Etapa 11: mostrar URLs y el siguiente paso (el token para el CI).
+      - name: 11 - Mostrar estado final
+        run: |
+          kubectl get pods -n sonarqube
+          kubectl get ingress -n sonarqube
+          echo "SonarQube: http://${{ steps.ingress.outputs.host }}/sonarqube (admin + SONAR_ADMIN_PASSWORD)"
+          echo "SIGUIENTE: entra con admin, genera un token en My Account > Security y guárdalo en el secret SONAR_TOKEN del repo. Sin ese token el job sonar del CI falla."
+          echo "OJO: si la IP del Ingress cambia, actualiza el secret SONAR_HOST_URL con la nueva URL."

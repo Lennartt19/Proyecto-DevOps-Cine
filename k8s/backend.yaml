@@ -6,7 +6,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
-  namespace: cine-dev
+  namespace: __NAMESPACE__
 spec:
   replicas: 1
   selector:
@@ -98,7 +98,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: backend
-  namespace: cine-dev
+  namespace: __NAMESPACE__
 spec:
   # ClusterIP a propósito: sin IP pública propia. La única puerta
   # a la calle es el Ingress (1 IP). Ver k8s/ingress.yaml.

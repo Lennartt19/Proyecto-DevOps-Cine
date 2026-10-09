@@ -1,0 +1,10 @@
+# Namespace de SonarQube (dev): habitación separada, como `monitoring`.
+# El análisis de código no vive con la app: si la app se borra, el historial
+# de calidad sobrevive.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sonarqube
+  labels:
+    project: cine
+    env: dev

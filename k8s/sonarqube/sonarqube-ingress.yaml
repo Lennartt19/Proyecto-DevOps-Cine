@@ -1,0 +1,30 @@
+# Ingress de SonarQube: vive en /sonarqube del MISMO host nip.io de la app.
+#
+# Detalles:
+# - Sin rewrite: SonarQube sirve el subpath nativo (ver sonar.web.context).
+# - proxy-body-size 50m: el reporte de análisis que sube el CI pesa MBs;
+#   el default de NGINX (1m) lo tumbaría con 413.
+# - __INGRESS_HOST__ y __SONAR_SVC__ los rellena el CD con sed (el nombre
+#   exacto del Service se descubre, no se escribe a mano).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sonarqube-ingress
+  namespace: sonarqube
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: __INGRESS_HOST__
+      http:
+        paths:
+          - path: /sonarqube
+            pathType: Prefix
+            backend:
+              service:
+                name: __SONAR_SVC__
+                port:
+                  number: 9000

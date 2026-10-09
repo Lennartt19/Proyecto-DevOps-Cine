@@ -1,0 +1,57 @@
+# Values DEV de SonarQube (chart `sonarqube/sonarqube`, release `sonarqube`).
+#
+# Idea: SonarQube = el revisor automático. Lee el código del backend y anota
+# bugs, vulnerabilidades y deuda (code smells). El CI le envía el código en
+# cada push y él devuelve APROBADO (OK) o RECHAZADO (ERROR) vía quality gate.
+#
+# Recursos: SonarQube pide ~2 GB RAM (trae Elasticsearch dentro). En el nodo
+# B2s_v2 (8 GB compartidos con app + monitoreo) va justo: cotas bajas y
+# paciencia en el primer arranque (Elasticsearch tarda 2-5 min).
+# Si el pod queda en Pending/OOMKilled, este es el primer sospechoso.
+#
+# __SONAR_ADMIN_PASSWORD__ lo reemplaza el CD con sed desde el GitHub Secret
+# SONAR_ADMIN_PASSWORD (igual que Grafana). Nunca va un password real a git.
+account:
+  # Clave inicial del admin. Se aplica solo en instalación limpia (si ya
+  # existe datos, se ignora: cambia la clave en la UI).
+  adminPassword: __SONAR_ADMIN_PASSWORD__
+  currentAdminPassword: admin
+
+# Base de datos incluida (Postgres del propio chart). Para dev basta;
+# en prod real iría un Postgres gestionado aparte.
+postgresql:
+  enabled: true
+  primary:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    persistence:
+      enabled: true
+      size: 2Gi
+
+persistence:
+  enabled: true
+  size: 5Gi
+
+# ClusterIP a propósito: la puerta pública es el Ingress existente
+# (sonarqube-ingress.yaml, ruta /sonarqube). Sin IP pública extra.
+service:
+  type: ClusterIP
+
+resources:
+  requests:
+    cpu: 500m
+    memory: 1Gi
+  limits:
+    cpu: 2000m
+    memory: 3Gi
+
+# SonarQube es el inquilino /sonarqube (igual que Grafana en /grafana).
+# Sin este context, el Ingress le entrega rutas que no entiende.
+sonarProperties:
+  sonar.web.context: /sonarqube
+  sonar.web.host: 0.0.0.0

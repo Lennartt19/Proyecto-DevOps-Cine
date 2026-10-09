@@ -1,0 +1,271 @@
+# CD PROD: instala backend + frontend + postgres + MONITOREO en el AKS de
+# producción detrás de 1 Ingress NGINX. Réplica del CD dev con valores de prod.
+#
+# Aprobación: el job usa `environment: prod`. En GitHub (Settings >
+# Environments > prod) se configuran "Required reviewers": el run se pausa
+# ahí hasta que un revisor lo aprueba. Sin esa config en la UI, corre directo.
+#
+# Promoción (sin reconstruir): la imagen es el MISMO SHA probado en QA.
+# Se copia del ACR de QA al de prod con `az acr import` (etapa 12).
+# Monitoreo: SOLO prod lo lleva (etapas 19-26: Prometheus + Loki + Grafana).
+#
+# Secrets: se usan los MISMOS nombres que en dev, pero definidos en el
+# Environment `prod` (Settings > Environments > prod > Secrets).
+# QA_ACR_NAME es secret de repo (el origen de la promoción).
+name: CD prod - deploy a AKS
+
+# Se dispara solo con el botón (pide el SHA probado en QA).
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Tag de imagen (SHA probado en QA)'
+        required: true
+        default: 'latest'
+
+# Permiso para pedir el token temporal de Azure (OIDC, sin contraseñas).
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Puerta de aprobación: pausa hasta que un reviewer apruebe en la UI.
+    environment: prod
+    steps:
+      # Etapa 1: descargar el código (aquí viven k8s/ y db/init/).
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+
+      # Etapa 2: entrar a Azure con token temporal.
+      - name: 2 - Entrar a Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      # Etapa 3: apuntar kubectl al clúster de PROD.
+      - name: 3 - Conectar kubectl al AKS prod
+        run: az aks get-credentials -g rg-cine-prod -n aks-cine-prod --overwrite-existing
+
+      # Etapa 4: si falta el nombre del registry, avisar en claro y parar.
+      - name: 4 - Revisar secret ACR_NAME
+        run: |
+          if [ -z "${{ secrets.ACR_NAME }}" ]; then
+            echo "Falta el secret ACR_NAME del environment prod (ej. acrcineprod01). Créalo en Settings > Environments > prod."
+            exit 1
+          fi
+
+      # Etapa 5: revisar uno por uno que los 5 secretos tengan valor.
+      - name: 5 - Revisar secrets de la app
+        run: |
+          if [ -z "${{ secrets.POSTGRES_DB }}" ]; then
+            echo "Falta el secret POSTGRES_DB del environment prod."
+            exit 1
+          fi
+          if [ -z "${{ secrets.POSTGRES_USER }}" ]; then
+            echo "Falta el secret POSTGRES_USER del environment prod."
+            exit 1
+          fi
+          if [ -z "${{ secrets.POSTGRES_PASSWORD }}" ]; then
+            echo "Falta el secret POSTGRES_PASSWORD del environment prod."
+            exit 1
+          fi
+          if [ -z "${{ secrets.JWT_SECRET }}" ]; then
+            echo "Falta el secret JWT_SECRET del environment prod."
+            exit 1
+          fi
+          if [ -z "${{ secrets.SESSION_SECRET }}" ]; then
+            echo "Falta el secret SESSION_SECRET del environment prod."
+            exit 1
+          fi
+
+      # Etapa 6: averiguar las direcciones del ACR y del Key Vault de PROD.
+      - name: 6 - Averiguar ACR y Key Vault
+        id: azure
+        run: |
+          LOGIN_SERVER=$(az acr show -g rg-cine-prod -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+          echo "ACR: $LOGIN_SERVER"
+          KV_NAME=$(az keyvault list -g rg-cine-prod --query "[0].name" -o tsv)
+          echo "kv_name=$KV_NAME" >> "$GITHUB_OUTPUT"
+          echo "Key Vault: $KV_NAME"
+
+      # Etapa 7: copiar los 5 secretos del environment al Key Vault.
+      - name: 7 - Subir secrets al Key Vault
+        run: |
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES-DB --value '${{ secrets.POSTGRES_DB }}' -o none
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES-USER --value '${{ secrets.POSTGRES_USER }}' -o none
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name POSTGRES-PASSWORD --value '${{ secrets.POSTGRES_PASSWORD }}' -o none
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name JWT-SECRET --value '${{ secrets.JWT_SECRET }}' -o none
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name SESSION-SECRET --value '${{ secrets.SESSION_SECRET }}' -o none
+          echo "5 secretos sincronizados al Vault."
+          echo "--- Verificar que el Vault tiene los 5 ---"
+          COUNT=$(az keyvault secret list --vault-name ${{ steps.azure.outputs.kv_name }} --query "length(@)" -o tsv)
+          echo "Secretos en el Vault: $COUNT"
+          if [ "$COUNT" != "5" ]; then
+            echo "El Vault no tiene los 5 secretos. Revisa el rol 'Key Vault Secrets Officer' para mi-github-terraform."
+            exit 1
+          fi
+
+      # Etapa 8: rellenar las plantillas del entorno y crear el namespace.
+      - name: 8 - Fijar entorno y crear namespace
+        run: |
+          sed -i "s/__NAMESPACE__/cine-prod/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
+          grep -rn "__NAMESPACE__\|__KV_NAME__" k8s/*.yaml && (echo "Quedó un placeholder sin reemplazar."; exit 1) || echo "Plantillas listas para cine-prod."
+          kubectl apply -f k8s/namespace.yaml
+
+      # Etapa 9: subir los SQL de db/init/ como ConfigMap "postgres-init".
+      - name: 9 - Subir SQL de init
+        run: |
+          kubectl create configmap postgres-init -n cine-prod \
+            --from-file=db/init/ \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      # Etapa 10: SecretProviderClass con la identidad kubelet VIGENTE de PROD.
+      - name: 10 - Aplicar SecretProviderClass
+        run: |
+          KUBELET_ID=$(az aks show -g rg-cine-prod -n aks-cine-prod --query identityProfile.kubeletidentity.clientId -o tsv)
+          echo "Kubelet vigente: $KUBELET_ID"
+          sed -i "s/userAssignedIdentityID: \".*\"/userAssignedIdentityID: \"$KUBELET_ID\"/" k8s/secret-provider.yaml
+          grep "userAssignedIdentityID" k8s/secret-provider.yaml
+          kubectl apply -f k8s/secret-provider.yaml
+
+      # Etapa 11: crear/actualizar postgres, backend y frontend.
+      - name: 11 - Aplicar manifiestos
+        run: kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
+
+      # Etapa 12: promover las imágenes de QA (mismo SHA) y fijarlas.
+      - name: 12 - Promover imágenes y fijar tag
+        run: |
+          QA_SERVER=$(az acr show -g rg-cine-qa -n ${{ secrets.QA_ACR_NAME }} --query loginServer -o tsv)
+          echo "Origen: $QA_SERVER"
+          az acr import -n ${{ secrets.ACR_NAME }} --source "$QA_SERVER/cine-backend:${{ inputs.image_tag }}" --image cine-backend:${{ inputs.image_tag }}
+          az acr import -n ${{ secrets.ACR_NAME }} --source "$QA_SERVER/cine-frontend:${{ inputs.image_tag }}" --image cine-frontend:${{ inputs.image_tag }}
+          echo "Imágenes promovidas."
+          az acr repository show-tags -n ${{ secrets.ACR_NAME }} --repository cine-backend --query "contains(@, '${{ inputs.image_tag }}')" -o tsv | grep -q true || (echo "El tag no llegó al ACR de prod."; exit 1)
+          kubectl set image deployment/backend -n cine-prod backend=${{ steps.azure.outputs.login_server }}/cine-backend:${{ inputs.image_tag }}
+          kubectl set image deployment/frontend -n cine-prod frontend=${{ steps.azure.outputs.login_server }}/cine-frontend:${{ inputs.image_tag }}
+
+      # Etapa 13: instalar el portero NGINX (idempotente).
+      - name: 13 - Instalar NGINX Ingress
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/cloud/deploy.yaml
+          kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=300s
+
+      # Etapa 14: averiguar la IP pública y armar el host nip.io.
+      - name: 14 - Averiguar IP y host del Ingress
+        id: ingress
+        run: |
+          IP=""
+          for i in $(seq 1 30); do
+            IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            if [ -n "$IP" ]; then
+              break
+            fi
+            sleep 10
+          done
+          if [ -z "$IP" ]; then
+            echo "El Ingress aún no tiene IP pública. Revisa: kubectl get svc -n ingress-nginx"
+            exit 1
+          fi
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          echo "host=$IP.nip.io" >> "$GITHUB_OUTPUT"
+          echo "Host: http://$IP.nip.io"
+
+      # Etapa 15: aplicar las reglas con el host real.
+      - name: 15 - Aplicar Ingress con host
+        run: |
+          sed "s/__INGRESS_HOST__/${{ steps.ingress.outputs.host }}/" k8s/ingress.yaml | kubectl apply -f -
+          kubectl get ingress -n cine-prod
+
+      # Etapa 16: URLs de la API y CORS al host único.
+      - name: 16 - Fijar URLs al host único
+        run: |
+          kubectl set env deployment/frontend -n cine-prod API_URL='http://${{ steps.ingress.outputs.host }}/api' APP_URL='http://${{ steps.ingress.outputs.host }}'
+          kubectl set env deployment/backend -n cine-prod FRONTEND_URL='http://${{ steps.ingress.outputs.host }}' BACKEND_URL='http://${{ steps.ingress.outputs.host }}' CORS_ORIGIN='http://${{ steps.ingress.outputs.host }}'
+
+      # Etapa 17: esperar que la app encienda, con diagnóstico si algo falla.
+      - name: 17 - Esperar que la app encienda
+        run: |
+          fail_diag() {
+            echo "=== DIAGNÓSTICO ($1) ==="
+            kubectl get pods -n cine-prod
+            kubectl describe deployment/$1 -n cine-prod | tail -n 30
+            kubectl get events -n cine-prod --sort-by=.lastTimestamp | tail -n 20
+            kubectl get secret cine-secrets -n cine-prod || echo "Secret cine-secrets NO existe -> el CSI no sincronizó (revisa Vault e identidad)."
+            kubectl logs -n cine-prod -l app=$1 --tail=50 || true
+            exit 1
+          }
+          kubectl rollout status deployment/postgres -n cine-prod --timeout=120s || fail_diag postgres
+          kubectl rollout status deployment/backend -n cine-prod --timeout=180s || fail_diag backend
+          kubectl rollout status deployment/frontend -n cine-prod --timeout=180s || fail_diag frontend
+
+      # ===== MONITOREO (solo prod) =====
+      # Etapa 18: revisar la clave de Grafana del environment prod.
+      - name: 18 - Revisar secret GRAFANA_ADMIN_PASSWORD
+        run: |
+          if [ -z "${{ secrets.GRAFANA_ADMIN_PASSWORD }}" ]; then
+            echo "Falta el secret GRAFANA_ADMIN_PASSWORD del environment prod. Créalo en Settings > Environments > prod."
+            exit 1
+          fi
+
+      # Etapa 19: namespace + clave en Vault y en Secret nativo.
+      - name: 19 - Namespace y secret de Grafana
+        run: |
+          kubectl apply -f k8s/monitoring/namespace.yaml
+          az keyvault secret set --vault-name ${{ steps.azure.outputs.kv_name }} --name GRAFANA-ADMIN-PASSWORD --value '${{ secrets.GRAFANA_ADMIN_PASSWORD }}' -o none
+          az keyvault secret show --vault-name ${{ steps.azure.outputs.kv_name }} --name GRAFANA-ADMIN-PASSWORD -o none || (echo "No se pudo guardar en el Vault. Revisa el rol 'Key Vault Secrets Officer'."; exit 1)
+          kubectl create secret generic grafana-admin -n monitoring \
+            --from-literal=admin-user=admin \
+            --from-literal=admin-password='${{ secrets.GRAFANA_ADMIN_PASSWORD }}' \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f k8s/monitoring/dashboard-navegacion.yaml
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 -o /tmp/gethelm.sh
+          bash /tmp/gethelm.sh
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+          echo "Helm listo."
+
+      # Etapa 20: Prometheus + Loki + Promtail (los values sirven para todo env:
+      # el namespace `monitoring` se llama igual en cada clúster).
+      - name: 20 - Instalar Prometheus, Loki y Promtail
+        run: |
+          helm upgrade --install prometheus prometheus-community/prometheus \
+            -n monitoring --create-namespace \
+            -f k8s/monitoring/values-prometheus-dev.yaml --wait --timeout 10m
+          helm upgrade --install loki grafana/loki-stack \
+            -n monitoring --create-namespace \
+            -f k8s/monitoring/values-loki-stack-dev.yaml --wait --timeout 10m
+
+      # Etapa 21: Grafana con el host real + su Ingress /grafana.
+      - name: 21 - Instalar Grafana e Ingress
+        run: |
+          sed "s/__INGRESS_HOST__/${{ steps.ingress.outputs.host }}/" k8s/monitoring/values-grafana-dev.yaml > /tmp/grafana-values.yaml
+          helm upgrade --install grafana grafana/grafana \
+            -n monitoring --create-namespace \
+            -f /tmp/grafana-values.yaml --wait --timeout 10m
+          sed "s/__INGRESS_HOST__/${{ steps.ingress.outputs.host }}/" k8s/monitoring/monitoring-ingress.yaml | kubectl apply -f -
+          kubectl get ingress -n monitoring
+
+      # Etapa 22: esperar que el monitoreo encienda.
+      - name: 22 - Esperar que el monitoreo encienda
+        run: |
+          kubectl rollout status deployment/prometheus-server -n monitoring --timeout=300s
+          kubectl rollout status statefulset/loki -n monitoring --timeout=300s
+          kubectl rollout status daemonset/loki-promtail -n monitoring --timeout=300s
+          kubectl rollout status deployment/grafana -n monitoring --timeout=300s
+
+      # Etapa 23: mostrar estado final de app + monitoreo.
+      - name: 23 - Mostrar estado final
+        run: |
+          kubectl get pods -n cine-prod
+          kubectl get ingress -n cine-prod
+          kubectl get pods -n monitoring
+          kubectl get ingress -n monitoring
+          echo "Web: http://${{ steps.ingress.outputs.host }}/"
+          echo "API: http://${{ steps.ingress.outputs.host }}/api/movies"
+          echo "Grafana: http://${{ steps.ingress.outputs.host }}/grafana (admin + GRAFANA_ADMIN_PASSWORD)"

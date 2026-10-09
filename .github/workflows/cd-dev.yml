@@ -121,9 +121,15 @@ jobs:
             exit 1
           fi
 
-      # Etapa 8: crear el namespace (carpeta lógica "cine-dev" en el clúster).
-      - name: 8 - Crear namespace
-        run: kubectl apply -f k8s/namespace.yaml
+      # Etapa 8: rellenar las plantillas del entorno y crear el namespace.
+      # Los YAML traen __NAMESPACE__ (__NAMESPACE__=cine-dev aquí; en qa/prod
+      # sus valores) y __KV_NAME__ (descubierto en la etapa 6). Sin esto los
+      # recursos caerían en el namespace/vault equivocados.
+      - name: 8 - Fijar entorno y crear namespace
+        run: |
+          sed -i "s/__NAMESPACE__/cine-dev/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
+          grep -rn "__NAMESPACE__\|__KV_NAME__" k8s/*.yaml && (echo "Quedó un placeholder sin reemplazar."; exit 1) || echo "Plantillas listas para cine-dev."
+          kubectl apply -f k8s/namespace.yaml
 
       # Etapa 9: subir los SQL de db/init/ como ConfigMap "postgres-init".
       # Es la única fuente de verdad: no se copian SQL a mano a ningún YAML.
