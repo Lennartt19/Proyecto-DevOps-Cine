@@ -5,13 +5,14 @@
 # Environments > prod) se configuran "Required reviewers": el run se pausa
 # ahí hasta que un revisor lo aprueba. Sin esa config en la UI, corre directo.
 #
-# Promoción (sin reconstruir): la imagen es el MISMO SHA probado en QA.
-# Se copia del ACR de QA al de prod con `az acr import` (etapa 12).
+# Promoción (sin reconstruir ni copiar): la imagen es el MISMO SHA probado en QA.
+# Hay UN SOLO ACR compartido (acrcinedev01 en rg-cine-dev): prod despliega
+# directamente desde ahí, sin `az acr import`.
 # Monitoreo: SOLO prod lo lleva (etapas 19-26: Prometheus + Loki + Grafana).
 #
 # Secrets: se usan los MISMOS nombres que en dev, pero definidos en el
 # Environment `prod` (Settings > Environments > prod > Secrets).
-# QA_ACR_NAME es secret de repo (el origen de la promoción).
+# ACR_NAME en TODOS los environments vale lo mismo: acrcinedev01 (el ACR compartido).
 name: CD prod - deploy a AKS
 
 # Se dispara solo con el botón (pide el SHA probado en QA).
@@ -54,7 +55,7 @@ jobs:
       - name: 4 - Revisar secret ACR_NAME
         run: |
           if [ -z "${{ secrets.ACR_NAME }}" ]; then
-            echo "Falta el secret ACR_NAME del environment prod (ej. acrcineprod01). Créalo en Settings > Environments > prod."
+            echo "Falta el secret ACR_NAME del environment prod (debe ser acrcinedev01, el ACR compartido). Créalo en Settings > Environments > prod."
             exit 1
           fi
 
@@ -75,11 +76,12 @@ jobs:
           done
           echo "Revisión lista."
 
-      # Etapa 6: averiguar las direcciones del ACR y del Key Vault de PROD.
+      # Etapa 6: averiguar la dirección del ACR COMPARTIDO y del Key Vault de PROD.
+      # El ACR vive en rg-cine-dev (acrcinedev01) para dev, qa y prod.
       - name: 6 - Averiguar ACR y Key Vault
         id: azure
         run: |
-          LOGIN_SERVER=$(az acr show -g rg-cine-prod -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
           echo "ACR: $LOGIN_SERVER"
           KV_NAME=$(az keyvault list -g rg-cine-prod --query "[0].name" -o tsv)
@@ -148,15 +150,11 @@ jobs:
       - name: 11 - Aplicar manifiestos
         run: kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
 
-      # Etapa 12: promover las imágenes de QA (mismo SHA) y fijarlas.
-      - name: 12 - Promover imágenes y fijar tag
+      # Etapa 12: desplegar las imágenes de QA (mismo SHA, sin copiar).
+      - name: 12 - Fijar tag del ACR compartido
         run: |
-          QA_SERVER=$(az acr show -g rg-cine-qa -n ${{ secrets.QA_ACR_NAME }} --query loginServer -o tsv)
-          echo "Origen: $QA_SERVER"
-          az acr import -n ${{ secrets.ACR_NAME }} --source "$QA_SERVER/cine-backend:${{ inputs.image_tag }}" --image cine-backend:${{ inputs.image_tag }}
-          az acr import -n ${{ secrets.ACR_NAME }} --source "$QA_SERVER/cine-frontend:${{ inputs.image_tag }}" --image cine-frontend:${{ inputs.image_tag }}
-          echo "Imágenes promovidas."
-          az acr repository show-tags -n ${{ secrets.ACR_NAME }} --repository cine-backend --query "contains(@, '${{ inputs.image_tag }}')" -o tsv | grep -q true || (echo "El tag no llegó al ACR de prod."; exit 1)
+          echo "Origen (compartido): ${{ steps.azure.outputs.login_server }}"
+          az acr repository show-tags -n ${{ secrets.ACR_NAME }} --repository cine-backend --query "contains(@, '${{ inputs.image_tag }}')" -o tsv | grep -q true || (echo "El tag '${{ inputs.image_tag }}' no existe en el ACR compartido. Lanza el CI primero."; exit 1)
           kubectl set image deployment/backend -n cine-prod backend=${{ steps.azure.outputs.login_server }}/cine-backend:${{ inputs.image_tag }}
           kubectl set image deployment/frontend -n cine-prod frontend=${{ steps.azure.outputs.login_server }}/cine-frontend:${{ inputs.image_tag }}
 

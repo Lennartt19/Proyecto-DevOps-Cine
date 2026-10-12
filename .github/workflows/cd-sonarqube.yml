@@ -83,7 +83,7 @@ jobs:
       # Etapa 8: instalar SonarQube (el primer arranque tarda: Elasticsearch).
       - name: 8 - Instalar SonarQube
         run: |
-          sed "s/__SONAR_ADMIN_PASSWORD__/${{ secrets.SONAR_ADMIN_PASSWORD }}/" k8s/sonarqube/values-sonarqube-dev.yaml > /tmp/sonar-values.yaml
+          sed -e "s/__SONAR_ADMIN_PASSWORD__/${{ secrets.SONAR_ADMIN_PASSWORD }}/" -e "s/__SONAR_MONITORING_PASSCODE__/${{ secrets.SONAR_ADMIN_PASSWORD }}/" k8s/sonarqube/values-sonarqube-dev.yaml > /tmp/sonar-values.yaml
           helm upgrade --install sonarqube sonarqube/sonarqube \
             -n sonarqube --create-namespace \
             -f /tmp/sonar-values.yaml --wait --timeout 15m

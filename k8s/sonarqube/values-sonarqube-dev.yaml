@@ -50,6 +50,11 @@ resources:
     cpu: 2000m
     memory: 3Gi
 
+# Passcode interno del exporter JMX (lo exige el chart desde la v10).
+# NO es un login: nada lo scrapea en dev. Se rellena con el mismo secret
+# del admin para no crear otro secret solo para esto.
+monitoringPasscode: __SONAR_MONITORING_PASSCODE__
+
 # SonarQube es el inquilino /sonarqube (igual que Grafana en /grafana).
 # Sin este context, el Ingress le entrega rutas que no entiende.
 sonarProperties:

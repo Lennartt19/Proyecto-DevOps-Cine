@@ -5,13 +5,14 @@
 # Environments > qa) se configuran "Required reviewers": el run se pausa
 # ahí hasta que un revisor lo aprueba. Sin esa config en la UI, corre directo.
 #
-# Promoción (sin reconstruir): la imagen es el MISMO SHA probado en dev.
-# Se copia del ACR de dev al de QA con `az acr import` (etapa 12).
+# Promoción (sin reconstruir ni copiar): la imagen es el MISMO SHA probado en dev.
+# Hay UN SOLO ACR compartido (acrcinedev01 en rg-cine-dev): QA despliega
+# directamente desde ahí, sin `az acr import`.
 #
 # Secrets: se usan los MISMOS nombres que en dev (ACR_NAME, POSTGRES_*,
 # JWT_SECRET...), pero definidos en el Environment `qa` (Settings >
-# Environments > qa > Secrets): así QA tiene sus propios valores.
-# Solo DEV_ACR_NAME es secret de repo (el origen de la promoción).
+# Environments > qa > Secrets). ACR_NAME en TODOS los environments vale
+# lo mismo: acrcinedev01 (el ACR compartido).
 # Flujo de secretos: Environment Secrets -> Key Vault (az) -> pods (CSI).
 name: CD QA - deploy a AKS
 
@@ -55,7 +56,7 @@ jobs:
       - name: 4 - Revisar secret ACR_NAME
         run: |
           if [ -z "${{ secrets.ACR_NAME }}" ]; then
-            echo "Falta el secret ACR_NAME del environment qa (ej. acrcineqa01). Créalo en Settings > Environments > qa."
+            echo "Falta el secret ACR_NAME del environment qa (debe ser acrcinedev01, el ACR compartido). Créalo en Settings > Environments > qa."
             exit 1
           fi
 
@@ -77,11 +78,12 @@ jobs:
           done
           echo "Revisión lista."
 
-      # Etapa 6: averiguar las direcciones del ACR y del Key Vault de QA.
+      # Etapa 6: averiguar la dirección del ACR COMPARTIDO y del Key Vault de QA.
+      # El ACR vive en rg-cine-dev (acrcinedev01) para dev, qa y prod.
       - name: 6 - Averiguar ACR y Key Vault
         id: azure
         run: |
-          LOGIN_SERVER=$(az acr show -g rg-cine-qa -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
           echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
           echo "ACR: $LOGIN_SERVER"
           KV_NAME=$(az keyvault list -g rg-cine-qa --query "[0].name" -o tsv)
@@ -155,16 +157,12 @@ jobs:
       - name: 11 - Aplicar manifiestos
         run: kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
 
-      # Etapa 12: promover las imágenes de dev (mismo SHA) y fijarlas.
-      # `az acr import` copia sin reconstruir: lo probado en dev = lo que va a QA.
-      - name: 12 - Promover imágenes y fijar tag
+      # Etapa 12: desplegar las imágenes de dev (mismo SHA, sin copiar).
+      # Hay un solo ACR: lo probado en dev = lo que va a QA, sin `az acr import`.
+      - name: 12 - Fijar tag del ACR compartido
         run: |
-          DEV_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.DEV_ACR_NAME }} --query loginServer -o tsv)
-          echo "Origen: $DEV_SERVER"
-          az acr import -n ${{ secrets.ACR_NAME }} --source "$DEV_SERVER/cine-backend:${{ inputs.image_tag }}" --image cine-backend:${{ inputs.image_tag }}
-          az acr import -n ${{ secrets.ACR_NAME }} --source "$DEV_SERVER/cine-frontend:${{ inputs.image_tag }}" --image cine-frontend:${{ inputs.image_tag }}
-          echo "Imágenes promovidas."
-          az acr repository show-tags -n ${{ secrets.ACR_NAME }} --repository cine-backend --query "contains(@, '${{ inputs.image_tag }}')" -o tsv | grep -q true || (echo "El tag no llegó al ACR de QA."; exit 1)
+          echo "Origen (compartido): ${{ steps.azure.outputs.login_server }}"
+          az acr repository show-tags -n ${{ secrets.ACR_NAME }} --repository cine-backend --query "contains(@, '${{ inputs.image_tag }}')" -o tsv | grep -q true || (echo "El tag '${{ inputs.image_tag }}' no existe en el ACR compartido. Lanza el CI primero."; exit 1)
           kubectl set image deployment/backend -n cine-qa backend=${{ steps.azure.outputs.login_server }}/cine-backend:${{ inputs.image_tag }}
           kubectl set image deployment/frontend -n cine-qa frontend=${{ steps.azure.outputs.login_server }}/cine-frontend:${{ inputs.image_tag }}
 
