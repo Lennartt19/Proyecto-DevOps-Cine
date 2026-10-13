@@ -165,19 +165,40 @@ jobs:
           kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=300s
 
       # Etapa 14: averiguar la IP pública y armar el host nip.io.
+      # A veces Azure tarda >5 min o devuelve hostname en vez de ip: se cubren
+      # ambos casos y si falla se vuelca diagnóstico (svc, eventos, LB del MC_*).
       - name: 14 - Averiguar IP y host del Ingress
         id: ingress
         run: |
-          IP=""
-          for i in $(seq 1 30); do
+          echo "--- Estado inicial del Service ---"
+          kubectl get svc -n ingress-nginx -o wide || true
+          IP=""; HOSTN=""
+          for i in $(seq 1 60); do
             IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            HOSTN=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
             if [ -n "$IP" ]; then
               break
             fi
+            if [ -n "$HOSTN" ]; then
+              echo "Intento $i: el LB devolvió hostname ($HOSTN), resolviendo a IP..."
+              IP=$(getent hosts "$HOSTN" | awk '{print $1}' | head -n1)
+              if [ -n "$IP" ]; then
+                break
+              fi
+            fi
+            echo "Intento $i/60: sin IP aún, esperando 10s..."
             sleep 10
           done
           if [ -z "$IP" ]; then
-            echo "El Ingress aún no tiene IP pública. Revisa: kubectl get svc -n ingress-nginx"
+            echo "=== DIAGNÓSTICO: el LB no obtuvo IP ==="
+            kubectl get svc -n ingress-nginx -o wide || true
+            kubectl describe svc ingress-nginx-controller -n ingress-nginx | tail -n 40 || true
+            kubectl get events -n ingress-nginx --sort-by=.lastTimestamp | tail -n 30 || true
+            echo "--- LB / IP pública en el RG gestionado (MC_*) ---"
+            MC_RG=$(az aks show -g rg-cine-prod -n aks-cine-prod --query nodeResourceGroup -o tsv)
+            echo "MC_RG=$MC_RG"
+            az network lb list -g "$MC_RG" -o table || true
+            az network public-ip list -g "$MC_RG" -o table || true
             exit 1
           fi
           echo "ip=$IP" >> "$GITHUB_OUTPUT"
