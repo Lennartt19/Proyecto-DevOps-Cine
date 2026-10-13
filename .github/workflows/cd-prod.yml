@@ -258,6 +258,11 @@ jobs:
           helm upgrade --install prometheus prometheus-community/prometheus \
             -n monitoring --create-namespace \
             -f k8s/monitoring/values-prometheus-dev.yaml --wait --timeout 10m
+          # Limpieza del intento anterior con disco (G6): ese PVC quedó Pending
+          # y sin Bound no guarda nada, se puede borrar sin perder datos.
+          if [ "$(kubectl get pvc storage-loki-0 -n monitoring -o jsonpath='{.status.phase}' 2>/dev/null)" = "Pending" ]; then
+            kubectl delete pvc storage-loki-0 -n monitoring
+          fi
           helm upgrade --install loki grafana/loki-stack \
             -n monitoring --create-namespace \
             -f k8s/monitoring/values-loki-stack-dev.yaml --wait --timeout 10m

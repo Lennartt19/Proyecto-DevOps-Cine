@@ -12,8 +12,12 @@ loki:
   enabled: true
   image:
     tag: 2.9.8
+  # Sin disco a propósito: el nodo B2s_v2 solo admite 4 discos de datos y ya
+  # están ocupados (3 postgres + 1 prometheus). Con persistence apagado Loki
+  # guarda en efímero: los logs se pierden si el pod reinicia, aceptable en
+  # este laboratorio (ver bitácora G6). Si se sube a 2 nodos, reactivar a true.
   persistence:
-    enabled: true
+    enabled: false
     size: 5Gi # semanas de logs en dev (los logs de una app chica pesan poco)
   resources:
     requests:
