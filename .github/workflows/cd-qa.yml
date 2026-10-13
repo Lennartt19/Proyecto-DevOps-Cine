@@ -1,5 +1,7 @@
-# CD QA: instala backend + frontend + postgres en el AKS de QA
-# detrás de 1 Ingress NGINX. Réplica del CD dev con valores de QA.
+# CD QA: instala backend + frontend + postgres en el AKS COMPARTIDO
+# (aks-cine-dev) como namespace cine-qa, detrás del MISMO Ingress NGINX de dev.
+# Motivo: cupo Students = 3 IPs en chilecentral y 1 AKS+Ingress = 2 IPs.
+# QA tiene host propio qa.<IP>.nip.io sobre la IP compartida (1 sola IP pública).
 #
 # Aprobación: el job usa `environment: qa`. En GitHub (Settings >
 # Environments > qa) se configuran "Required reviewers": el run se pausa
@@ -48,9 +50,9 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      # Etapa 3: apuntar kubectl al clúster de QA.
-      - name: 3 - Conectar kubectl al AKS QA
-        run: az aks get-credentials -g rg-cine-qa -n aks-cine-qa --overwrite-existing
+      # Etapa 3: apuntar kubectl al clúster COMPARTIDO (aks-cine-dev).
+      - name: 3 - Conectar kubectl al AKS compartido
+        run: az aks get-credentials -g rg-cine-dev -n aks-cine-dev --overwrite-existing
 
       # Etapa 4: si falta el nombre del registry, avisar en claro y parar.
       - name: 4 - Revisar secret ACR_NAME
@@ -142,12 +144,12 @@ jobs:
             --from-file=db/init/ \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      # Etapa 10: SecretProviderClass con la identidad kubelet VIGENTE de QA.
-      # El ID cambia en cada AKS nuevo, por eso se inyecta aquí y no se confía
-      # en el valor commiteado.
+      # Etapa 10: SecretProviderClass con la identidad kubelet del clúster
+      # COMPARTIDO (dev). El ID cambia en cada AKS nuevo, por eso se inyecta
+      # aquí y no se confía en el valor commiteado.
       - name: 10 - Aplicar SecretProviderClass
         run: |
-          KUBELET_ID=$(az aks show -g rg-cine-qa -n aks-cine-qa --query identityProfile.kubeletidentity.clientId -o tsv)
+          KUBELET_ID=$(az aks show -g rg-cine-dev -n aks-cine-dev --query identityProfile.kubeletidentity.clientId -o tsv)
           echo "Kubelet vigente: $KUBELET_ID"
           sed -i "s/userAssignedIdentityID: \".*\"/userAssignedIdentityID: \"$KUBELET_ID\"/" k8s/secret-provider.yaml
           grep "userAssignedIdentityID" k8s/secret-provider.yaml
@@ -166,52 +168,31 @@ jobs:
           kubectl set image deployment/backend -n cine-qa backend=${{ steps.azure.outputs.login_server }}/cine-backend:${{ inputs.image_tag }}
           kubectl set image deployment/frontend -n cine-qa frontend=${{ steps.azure.outputs.login_server }}/cine-frontend:${{ inputs.image_tag }}
 
-      # Etapa 13: instalar el portero NGINX (idempotente).
-      - name: 13 - Instalar NGINX Ingress
+      # Etapa 13: el portero NGINX ya vive en el clúster compartido (lo instala
+      # el CD dev). Aquí SOLO se verifica: crear otro controller = otro LB =
+      # otra IP pública, y el cupo Students no da (PublicIPCountLimitReached).
+      - name: 13 - Verificar NGINX del clúster compartido
         run: |
-          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/cloud/deploy.yaml
-          kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=300s
+          kubectl get svc -n ingress-nginx ingress-nginx-controller || (echo "NGINX no existe en aks-cine-dev. Corre primero el CD dev."; exit 1)
+          kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=120s
 
-      # Etapa 14: averiguar la IP pública y armar el host nip.io.
-      # A veces Azure tarda >5 min o devuelve hostname en vez de ip: se cubren
-      # ambos casos y si falla se vuelca diagnóstico (svc, eventos, LB del MC_*).
-      - name: 14 - Averiguar IP y host del Ingress
+      # Etapa 14: reutilizar la IP del Ingress de dev y armar host propio.
+      # nip.io resuelve qa.<IP>.nip.io a <IP>: los 3 env comparten 1 IP,
+      # el Ingress reparte por host (cine-qa) y dev sigue en <IP>.nip.io.
+      - name: 14 - Reutilizar IP y armar host qa
         id: ingress
         run: |
-          echo "--- Estado inicial del Service ---"
-          kubectl get svc -n ingress-nginx -o wide || true
-          IP=""; HOSTN=""
-          for i in $(seq 1 60); do
-            IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-            HOSTN=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
-            if [ -n "$IP" ]; then
-              break
-            fi
-            if [ -n "$HOSTN" ]; then
-              echo "Intento $i: el LB devolvió hostname ($HOSTN), resolviendo a IP..."
-              IP=$(getent hosts "$HOSTN" | awk '{print $1}' | head -n1)
-              if [ -n "$IP" ]; then
-                break
-              fi
-            fi
-            echo "Intento $i/60: sin IP aún, esperando 10s..."
-            sleep 10
-          done
+          IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
           if [ -z "$IP" ]; then
-            echo "=== DIAGNÓSTICO: el LB no obtuvo IP ==="
-            kubectl get svc -n ingress-nginx -o wide || true
-            kubectl describe svc ingress-nginx-controller -n ingress-nginx | tail -n 40 || true
-            kubectl get events -n ingress-nginx --sort-by=.lastTimestamp | tail -n 30 || true
-            echo "--- LB / IP pública en el RG gestionado (MC_*) ---"
-            MC_RG=$(az aks show -g rg-cine-qa -n aks-cine-qa --query nodeResourceGroup -o tsv)
-            echo "MC_RG=$MC_RG"
-            az network lb list -g "$MC_RG" -o table || true
-            az network public-ip list -g "$MC_RG" -o table || true
+            echo "El Ingress de dev aún no tiene IP pública. Corre primero el CD dev."
             exit 1
           fi
+          HOST="qa.$IP.nip.io"
+          echo "IP compartida: $IP -> host QA: $HOST"
+          getent hosts "$HOST" | head -n1 || echo "Aviso: $HOST no resolvió desde el runner; verifica en tu navegador."
           echo "ip=$IP" >> "$GITHUB_OUTPUT"
-          echo "host=$IP.nip.io" >> "$GITHUB_OUTPUT"
-          echo "Host: http://$IP.nip.io"
+          echo "host=$HOST" >> "$GITHUB_OUTPUT"
+          echo "Host: http://$HOST"
 
       # Etapa 15: aplicar las reglas con el host real.
       - name: 15 - Aplicar Ingress con host
