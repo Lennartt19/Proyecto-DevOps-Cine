@@ -11,6 +11,10 @@
 #
 # __SONAR_ADMIN_PASSWORD__ lo reemplaza el CD con sed desde el GitHub Secret
 # SONAR_ADMIN_PASSWORD (igual que Grafana). Nunca va un password real a git.
+# Chart >=10 exige elegir edición: para Community Build se usa
+# community.enabled=true y SIN edition (developer/enterprise son de pago).
+community:
+  enabled: true
 account:
   # Clave inicial del admin. Se aplica solo en instalación limpia (si ya
   # existe datos, se ignora: cambia la clave en la UI).
@@ -30,11 +34,15 @@ postgresql:
         cpu: 500m
         memory: 512Mi
     persistence:
-      enabled: true
+      # Sin disco a propósito: 1 nodo B2s_v2 = máx 4 discos, ya ocupados por
+      # 3x postgres-data de la app. Con false usa emptyDir (se borra al reiniciar).
+      enabled: false
       size: 2Gi
 
 persistence:
-  enabled: true
+  # Sin disco a propósito: mismo motivo. Pierde historial/proyectos al
+  # reiniciar; aceptable en lab (el CI re-envía el análisis en cada push).
+  enabled: false
   size: 5Gi
 
 # ClusterIP a propósito: la puerta pública es el Ingress existente
