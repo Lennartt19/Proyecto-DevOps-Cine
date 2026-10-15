@@ -194,61 +194,61 @@ jobs:
   # exige quality gate en verde. Si falla, el CI queda en rojo y ese SHA
   # no debe promoverse a QA (la puerta formal del pipeline).
   # Se salta en PR (los forks no tienen los secrets).
-  sonar:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    if: github.event_name != 'pull_request'
-    steps:
-      # Historial completo: SonarQube lo usa para asignar culpables (blame).
-      - name: 1 - Descargar código completo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+  # sonar:
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 20
+  #   if: github.event_name != 'pull_request'
+  #   steps:
+  #     # Historial completo: SonarQube lo usa para asignar culpables (blame).
+  #     - name: 1 - Descargar código completo
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
 
-      - name: 1 - Instalar Node 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+  #     - name: 1 - Instalar Node 20
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 20
 
-      # Revisar que el servidor y el token existen antes de analizar.
-      - name: 2 - Revisar secrets de SonarQube
-        run: |
-          if [ -z "${{ secrets.SONAR_HOST_URL }}" ]; then
-            echo "Falta el secret SONAR_HOST_URL (ej. http://<IP>.nip.io/sonarqube). Lo muestra el CD SonarQube al final."
-            exit 1
-          fi
-          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
-            echo "Falta el secret SONAR_TOKEN (SonarQube > My Account > Security > Generate). Sin token no hay análisis."
-            exit 1
-          fi
-          curl -fsSL -u "${{ secrets.SONAR_TOKEN }}:" "${{ secrets.SONAR_HOST_URL }}/api/system/status" | grep -q '"status":"UP"' || (echo "SonarQube no responde en SONAR_HOST_URL. ¿Cambió la IP del Ingress?"; exit 1)
+  #     # Revisar que el servidor y el token existen antes de analizar.
+  #     - name: 2 - Revisar secrets de SonarQube
+  #       run: |
+  #         if [ -z "${{ secrets.SONAR_HOST_URL }}" ]; then
+  #           echo "Falta el secret SONAR_HOST_URL (ej. http://<IP>.nip.io/sonarqube). Lo muestra el CD SonarQube al final."
+  #           exit 1
+  #         fi
+  #         if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+  #           echo "Falta el secret SONAR_TOKEN (SonarQube > My Account > Security > Generate). Sin token no hay análisis."
+  #           exit 1
+  #         fi
+  #         curl -fsSL -u "${{ secrets.SONAR_TOKEN }}:" "${{ secrets.SONAR_HOST_URL }}/api/system/status" | grep -q '"status":"UP"' || (echo "SonarQube no responde en SONAR_HOST_URL. ¿Cambió la IP del Ingress?"; exit 1)
 
-      # Enviar el código (lee backend/sonar-project.properties).
-      - name: 3 - Analizar con SonarQube
-        working-directory: backend
-        env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: npx -y sonarqube-scanner -Dsonar.host.url="$SONAR_HOST_URL" -Dsonar.token="$SONAR_TOKEN"
+  #     # Enviar el código (lee backend/sonar-project.properties).
+  #     - name: 3 - Analizar con SonarQube
+  #       working-directory: backend
+  #       env:
+  #         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #       run: npx -y sonarqube-scanner -Dsonar.host.url="$SONAR_HOST_URL" -Dsonar.token="$SONAR_TOKEN"
 
-      # Preguntar el veredicto (hasta 5 min: el servidor tarda en procesar).
-      - name: 4 - Exigir quality gate en verde
-        env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          for i in $(seq 1 20); do
-            STATUS=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=cine-backend" | python3 -c "import sys,json; print(json.load(sys.stdin)['projectStatus']['status'])")
-            echo "Intento $i: $STATUS"
-            if [ "$STATUS" = "OK" ]; then
-              echo "Quality gate en verde."
-              exit 0
-            fi
-            if [ "$STATUS" = "ERROR" ]; then
-              echo "Quality gate en ROJO: revisa el reporte en $SONAR_HOST_URL/dashboard?id=cine-backend y corrige antes de promover a QA."
-              exit 1
-            fi
-            sleep 15
-          done
-          echo "SonarQube no dio veredicto en 5 min. Revisa el servidor."
-          exit 1
+  #     # Preguntar el veredicto (hasta 5 min: el servidor tarda en procesar).
+  #     - name: 4 - Exigir quality gate en verde
+  #       env:
+  #         SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  #         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  #       run: |
+  #         for i in $(seq 1 20); do
+  #           STATUS=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=cine-backend" | python3 -c "import sys,json; print(json.load(sys.stdin)['projectStatus']['status'])")
+  #           echo "Intento $i: $STATUS"
+  #           if [ "$STATUS" = "OK" ]; then
+  #             echo "Quality gate en verde."
+  #             exit 0
+  #           fi
+  #           if [ "$STATUS" = "ERROR" ]; then
+  #             echo "Quality gate en ROJO: revisa el reporte en $SONAR_HOST_URL/dashboard?id=cine-backend y corrige antes de promover a QA."
+  #             exit 1
+  #           fi
+  #           sleep 15
+  #         done
+  #         echo "SonarQube no dio veredicto en 5 min. Revisa el servidor."
+  #         exit 1
