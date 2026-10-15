@@ -51,9 +51,14 @@ service:
   type: ClusterIP
 
 resources:
+  # Requests bajos a propósito: el Job hook change-admin-password hereda
+  # estos mismos requests y en 1x B2s_v2 (2026-10-15: 1576m/82% pedidos)
+  # 500m dejaba al hook en Pending (Insufficient cpu) y helm --wait
+  # colgaba 15m en pending-install. Con 100m/512Mi programa y el límite
+  # sigue permitiendo el pico de Elasticsearch en runtime.
   requests:
-    cpu: 500m
-    memory: 1Gi
+    cpu: 100m
+    memory: 512Mi
   limits:
     cpu: 2000m
     memory: 3Gi
