@@ -1,0 +1,554 @@
+name: Pipeline - test, artefactos, sonar, dev, QA, prod
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'angular.json'
+      - 'Dockerfile.frontend'
+      - 'backend/Dockerfile'
+      - '.github/workflows/pipeline.yml'
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+# Evita dos despliegues pisándose: el segundo espera al primero.
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # ============ ETAPA 0: NGINX Ingress (puerta única, primero) ============
+  # Sin controller no hay IP ni host nip.io para nada (app o SonarQube).
+  # Idempotente: 1ra vez crea el LB (tarda minutos), luego solo verifica.
+  ingress-ensure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      ip: ${{ steps.ingress.outputs.ip }}
+      host: ${{ steps.ingress.outputs.host }}
+    steps:
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+      - name: 2 - Entrar a Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: 3 - Conectar kubectl al AKS
+        run: az aks get-credentials -g rg-cine-dev -n aks-cine-dev --overwrite-existing
+      - name: 4 - Instalar/verificar NGINX Ingress
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/cloud/deploy.yaml
+          kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=300s
+      - name: 5 - Descubrir IP y host
+        id: ingress
+        run: |
+          IP=""; HOSTN=""
+          for i in $(seq 1 60); do
+            IP=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+            HOSTN=$(kubectl get svc -n ingress-nginx ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null)
+            if [ -n "$IP" ]; then break; fi
+            if [ -n "$HOSTN" ]; then
+              IP=$(getent hosts "$HOSTN" | awk '{print $1}' | head -n1)
+              if [ -n "$IP" ]; then break; fi
+            fi
+            sleep 10
+          done
+          if [ -z "$IP" ]; then echo "El LB no obtuvo IP."; exit 1; fi
+          echo "ip=$IP" >> "$GITHUB_OUTPUT"
+          echo "host=$IP.nip.io" >> "$GITHUB_OUTPUT"
+          echo "Host: http://$IP.nip.io"
+
+  # ============ ETAPA 1: pruebas unitarias backend ============
+  test-backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+      - name: 1 - Instalar Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 2 - Instalar dependencias
+        working-directory: backend
+        run: npm ci
+      - name: 3 - Tests unitarios (jest, con mocks, sin BD)
+        working-directory: backend
+        run: npm test -- --ci
+      - name: 4 - Audit de seguridad (informa, no bloquea)
+        working-directory: backend
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+  # ============ ETAPA 1: compilación frontend ============
+  test-frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+      - name: 1 - Instalar Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 2 - Instalar dependencias
+        run: npm ci
+      - name: 3 - Build producción (TypeScript falla aquí, no en Docker)
+        run: npm run build
+      - name: 4 - Audit de seguridad (informa, no bloquea)
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+  # ============ ETAPA 2: artefactos (imágenes al ACR) ============
+  build-push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [test-backend, test-frontend, sonar-analysis]
+    outputs:
+      image_tag: ${{ steps.meta.outputs.tag }}
+      login_server: ${{ steps.acr.outputs.login_server }}
+    steps:
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+      - name: 2 - Entrar a Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: 3 - Revisar secret ACR_NAME
+        run: |
+          if [ -z "${{ secrets.ACR_NAME }}" ]; then
+            echo "Falta el secret ACR_NAME (ej. acrcinedev01)."
+            exit 1
+          fi
+      - name: 4 - Averiguar dirección del ACR
+        id: acr
+        run: |
+          LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+          echo "ACR: $LOGIN_SERVER"
+      - name: 5 - Entrar al ACR con Docker
+        run: az acr login -n ${{ secrets.ACR_NAME }}
+      - name: 6 - Fijar tag (el SHA viaja hasta prod sin reconstruir)
+        id: meta
+        run: echo "tag=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+      - name: 7 - Build + push backend (:sha y :latest)
+        run: |
+          docker build -f backend/Dockerfile -t ${{ steps.acr.outputs.login_server }}/cine-backend:${{ steps.meta.outputs.tag }} .
+          docker tag ${{ steps.acr.outputs.login_server }}/cine-backend:${{ steps.meta.outputs.tag }} ${{ steps.acr.outputs.login_server }}/cine-backend:latest
+          docker push ${{ steps.acr.outputs.login_server }}/cine-backend:${{ steps.meta.outputs.tag }}
+          docker push ${{ steps.acr.outputs.login_server }}/cine-backend:latest
+      - name: 8 - Build + push frontend (:sha y :latest)
+        run: |
+          docker build -f Dockerfile.frontend -t ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ steps.meta.outputs.tag }} .
+          docker tag ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ steps.meta.outputs.tag }} ${{ steps.acr.outputs.login_server }}/cine-frontend:latest
+          docker push ${{ steps.acr.outputs.login_server }}/cine-frontend:${{ steps.meta.outputs.tag }}
+          docker push ${{ steps.acr.outputs.login_server }}/cine-frontend:latest
+
+  # ============ ETAPA 3: deploy automático a dev ============
+  # Usa el host de ingress-ensure (no instala NGINX: ya viene verificado).
+  deploy-dev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build-push, ingress-ensure]
+    outputs:
+      ingress_host: ${{ needs.ingress-ensure.outputs.host }}
+      ingress_ip: ${{ needs.ingress-ensure.outputs.ip }}
+    steps:
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+      - name: 2 - Entrar a Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: 3 - Conectar kubectl al AKS dev
+        run: az aks get-credentials -g rg-cine-dev -n aks-cine-dev --overwrite-existing
+      - name: 4 - Revisar secrets de la app
+        run: |
+          [ -n "${{ secrets.ACR_NAME }}" ] || (echo "Falta ACR_NAME."; exit 1)
+          [ -n "${{ secrets.POSTGRES_DB }}" ] || (echo "Falta POSTGRES_DB."; exit 1)
+          [ -n "${{ secrets.POSTGRES_USER }}" ] || (echo "Falta POSTGRES_USER."; exit 1)
+          [ -n "${{ secrets.POSTGRES_PASSWORD }}" ] || (echo "Falta POSTGRES_PASSWORD."; exit 1)
+          [ -n "${{ secrets.JWT_SECRET }}" ] || (echo "Falta JWT_SECRET."; exit 1)
+          [ -n "${{ secrets.SESSION_SECRET }}" ] || (echo "Falta SESSION_SECRET."; exit 1)
+          echo "Secrets de dev presentes."
+      - name: 5 - Averiguar ACR y Key Vault
+        id: azure
+        run: |
+          LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+          KV_NAME=$(az keyvault list -g rg-cine-dev --query "[0].name" -o tsv)
+          echo "kv_name=$KV_NAME" >> "$GITHUB_OUTPUT"
+          echo "ACR: $LOGIN_SERVER / Vault: $KV_NAME"
+      - name: 6 - Subir secrets al Key Vault
+        run: |
+          KV=${{ steps.azure.outputs.kv_name }}
+          az keyvault secret set --vault-name "$KV" --name POSTGRES-DB --value '${{ secrets.POSTGRES_DB }}' -o none
+          az keyvault secret set --vault-name "$KV" --name POSTGRES-USER --value '${{ secrets.POSTGRES_USER }}' -o none
+          az keyvault secret set --vault-name "$KV" --name POSTGRES-PASSWORD --value '${{ secrets.POSTGRES_PASSWORD }}' -o none
+          az keyvault secret set --vault-name "$KV" --name JWT-SECRET --value '${{ secrets.JWT_SECRET }}' -o none
+          az keyvault secret set --vault-name "$KV" --name SESSION-SECRET --value '${{ secrets.SESSION_SECRET }}' -o none
+          COUNT=$(az keyvault secret list --vault-name "$KV" --query "length(@)" -o tsv)
+          [ "$COUNT" = "5" ] || (echo "El Vault no tiene los 5 secretos (rol Secrets Officer?)."; exit 1)
+      - name: 7 - Fijar entorno y crear namespace
+        run: |
+          sed -i "s/__NAMESPACE__/cine-dev/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
+          grep -rn "__NAMESPACE__\|__KV_NAME__" k8s/*.yaml && (echo "Quedó un placeholder."; exit 1) || echo "Plantillas listas para cine-dev."
+          kubectl apply -f k8s/namespace.yaml
+      - name: 8 - Subir SQL de init
+        run: |
+          kubectl create configmap postgres-init -n cine-dev \
+            --from-file=db/init/ \
+            --dry-run=client -o yaml | kubectl apply -f -
+      - name: 9 - Aplicar SecretProviderClass
+        run: |
+          KUBELET_ID=$(az aks show -g rg-cine-dev -n aks-cine-dev --query identityProfile.kubeletidentity.clientId -o tsv)
+          sed -i "s/userAssignedIdentityID: \".*\"/userAssignedIdentityID: \"$KUBELET_ID\"/" k8s/secret-provider.yaml
+          kubectl apply -f k8s/secret-provider.yaml
+      - name: 10 - Aplicar manifiestos
+        run: kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
+      - name: 11 - Fijar imágenes del SHA
+        run: |
+          TAG=${{ needs.build-push.outputs.image_tag }}
+          az acr repository show-tags -n ${{ secrets.ACR_NAME }} --repository cine-backend --query "contains(@, '$TAG')" -o tsv | grep -q true || (echo "Tag $TAG sin push. Revisa build-push."; exit 1)
+          kubectl set image deployment/backend -n cine-dev backend=${{ needs.build-push.outputs.login_server }}/cine-backend:$TAG
+          kubectl set image deployment/frontend -n cine-dev frontend=${{ needs.build-push.outputs.login_server }}/cine-frontend:$TAG
+      - name: 12 - Verificar NGINX (instalado por ingress-ensure)
+        run: |
+          kubectl get svc -n ingress-nginx ingress-nginx-controller || (echo "Sin NGINX. Revisa el job ingress-ensure."; exit 1)
+          kubectl rollout status deployment/ingress-nginx-controller -n ingress-nginx --timeout=120s
+      - name: 13 - Tomar host de ingress-ensure
+        id: ingress
+        run: |
+          echo "ip=${{ needs.ingress-ensure.outputs.ip }}" >> "$GITHUB_OUTPUT"
+          echo "host=${{ needs.ingress-ensure.outputs.host }}" >> "$GITHUB_OUTPUT"
+          echo "Host: http://${{ needs.ingress-ensure.outputs.host }}"
+      - name: 14 - Aplicar Ingress con host
+        run: |
+          sed "s/__INGRESS_HOST__/${{ steps.ingress.outputs.host }}/" k8s/ingress.yaml | kubectl apply -f -
+          kubectl get ingress -n cine-dev
+      - name: 15 - Fijar URLs al host único
+        run: |
+          kubectl set env deployment/frontend -n cine-dev API_URL='http://${{ steps.ingress.outputs.host }}/api' APP_URL='http://${{ steps.ingress.outputs.host }}'
+          kubectl set env deployment/backend -n cine-dev FRONTEND_URL='http://${{ steps.ingress.outputs.host }}' BACKEND_URL='http://${{ steps.ingress.outputs.host }}' CORS_ORIGIN='http://${{ steps.ingress.outputs.host }}'
+      - name: 16 - Esperar que todo encienda
+        run: |
+          kubectl rollout status deployment/postgres -n cine-dev --timeout=120s
+          kubectl rollout status deployment/backend -n cine-dev --timeout=180s
+          kubectl rollout status deployment/frontend -n cine-dev --timeout=180s
+      - name: 17 - Mostrar estado final
+        run: |
+          kubectl get pods -n cine-dev
+          echo "Web: http://${{ steps.ingress.outputs.host }}/"
+
+  # ============ Servidor SonarQube (infra, en paralelo con tests) ============
+  # Consume el host de ingress-ensure: por eso ya no depende de deploy-dev
+  # y puede correr en paralelo con los tests sin romper el orden correcto.
+  sonar-ensure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: [ingress-ensure]
+    outputs:
+      sonar_url: ${{ steps.url.outputs.sonar_url }}
+    steps:
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+      - name: 2 - Entrar a Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: 3 - Conectar kubectl al AKS dev
+        run: az aks get-credentials -g rg-cine-dev -n aks-cine-dev --overwrite-existing
+      - name: 4 - Revisar secret SONAR_ADMIN_PASSWORD
+        run: |
+          if [ -z "${{ secrets.SONAR_ADMIN_PASSWORD }}" ]; then
+            echo "Falta SONAR_ADMIN_PASSWORD (mínimo 8 chars, sin comilla simple)."
+            exit 1
+          fi
+      - name: 5 - Guardar clave en Key Vault
+        run: |
+          KV_NAME=$(az keyvault list -g rg-cine-dev --query "[0].name" -o tsv)
+          az keyvault secret set --vault-name "$KV_NAME" --name SONAR-ADMIN-PASSWORD --value '${{ secrets.SONAR_ADMIN_PASSWORD }}' -o none
+      - name: 6 - Crear namespace
+        run: kubectl apply -f k8s/sonarqube/namespace.yaml
+      - name: 7 - Repo Helm
+        run: |
+          helm repo add sonarqube https://SonarSource.github.io/helm-chart-sonarqube
+          helm repo update
+      - name: 7b - Tomar host de ingress-ensure
+        id: ingress
+        run: |
+          echo "host=${{ needs.ingress-ensure.outputs.host }}" >> "$GITHUB_OUTPUT"
+          echo "Host: http://${{ needs.ingress-ensure.outputs.host }}"
+      - name: 8 - Instalar SonarQube pineado (con auto-limpieza de pending)
+        env:
+          SONAR_PWD: ${{ secrets.SONAR_ADMIN_PASSWORD }}
+        run: |
+          python3 -c "
+          import os
+          p = open('k8s/sonarqube/values-sonarqube-dev.yaml').read()
+          admin = os.environ['SONAR_PWD']
+          p = p.replace('__SONAR_ADMIN_PASSWORD__', admin).replace('__SONAR_MONITORING_PASSCODE__', admin)
+          open('/tmp/sonar-values.yaml','w').write(p)
+          "
+          STATUS=$(helm status sonarqube -n sonarqube -o json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('info',{}).get('status',''))" 2>/dev/null || echo "")
+          if [ "$STATUS" = "pending-install" ] || [ "$STATUS" = "pending-upgrade" ] || [ "$STATUS" = "failed" ]; then
+            echo "Release en $STATUS, desinstalando para reinstalar limpio..."
+            helm uninstall sonarqube -n sonarqube --wait
+          fi
+          helm upgrade --install sonarqube sonarqube/sonarqube \
+            --version 2026.5.1002 \
+            -n sonarqube --create-namespace \
+            -f /tmp/sonar-values.yaml --wait --timeout 15m
+      - name: 9 - Aplicar Ingress de SonarQube en el host descubierto
+        run: |
+          kubectl get svc sonarqube-sonarqube -n sonarqube
+          sed -e "s/__INGRESS_HOST__/${{ steps.ingress.outputs.host }}/" -e "s/__SONAR_SVC__/sonarqube-sonarqube/" \
+            k8s/sonarqube/sonarqube-ingress.yaml | kubectl apply -f -
+      - name: 10 - Esperar que encienda (StatefulSet)
+        run: kubectl rollout status statefulset/sonarqube-sonarqube -n sonarqube --timeout=600s
+      - name: 11 - Publicar URL de SonarQube
+        id: url
+        run: echo "sonar_url=http://${{ steps.ingress.outputs.host }}/sonarqube" >> "$GITHUB_OUTPUT"
+
+  # ============ Análisis + quality gate (puerta de calidad, ANTES de build) ============
+  # Shift-left: si el gate sale ERROR, el pipeline se detiene aquí. Ese código
+  # no se empaqueta ni se despliega a ningún ambiente. Barato fallar aquí.
+  sonar-analysis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [test-backend, sonar-ensure]
+    steps:
+      - name: 1 - Descargar código completo (blame para SonarQube)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: 1 - Instalar Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: 2 - Revisar servidor y token
+        run: |
+          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+            echo "Falta SONAR_TOKEN (SonarQube > My Account > Security > Generate)."
+            exit 1
+          fi
+          curl -fsSL -u "${{ secrets.SONAR_TOKEN }}:" "${{ needs.sonar-ensure.outputs.sonar_url }}/api/system/status" | grep -q '"status":"UP"' || (echo "SonarQube no responde en ${{ needs.sonar-ensure.outputs.sonar_url }}."; exit 1)
+      - name: 3 - Analizar backend con SonarQube
+        working-directory: backend
+        env:
+          SONAR_HOST_URL: ${{ needs.sonar-ensure.outputs.sonar_url }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: npx -y sonarqube-scanner -Dsonar.host.url="$SONAR_HOST_URL" -Dsonar.token="$SONAR_TOKEN"
+      - name: 4 - Exigir quality gate en verde
+        env:
+          SONAR_HOST_URL: ${{ needs.sonar-ensure.outputs.sonar_url }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          for i in $(seq 1 20); do
+            STATUS=$(curl -s -u "$SONAR_TOKEN:" "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=cine-backend" | python3 -c "import sys,json; print(json.load(sys.stdin)['projectStatus']['status'])")
+            echo "Intento $i: $STATUS"
+            if [ "$STATUS" = "OK" ]; then echo "Quality gate en verde."; exit 0; fi
+            if [ "$STATUS" = "ERROR" ]; then echo "Quality gate en ROJO: corrige antes de QA."; exit 1; fi
+            sleep 15
+          done
+          echo "Sin veredicto en 5 min."; exit 1
+
+  # ============ ETAPA 6: QA con aprobación del equipo ============
+  deploy-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build-push, deploy-dev, ingress-ensure]
+    environment: qa
+    steps:
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+      - name: 2 - Entrar a Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: 3 - Conectar kubectl al AKS compartido
+        run: az aks get-credentials -g rg-cine-dev -n aks-cine-dev --overwrite-existing
+      - name: 4 - Averiguar ACR y Key Vault de QA
+        id: azure
+        run: |
+          LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+          KV_NAME=$(az keyvault list -g rg-cine-qa --query "[0].name" -o tsv)
+          echo "kv_name=$KV_NAME" >> "$GITHUB_OUTPUT"
+      - name: 5 - Sincronizar secrets (valor de QA o herencia de dev)
+        env:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+        run: |
+          KV=${{ steps.azure.outputs.kv_name }}
+          DEV_VAULT=kvcinedev01
+          sync_secret() {
+            if az keyvault secret show-deleted --vault-name "$KV" --name "$1" -o none 2>/dev/null; then
+              az keyvault secret recover --vault-name "$KV" --name "$1" -o none
+            fi
+            if [ -n "$2" ]; then
+              az keyvault secret set --vault-name "$KV" --name "$1" --value "$2" -o none
+            else
+              V=$(az keyvault secret show --vault-name "$DEV_VAULT" --name "$1" --query value -o tsv)
+              az keyvault secret set --vault-name "$KV" --name "$1" --value "$V" -o none
+            fi
+          }
+          sync_secret POSTGRES-DB "$POSTGRES_DB"
+          sync_secret POSTGRES-USER "$POSTGRES_USER"
+          sync_secret POSTGRES-PASSWORD "$POSTGRES_PASSWORD"
+          sync_secret JWT-SECRET "$JWT_SECRET"
+          sync_secret SESSION-SECRET "$SESSION_SECRET"
+      - name: 6 - Desplegar namespace cine-qa
+        run: |
+          sed -i "s/__NAMESPACE__/cine-qa/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
+          kubectl apply -f k8s/namespace.yaml
+          kubectl create configmap postgres-init -n cine-qa --from-file=db/init/ --dry-run=client -o yaml | kubectl apply -f -
+          KUBELET_ID=$(az aks show -g rg-cine-dev -n aks-cine-dev --query identityProfile.kubeletidentity.clientId -o tsv)
+          sed -i "s/userAssignedIdentityID: \".*\"/userAssignedIdentityID: \"$KUBELET_ID\"/" k8s/secret-provider.yaml
+          kubectl apply -f k8s/secret-provider.yaml
+          kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
+          TAG=${{ needs.build-push.outputs.image_tag }}
+          kubectl set image deployment/backend -n cine-qa backend=${{ steps.azure.outputs.login_server }}/cine-backend:$TAG
+          kubectl set image deployment/frontend -n cine-qa frontend=${{ steps.azure.outputs.login_server }}/cine-frontend:$TAG
+      - name: 7 - Ingress qa.<IP>.nip.io (IP de ingress-ensure, sin LB nuevo)
+        run: |
+          kubectl get svc -n ingress-nginx ingress-nginx-controller || (echo "Revisa el job ingress-ensure."; exit 1)
+          IP=${{ needs.ingress-ensure.outputs.ip }}
+          HOST="qa.$IP.nip.io"
+          sed "s/__INGRESS_HOST__/$HOST/" k8s/ingress.yaml | kubectl apply -f -
+          kubectl set env deployment/frontend -n cine-qa API_URL="http://$HOST/api" APP_URL="http://$HOST"
+          kubectl set env deployment/backend -n cine-qa FRONTEND_URL="http://$HOST" BACKEND_URL="http://$HOST" CORS_ORIGIN="http://$HOST"
+          kubectl rollout status deployment/postgres -n cine-qa --timeout=120s
+          kubectl rollout status deployment/backend -n cine-qa --timeout=180s
+          kubectl rollout status deployment/frontend -n cine-qa --timeout=180s
+          echo "QA: http://$HOST/"
+
+  # ============ ETAPA 7: producción con aprobación final ============
+  deploy-prod:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    needs: [build-push, deploy-qa, ingress-ensure]
+    environment: prod
+    steps:
+      - name: 1 - Descargar código
+        uses: actions/checkout@v4
+      - name: 2 - Entrar a Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: 3 - Conectar kubectl al AKS compartido
+        run: az aks get-credentials -g rg-cine-dev -n aks-cine-dev --overwrite-existing
+      - name: 4 - Averiguar ACR y Key Vault de prod
+        id: azure
+        run: |
+          LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
+          KV_NAME=$(az keyvault list -g rg-cine-prod --query "[0].name" -o tsv)
+          echo "kv_name=$KV_NAME" >> "$GITHUB_OUTPUT"
+      - name: 5 - Sincronizar secrets (valor de prod o herencia de dev)
+        env:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+        run: |
+          KV=${{ steps.azure.outputs.kv_name }}
+          DEV_VAULT=kvcinedev01
+          sync_secret() {
+            if az keyvault secret show-deleted --vault-name "$KV" --name "$1" -o none 2>/dev/null; then
+              az keyvault secret recover --vault-name "$KV" --name "$1" -o none
+            fi
+            if [ -n "$2" ]; then
+              az keyvault secret set --vault-name "$KV" --name "$1" --value "$2" -o none
+            else
+              V=$(az keyvault secret show --vault-name "$DEV_VAULT" --name "$1" --query value -o tsv)
+              az keyvault secret set --vault-name "$KV" --name "$1" --value "$V" -o none
+            fi
+          }
+          sync_secret POSTGRES-DB "$POSTGRES_DB"
+          sync_secret POSTGRES-USER "$POSTGRES_USER"
+          sync_secret POSTGRES-PASSWORD "$POSTGRES_PASSWORD"
+          sync_secret JWT-SECRET "$JWT_SECRET"
+          sync_secret SESSION-SECRET "$SESSION_SECRET"
+      - name: 6 - Desplegar namespace cine-prod
+        run: |
+          sed -i "s/__NAMESPACE__/cine-prod/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
+          kubectl apply -f k8s/namespace.yaml
+          kubectl create configmap postgres-init -n cine-prod --from-file=db/init/ --dry-run=client -o yaml | kubectl apply -f -
+          KUBELET_ID=$(az aks show -g rg-cine-dev -n aks-cine-dev --query identityProfile.kubeletidentity.clientId -o tsv)
+          sed -i "s/userAssignedIdentityID: \".*\"/userAssignedIdentityID: \"$KUBELET_ID\"/" k8s/secret-provider.yaml
+          kubectl apply -f k8s/secret-provider.yaml
+          kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
+          TAG=${{ needs.build-push.outputs.image_tag }}
+          kubectl set image deployment/backend -n cine-prod backend=${{ steps.azure.outputs.login_server }}/cine-backend:$TAG
+          kubectl set image deployment/frontend -n cine-prod frontend=${{ steps.azure.outputs.login_server }}/cine-frontend:$TAG
+      - name: 7 - Ingress prod.<IP>.nip.io (IP de ingress-ensure, sin LB nuevo)
+        run: |
+          kubectl get svc -n ingress-nginx ingress-nginx-controller || (echo "Revisa el job ingress-ensure."; exit 1)
+          IP=${{ needs.ingress-ensure.outputs.ip }}
+          HOST="prod.$IP.nip.io"
+          sed "s/__INGRESS_HOST__/$HOST/" k8s/ingress.yaml | kubectl apply -f -
+          kubectl set env deployment/frontend -n cine-prod API_URL="http://$HOST/api" APP_URL="http://$HOST"
+          kubectl set env deployment/backend -n cine-prod FRONTEND_URL="http://$HOST" BACKEND_URL="http://$HOST" CORS_ORIGIN="http://$HOST"
+          kubectl rollout status deployment/postgres -n cine-prod --timeout=120s
+          kubectl rollout status deployment/backend -n cine-prod --timeout=180s
+          kubectl rollout status deployment/frontend -n cine-prod --timeout=180s
+          echo "PROD: http://$HOST/"
+      - name: "8 - Monitoreo (solo prod: Prometheus + Loki + Grafana)"
+        env:
+          GRAFANA_ADMIN_PASSWORD: ${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+        run: |
+          kubectl apply -f k8s/monitoring/namespace.yaml
+          IP=${{ needs.ingress-ensure.outputs.ip }}
+          HOST="prod.$IP.nip.io"
+          KV=${{ steps.azure.outputs.kv_name }}
+          if [ -n "$GRAFANA_ADMIN_PASSWORD" ]; then GRAFANA_PASS="$GRAFANA_ADMIN_PASSWORD"; else GRAFANA_PASS=$(az keyvault secret show --vault-name kvcinedev01 --name GRAFANA-ADMIN-PASSWORD --query value -o tsv); fi
+          az keyvault secret set --vault-name "$KV" --name GRAFANA-ADMIN-PASSWORD --value "$GRAFANA_PASS" -o none
+          kubectl create secret generic grafana-admin -n monitoring \
+            --from-literal=admin-user=admin \
+            --from-literal=admin-password="$GRAFANA_PASS" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          kubectl apply -f k8s/monitoring/dashboard-navegacion.yaml
+          curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 -o /tmp/gethelm.sh
+          bash /tmp/gethelm.sh
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+          helm upgrade --install prometheus prometheus-community/prometheus \
+            -n monitoring --create-namespace \
+            -f k8s/monitoring/values-prometheus-dev.yaml --wait --timeout 10m
+          helm upgrade --install loki grafana/loki-stack \
+            -n monitoring --create-namespace \
+            -f k8s/monitoring/values-loki-stack-dev.yaml --wait --timeout 10m
+          sed "s/__INGRESS_HOST__/$HOST/" k8s/monitoring/values-grafana-dev.yaml > /tmp/grafana-values.yaml
+          helm upgrade --install grafana grafana/grafana \
+            -n monitoring --create-namespace \
+            -f /tmp/grafana-values.yaml --wait --timeout 10m
+          sed "s/__INGRESS_HOST__/$HOST/" k8s/monitoring/monitoring-ingress.yaml | kubectl apply -f -
+          kubectl rollout status deployment/prometheus-server -n monitoring --timeout=300s
+          kubectl rollout status deployment/grafana -n monitoring --timeout=300s
+          echo "Grafana: http://$HOST/grafana"
