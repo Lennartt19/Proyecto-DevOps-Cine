@@ -108,6 +108,13 @@ jobs:
           KV=${{ steps.azure.outputs.kv_name }}
           DEV_VAULT=kvcinedev01
           sync_secret() {
+            # Si el secreto quedó en borrado suave (recreate del vault),
+            # recuperarlo antes de escribir: si no, `set` falla con
+            # Conflict/ObjectIsDeletedButRecoverable.
+            if az keyvault secret show-deleted --vault-name "$KV" --name "$1" -o none 2>/dev/null; then
+              az keyvault secret recover --vault-name "$KV" --name "$1" -o none
+              echo "$1: recuperado del borrado suave."
+            fi
             if [ -n "$2" ]; then
               az keyvault secret set --vault-name "$KV" --name "$1" --value "$2" -o none
               echo "$1: valor propio del environment qa."

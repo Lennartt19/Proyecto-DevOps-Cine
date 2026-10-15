@@ -10,9 +10,11 @@ admin:
   userKey: admin-user
   passwordKey: admin-password
 
-# Disco de 1Gi para dashboards y la config (si no, se pierden al reiniciar).
+# Sin disco a propósito: 1 nodo B2s_v2 = máx 4 discos, ya ocupados por
+# 3x postgres-data. Con false usa emptyDir (pierde dashboards de UI al
+# reiniciar; los aprovisionados por ConfigMap se recargan solos).
 persistence:
-  enabled: true
+  enabled: false
   size: 1Gi
 
 # ClusterIP a propósito: la puerta pública es el Ingress existente

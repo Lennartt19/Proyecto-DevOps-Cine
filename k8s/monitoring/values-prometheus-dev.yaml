@@ -7,7 +7,9 @@ server:
   # Cuánto historial guarda. 2 días bastan en dev; más = más disco = más costo.
   retention: 2d
   persistentVolume:
-    enabled: true
+    # Apagado a propósito: 1 nodo B2s_v2 = máx 4 discos, ya ocupados por
+    # 3x postgres-data. Con false usa emptyDir (pierde historial al reiniciar).
+    enabled: false
     size: 4Gi
   # Cotas: sin limits, Prometheus se come el nodo y tumba la app.
   resources:
