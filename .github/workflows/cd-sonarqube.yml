@@ -81,26 +81,52 @@ jobs:
           echo "Host: http://$IP.nip.io"
 
       # Etapa 8: instalar SonarQube (el primer arranque tarda: Elasticsearch).
+      # - Reemplazo con python (no sed): el password puede traer / & \ y
+      #   rompería el sed clásico.
+      # - Chart pineado a 2026.5.1002 (validado en aks-cine-dev 2026-10-15).
+      #   Sin pin, helm repo update trae breaking changes.
+      # - Si hay un release en pending-install/failed (hook Pending por
+      #   Insufficient cpu el 2026-10-15), se desinstala primero: helm no
+      #   permite upgrade sobre pending.
       - name: 8 - Instalar SonarQube
+        env:
+          SONAR_PWD: ${{ secrets.SONAR_ADMIN_PASSWORD }}
         run: |
-          sed -e "s/__SONAR_ADMIN_PASSWORD__/${{ secrets.SONAR_ADMIN_PASSWORD }}/" -e "s/__SONAR_MONITORING_PASSCODE__/${{ secrets.SONAR_ADMIN_PASSWORD }}/" k8s/sonarqube/values-sonarqube-dev.yaml > /tmp/sonar-values.yaml
+          python3 -c "
+          import os
+          p = open('k8s/sonarqube/values-sonarqube-dev.yaml').read()
+          admin = os.environ['SONAR_PWD']
+          p = p.replace('__SONAR_ADMIN_PASSWORD__', admin).replace('__SONAR_MONITORING_PASSCODE__', admin)
+          open('/tmp/sonar-values.yaml','w').write(p)
+          "
+          STATUS=$(helm status sonarqube -n sonarqube -o json 2>/dev/null | python3 -c "import sys,json; print(json.load(sys.stdin).get('info',{}).get('status',''))" 2>/dev/null || echo "")
+          if [ "$STATUS" = "pending-install" ] || [ "$STATUS" = "pending-upgrade" ] || [ "$STATUS" = "failed" ]; then
+            echo "Release en estado $STATUS, desinstalando para reinstalar limpio..."
+            helm uninstall sonarqube -n sonarqube --wait
+          fi
           helm upgrade --install sonarqube sonarqube/sonarqube \
+            --version 2026.5.1002 \
             -n sonarqube --create-namespace \
             -f /tmp/sonar-values.yaml --wait --timeout 15m
 
-      # Etapa 9: exponerlo en /sonarqube (el Service se descubre, no se escribe).
+      # Etapa 9: exponerlo en /sonarqube. Service fijo sonarqube-sonarqube
+      # (validado en clúster 2026-10-15: el .items[0] anterior podía tomar
+      # otro svc y dejar el Ingress en 503).
       - name: 9 - Aplicar Ingress de SonarQube
         run: |
           kubectl get svc -n sonarqube
-          SONAR_SVC=$(kubectl get svc -n sonarqube -o jsonpath='{.items[0].metadata.name}')
+          SONAR_SVC="sonarqube-sonarqube"
+          kubectl get svc "$SONAR_SVC" -n sonarqube
           echo "Service: $SONAR_SVC"
           sed -e "s/__INGRESS_HOST__/${{ steps.ingress.outputs.host }}/" -e "s/__SONAR_SVC__/$SONAR_SVC/" \
             k8s/sonarqube/sonarqube-ingress.yaml | kubectl apply -f -
           kubectl get ingress -n sonarqube
 
       # Etapa 10: esperar a que encienda (Elasticsearch es lento la 1ra vez).
+      # El chart despliega StatefulSet (no Deployment): verificado en
+      # clúster 2026-10-15 (statefulset.apps/sonarqube-sonarqube 1/1).
       - name: 10 - Esperar que encienda
-        run: kubectl rollout status deployment/sonarqube-sonarqube -n sonarqube --timeout=600s
+        run: kubectl rollout status statefulset/sonarqube-sonarqube -n sonarqube --timeout=600s
 
       # Etapa 11: mostrar URLs y el siguiente paso (el token para el CI).
       - name: 11 - Mostrar estado final
@@ -110,3 +136,4 @@ jobs:
           echo "SonarQube: http://${{ steps.ingress.outputs.host }}/sonarqube (admin + SONAR_ADMIN_PASSWORD)"
           echo "SIGUIENTE: entra con admin, genera un token en My Account > Security y guárdalo en el secret SONAR_TOKEN del repo. Sin ese token el job sonar del CI falla."
           echo "OJO: si la IP del Ingress cambia, actualiza el secret SONAR_HOST_URL con la nueva URL."
+
