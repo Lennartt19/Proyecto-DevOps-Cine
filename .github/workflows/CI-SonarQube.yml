@@ -36,6 +36,7 @@ permissions:
 #   exige quality gate en verde. Si falla, el CI queda en rojo y ese SHA
 #   no debe promoverse a QA (la puerta formal del pipeline).
 #   Se salta en PR (los forks no tienen los secrets).
+jobs:
  sonar:
     runs-on: ubuntu-latest
     timeout-minutes: 20
