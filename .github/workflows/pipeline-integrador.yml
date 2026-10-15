@@ -201,8 +201,11 @@ jobs:
           az keyvault secret set --vault-name "$KV" --name POSTGRES-PASSWORD --value '${{ secrets.POSTGRES_PASSWORD }}' -o none
           az keyvault secret set --vault-name "$KV" --name JWT-SECRET --value '${{ secrets.JWT_SECRET }}' -o none
           az keyvault secret set --vault-name "$KV" --name SESSION-SECRET --value '${{ secrets.SESSION_SECRET }}' -o none
-          COUNT=$(az keyvault secret list --vault-name "$KV" --query "length(@)" -o tsv)
-          [ "$COUNT" = "5" ] || (echo "El Vault no tiene los 5 secretos (rol Secrets Officer?)."; exit 1)
+          echo "--- Verificar los 5 de la app por nombre (el Vault puede tener más: SONAR/GRAFANA) ---"
+          for S in POSTGRES-DB POSTGRES-USER POSTGRES-PASSWORD JWT-SECRET SESSION-SECRET; do
+            az keyvault secret show --vault-name "$KV" --name "$S" -o none || (echo "Falta $S en el Vault (rol Secrets Officer?)."; exit 1)
+          done
+          echo "5 secretos de la app verificados."
       - name: 7 - Fijar entorno y crear namespace
         run: |
           sed -i "s/__NAMESPACE__/cine-dev/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
@@ -552,3 +555,4 @@ jobs:
           kubectl rollout status deployment/prometheus-server -n monitoring --timeout=300s
           kubectl rollout status deployment/grafana -n monitoring --timeout=300s
           echo "Grafana: http://$HOST/grafana"
+
