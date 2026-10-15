@@ -136,6 +136,7 @@ jobs:
         id: acr
         run: |
           LOGIN_SERVER=$(az acr show -g rg-cine-dev -n ${{ secrets.ACR_NAME }} --query loginServer -o tsv)
+          [ -n "$LOGIN_SERVER" ] || (echo "az acr show devolvió vacío para '${{ secrets.ACR_NAME }}'. Revisa el nombre/RG."; exit 1)
           echo "login_server=$LOGIN_SERVER" >> "$GITHUB_OUTPUT"
           echo "ACR: $LOGIN_SERVER"
       - name: 5 - Entrar al ACR con Docker
@@ -208,8 +209,8 @@ jobs:
           echo "5 secretos de la app verificados."
       - name: 7 - Fijar entorno y crear namespace
         run: |
-          sed -i "s/__NAMESPACE__/cine-dev/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
-          grep -rn "__NAMESPACE__\|__KV_NAME__" k8s/*.yaml && (echo "Quedó un placeholder."; exit 1) || echo "Plantillas listas para cine-dev."
+          sed -i "s/__NAMESPACE__/cine-dev/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g; s|__ACR_LOGIN_SERVER__|${{ steps.azure.outputs.login_server }}|g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
+          grep -rn "__NAMESPACE__\|__KV_NAME__\|__ACR_LOGIN_SERVER__" k8s/*.yaml && (echo "Quedó un placeholder."; exit 1) || echo "Plantillas listas para cine-dev."
           kubectl apply -f k8s/namespace.yaml
       - name: 8 - Subir SQL de init
         run: |
@@ -226,9 +227,12 @@ jobs:
       - name: 11 - Fijar imágenes del SHA
         run: |
           TAG=${{ needs.build-push.outputs.image_tag }}
+          LOGIN_SERVER=${{ steps.azure.outputs.login_server }}
+          [ -n "$LOGIN_SERVER" ] || (echo "login_server vacío. Revisa la etapa 5 (ACR_NAME/RG)."; exit 1)
+          case "$LOGIN_SERVER" in /*) echo "login_server inválido: $LOGIN_SERVER"; exit 1;; esac
           az acr repository show-tags -n ${{ secrets.ACR_NAME }} --repository cine-backend --query "contains(@, '$TAG')" -o tsv | grep -q true || (echo "Tag $TAG sin push. Revisa build-push."; exit 1)
-          kubectl set image deployment/backend -n cine-dev backend=${{ needs.build-push.outputs.login_server }}/cine-backend:$TAG
-          kubectl set image deployment/frontend -n cine-dev frontend=${{ needs.build-push.outputs.login_server }}/cine-frontend:$TAG
+          kubectl set image deployment/backend -n cine-dev backend=$LOGIN_SERVER/cine-backend:$TAG
+          kubectl set image deployment/frontend -n cine-dev frontend=$LOGIN_SERVER/cine-frontend:$TAG
       - name: 12 - Verificar NGINX (instalado por ingress-ensure)
         run: |
           kubectl get svc -n ingress-nginx ingress-nginx-controller || (echo "Sin NGINX. Revisa el job ingress-ensure."; exit 1)
@@ -424,7 +428,8 @@ jobs:
           sync_secret SESSION-SECRET "$SESSION_SECRET"
       - name: 6 - Desplegar namespace cine-qa
         run: |
-          sed -i "s/__NAMESPACE__/cine-qa/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
+          sed -i "s/__NAMESPACE__/cine-qa/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g; s|__ACR_LOGIN_SERVER__|${{ steps.azure.outputs.login_server }}|g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
+          grep -rn "__NAMESPACE__\|__KV_NAME__\|__ACR_LOGIN_SERVER__" k8s/*.yaml && (echo "Quedó un placeholder."; exit 1) || echo "Plantillas listas para cine-qa."
           kubectl apply -f k8s/namespace.yaml
           kubectl create configmap postgres-init -n cine-qa --from-file=db/init/ --dry-run=client -o yaml | kubectl apply -f -
           KUBELET_ID=$(az aks show -g rg-cine-dev -n aks-cine-dev --query identityProfile.kubeletidentity.clientId -o tsv)
@@ -432,8 +437,10 @@ jobs:
           kubectl apply -f k8s/secret-provider.yaml
           kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
           TAG=${{ needs.build-push.outputs.image_tag }}
-          kubectl set image deployment/backend -n cine-qa backend=${{ steps.azure.outputs.login_server }}/cine-backend:$TAG
-          kubectl set image deployment/frontend -n cine-qa frontend=${{ steps.azure.outputs.login_server }}/cine-frontend:$TAG
+          LOGIN_SERVER=${{ steps.azure.outputs.login_server }}
+          [ -n "$LOGIN_SERVER" ] || (echo "login_server vacío."; exit 1)
+          kubectl set image deployment/backend -n cine-qa backend=$LOGIN_SERVER/cine-backend:$TAG
+          kubectl set image deployment/frontend -n cine-qa frontend=$LOGIN_SERVER/cine-frontend:$TAG
       - name: 7 - Ingress qa.<IP>.nip.io (IP de ingress-ensure, sin LB nuevo)
         run: |
           kubectl get svc -n ingress-nginx ingress-nginx-controller || (echo "Revisa el job ingress-ensure."; exit 1)
@@ -499,7 +506,8 @@ jobs:
           sync_secret SESSION-SECRET "$SESSION_SECRET"
       - name: 6 - Desplegar namespace cine-prod
         run: |
-          sed -i "s/__NAMESPACE__/cine-prod/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
+          sed -i "s/__NAMESPACE__/cine-prod/g; s/__KV_NAME__/${{ steps.azure.outputs.kv_name }}/g; s|__ACR_LOGIN_SERVER__|${{ steps.azure.outputs.login_server }}|g" k8s/namespace.yaml k8s/secret-provider.yaml k8s/postgres.yaml k8s/backend.yaml k8s/frontend.yaml k8s/ingress.yaml
+          grep -rn "__NAMESPACE__\|__KV_NAME__\|__ACR_LOGIN_SERVER__" k8s/*.yaml && (echo "Quedó un placeholder."; exit 1) || echo "Plantillas listas para cine-prod."
           kubectl apply -f k8s/namespace.yaml
           kubectl create configmap postgres-init -n cine-prod --from-file=db/init/ --dry-run=client -o yaml | kubectl apply -f -
           KUBELET_ID=$(az aks show -g rg-cine-dev -n aks-cine-dev --query identityProfile.kubeletidentity.clientId -o tsv)
@@ -507,8 +515,10 @@ jobs:
           kubectl apply -f k8s/secret-provider.yaml
           kubectl apply -f k8s/postgres.yaml -f k8s/backend.yaml -f k8s/frontend.yaml
           TAG=${{ needs.build-push.outputs.image_tag }}
-          kubectl set image deployment/backend -n cine-prod backend=${{ steps.azure.outputs.login_server }}/cine-backend:$TAG
-          kubectl set image deployment/frontend -n cine-prod frontend=${{ steps.azure.outputs.login_server }}/cine-frontend:$TAG
+          LOGIN_SERVER=${{ steps.azure.outputs.login_server }}
+          [ -n "$LOGIN_SERVER" ] || (echo "login_server vacío."; exit 1)
+          kubectl set image deployment/backend -n cine-prod backend=$LOGIN_SERVER/cine-backend:$TAG
+          kubectl set image deployment/frontend -n cine-prod frontend=$LOGIN_SERVER/cine-frontend:$TAG
       - name: 7 - Ingress prod.<IP>.nip.io (IP de ingress-ensure, sin LB nuevo)
         run: |
           kubectl get svc -n ingress-nginx ingress-nginx-controller || (echo "Revisa el job ingress-ensure."; exit 1)
